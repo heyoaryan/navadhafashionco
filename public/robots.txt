@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://navadha.com/sitemap.xml

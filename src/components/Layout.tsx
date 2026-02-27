@@ -1,0 +1,29 @@
+import { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import Header from './Header';
+import Footer from './Footer';
+
+interface LayoutProps {
+  children: ReactNode;
+}
+
+export default function Layout({ children }: LayoutProps) {
+  const location = useLocation();
+  const hideFooter = location.pathname === '/auth' || location.pathname.startsWith('/account');
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  // Don't render layout for admin routes - they have their own layout
+  if (isAdminRoute) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
+      <Header />
+      <main className="pt-16">
+        {children}
+      </main>
+      {!hideFooter && <Footer />}
+    </div>
+  );
+}
