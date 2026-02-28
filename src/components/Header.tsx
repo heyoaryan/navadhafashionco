@@ -338,7 +338,7 @@ export default function Header() {
       </div>
 
       {mobileMenuOpen && (
-        <div ref={mobileMenuRef} className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+        <div ref={mobileMenuRef} className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg relative z-50">
           <nav className="px-4 py-4 space-y-2">
             {categories.map((category) => (
               <div key={category.name}>
@@ -414,7 +414,8 @@ export default function Header() {
       {/* Overlay for mobile menu and search */}
       {(mobileMenuOpen || searchOpen) && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          style={{ top: '56px' }}
           onClick={() => {
             setMobileMenuOpen(false);
             setSearchOpen(false);
@@ -450,7 +451,7 @@ export default function Header() {
 
       {/* Search Dropdown - All screens */}
       {searchOpen && (
-        <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 animate-in slide-in-from-top duration-300 shadow-lg">
+        <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 animate-in slide-in-from-top duration-300 shadow-lg relative z-50">
           <form onSubmit={handleSearch} className="max-w-3xl mx-auto relative">
             <input
               ref={searchInputRef}
