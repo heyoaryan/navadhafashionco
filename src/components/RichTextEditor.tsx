@@ -52,7 +52,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             key={index}
             type="button"
             onClick={() => execCommand(btn.command)}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors text-gray-700 dark:text-gray-300"
             title={btn.title}
           >
             <btn.icon className="w-4 h-4" />
@@ -65,7 +65,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         ref={editorRef}
         contentEditable
         onInput={handleInput}
-        className="min-h-[150px] p-4 focus:outline-none prose prose-sm dark:prose-invert max-w-none"
+        className="min-h-[150px] p-4 focus:outline-none prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
         data-placeholder={placeholder}
         style={{
           wordBreak: 'break-word',
@@ -77,6 +77,9 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           content: attr(data-placeholder);
           color: #9ca3af;
           pointer-events: none;
+        }
+        .dark [contenteditable]:empty:before {
+          color: #6b7280;
         }
         [contenteditable] {
           outline: none;

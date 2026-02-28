@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Upload, X, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
 import RichTextEditor from '../../components/RichTextEditor';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface ColorOption {
   name: string;
@@ -85,6 +86,15 @@ export default function ProductForm() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [id, hasUserInput]);
+
+  useEffect(() => {
+    if (showConfirmModal) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [showConfirmModal]);
 
   const saveFormData = () => {
     try {
@@ -201,7 +211,12 @@ export default function ProductForm() {
 
         // Set colors
         if (data.colors && Array.isArray(data.colors) && data.colors.length > 0) {
-          setColors(data.colors);
+          setColors(data.colors.map((c: any) => ({
+            name: c.name || '',
+            hex: c.hex || '#000000',
+          })));
+        } else {
+          setColors([{ name: '', hex: '#000000' }]);
         }
       }
     } catch (error) {
@@ -390,12 +405,150 @@ export default function ProductForm() {
   const updateColor = (index: number, field: 'name' | 'hex', value: string) => {
     setHasUserInput(true);
     const newColors = [...colors];
-    newColors[index][field] = value;
+    
+    if (field === 'hex') {
+      // Check for duplicate colors
+      const colorName = getColorName(value);
+      const isDuplicate = colors.some((c, i) => {
+        if (i === index) return false; // Skip current color
+        if (value === '#multicolor' && c.hex === '#multicolor') return true; // Multicolor duplicate
+        return getColorName(c.hex) === colorName && colorName !== 'Custom'; // Same color name duplicate
+      });
+
+      if (isDuplicate) {
+        if (value === '#multicolor') {
+          showToast('Multicolor is already selected', 'error');
+        } else {
+          showToast(`${colorName} is already selected. Choose a different shade or color.`, 'error');
+        }
+        return;
+      }
+
+      newColors[index].hex = value;
+      // Automatically update color name when hex changes
+      newColors[index].name = colorName;
+    } else {
+      newColors[index][field] = value;
+    }
+    
     setColors(newColors);
+  };
+
+  // Function to get color name from hex
+  const getColorName = (hex: string): string => {
+    const colorMap: { [key: string]: string } = {
+      '#000000': 'Black',
+      '#ffffff': 'White',
+      '#ff0000': 'Red',
+      '#00ff00': 'Green',
+      '#0000ff': 'Blue',
+      '#ffff00': 'Yellow',
+      '#ff00ff': 'Magenta',
+      '#00ffff': 'Cyan',
+      '#ffa500': 'Orange',
+      '#800080': 'Purple',
+      '#ffc0cb': 'Pink',
+      '#a52a2a': 'Brown',
+      '#808080': 'Gray',
+      '#c0c0c0': 'Silver',
+      '#ffd700': 'Gold',
+      '#4b0082': 'Indigo',
+      '#ee82ee': 'Violet',
+      '#f5f5dc': 'Beige',
+      '#d2691e': 'Chocolate',
+      '#ff6347': 'Tomato',
+      '#40e0d0': 'Turquoise',
+      '#da70d6': 'Orchid',
+      '#87ceeb': 'Sky Blue',
+      '#98fb98': 'Pale Green',
+      '#dda0dd': 'Plum',
+      '#f0e68c': 'Khaki',
+      '#e6e6fa': 'Lavender',
+      '#ffe4e1': 'Misty Rose',
+      '#faebd7': 'Antique White',
+      '#f5deb3': 'Wheat',
+      '#fffacd': 'Lemon Chiffon',
+      '#multicolor': 'Multicolor',
+    };
+
+    const lowerHex = hex.toLowerCase();
+    
+    // Check for exact match
+    if (colorMap[lowerHex]) {
+      return colorMap[lowerHex];
+    }
+
+    // Basic color detection based on RGB values
+    const r = parseInt(lowerHex.slice(1, 3), 16);
+    const g = parseInt(lowerHex.slice(3, 5), 16);
+    const b = parseInt(lowerHex.slice(5, 7), 16);
+
+    if (r > 200 && g < 100 && b < 100) return 'Red';
+    if (r < 100 && g > 200 && b < 100) return 'Green';
+    if (r < 100 && g < 100 && b > 200) return 'Blue';
+    if (r > 200 && g > 200 && b < 100) return 'Yellow';
+    if (r > 200 && g < 100 && b > 200) return 'Magenta';
+    if (r < 100 && g > 200 && b > 200) return 'Cyan';
+    if (r > 200 && g > 150 && b < 100) return 'Orange';
+    if (r > 150 && g < 100 && b > 150) return 'Purple';
+    if (r > 200 && g > 150 && b > 150) return 'Pink';
+    if (r < 50 && g < 50 && b < 50) return 'Black';
+    if (r > 200 && g > 200 && b > 200) return 'White';
+    if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30) return 'Gray';
+
+    return 'Custom';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    const requiredFields = [
+      { name: 'name', label: 'Product Name', ref: 'name' },
+      { name: 'slug', label: 'Slug', ref: 'slug' },
+      { name: 'price', label: 'Price', ref: 'price' },
+      { name: 'category', label: 'Main Category', ref: 'category' },
+      { name: 'stock_quantity', label: 'Stock Quantity', ref: 'stock_quantity' },
+    ];
+
+    // Check for missing required fields
+    for (const field of requiredFields) {
+      if (!formData[field.name as keyof typeof formData] || formData[field.name as keyof typeof formData] === '') {
+        showToast(`Please fill in the ${field.label} field`, 'error');
+        
+        // Scroll to the field and highlight it
+        const element = document.querySelector(`[name="${field.name}"]`) as HTMLElement;
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+          element.focus();
+          
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            element.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+          }, 3000);
+        }
+        return;
+      }
+    }
+
+    // Check if at least one image is provided
+    if (!imageUrls[0] || imageUrls[0] === '') {
+      showToast('Please upload at least one product image', 'error');
+      
+      // Scroll to images section
+      const imagesSection = document.querySelector('[data-section="images"]') as HTMLElement;
+      if (imagesSection) {
+        imagesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        imagesSection.classList.add('ring-2', 'ring-red-500', 'rounded-lg');
+        
+        setTimeout(() => {
+          imagesSection.classList.remove('ring-2', 'ring-red-500');
+        }, 3000);
+      }
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -553,7 +706,7 @@ export default function ProductForm() {
                   setShowConfirmModal(false);
                   setConfirmAction(null);
                 }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-900 dark:text-gray-100"
               >
                 Cancel
               </button>
@@ -620,31 +773,31 @@ export default function ProductForm() {
           <h2 className="text-lg sm:text-xl font-medium mb-4 text-gray-900 dark:text-gray-100">Basic Information</h2>
           
           <div>
-            <label className="block text-sm font-medium mb-2">Product Name *</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Product Name *</label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Slug *</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Slug *</label>
             <input
               type="text"
               name="slug"
               value={formData.slug}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Description</label>
             <RichTextEditor
               value={formData.description}
               onChange={(value) => {
@@ -656,13 +809,13 @@ export default function ProductForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Main Category *</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Main Category *</label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select Main Category</option>
               <option value="boutique">Boutique</option>
@@ -676,12 +829,12 @@ export default function ProductForm() {
 
           {formData.category && (
             <div>
-              <label className="block text-sm font-medium mb-2">Subcategory</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Subcategory</label>
               <select
                 name="subcategory"
                 value={formData.subcategory}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Select Subcategory</option>
                 {formData.category === 'boutique' && (
@@ -735,12 +888,12 @@ export default function ProductForm() {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-2">Gender</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Gender</label>
             <select
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select Gender</option>
               <option value="women">Women</option>
@@ -751,7 +904,7 @@ export default function ProductForm() {
         </div>
 
         {/* Images */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 space-y-4" data-section="images">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-gray-100">Product Images</h2>
             <button
@@ -771,7 +924,7 @@ export default function ProductForm() {
             {imageUrls.map((url, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
                     Image {index + 1} {index === 0 && <span className="text-red-500">*</span>}
                   </label>
                   {imageUrls.length > 1 && (
@@ -806,7 +959,7 @@ export default function ProductForm() {
                     <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                        <p className="text-sm text-gray-500">Click to upload</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Click to upload</p>
                       </div>
                       <input
                         type="file"
@@ -818,13 +971,6 @@ export default function ProductForm() {
                         }}
                       />
                     </label>
-                    <input
-                      type="url"
-                      placeholder="Or paste image URL"
-                      value={url}
-                      onChange={(e) => handleImageUrlChange(index, e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    />
                   </div>
                 )}
               </div>
@@ -907,7 +1053,7 @@ export default function ProductForm() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Price *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Price *</label>
               <input
                 type="number"
                 name="price"
@@ -916,12 +1062,12 @@ export default function ProductForm() {
                 required
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Compare at Price</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Compare at Price</label>
               <input
                 type="number"
                 name="compare_at_price"
@@ -929,12 +1075,12 @@ export default function ProductForm() {
                 onChange={handleChange}
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Cost per Item</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Cost per Item</label>
               <input
                 type="number"
                 name="cost_per_item"
@@ -942,7 +1088,7 @@ export default function ProductForm() {
                 onChange={handleChange}
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
             </div>
           </div>
@@ -954,18 +1100,18 @@ export default function ProductForm() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">SKU</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">SKU</label>
               <input
                 type="text"
                 name="sku"
                 value={formData.sku}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Stock Quantity *</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Stock Quantity *</label>
               <input
                 type="number"
                 name="stock_quantity"
@@ -973,19 +1119,19 @@ export default function ProductForm() {
                 onChange={handleChange}
                 required
                 min="0"
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Low Stock Threshold</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Low Stock Threshold</label>
               <input
                 type="number"
                 name="low_stock_threshold"
                 value={formData.low_stock_threshold}
                 onChange={handleChange}
                 min="0"
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
             </div>
           </div>
@@ -996,20 +1142,20 @@ export default function ProductForm() {
           <h2 className="text-lg sm:text-xl font-medium mb-4 text-gray-900 dark:text-gray-100">Variants</h2>
           
           <div>
-            <label className="block text-sm font-medium mb-2">Sizes (comma separated)</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Sizes (comma separated)</label>
             <input
               type="text"
               name="sizes"
               value={formData.sizes}
               onChange={handleChange}
               placeholder="S, M, L, XL"
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium">Colors</label>
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">Colors</label>
               <button
                 type="button"
                 onClick={addColor}
@@ -1022,38 +1168,82 @@ export default function ProductForm() {
             
             <div className="space-y-3">
               {colors.map((color, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <input
-                    type="text"
-                    placeholder="Color name"
-                    value={color.name}
-                    onChange={(e) => updateColor(index, 'name', e.target.value)}
-                    className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <input
-                      type="color"
-                      value={color.hex}
-                      onChange={(e) => updateColor(index, 'hex', e.target.value)}
-                      className="w-12 h-10 rounded cursor-pointer flex-shrink-0"
-                    />
+                <div key={index} className="space-y-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <input
                       type="text"
-                      value={color.hex}
-                      onChange={(e) => updateColor(index, 'hex', e.target.value)}
-                      placeholder="#000000"
-                      className="w-24 px-2 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      placeholder="Color name"
+                      value={color.name}
+                      onChange={(e) => updateColor(index, 'name', e.target.value)}
+                      className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                     />
-                    {colors.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeColor(index)}
-                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {color.hex !== '#multicolor' && (
+                        <>
+                          <input
+                            type="color"
+                            value={color.hex}
+                            onChange={(e) => updateColor(index, 'hex', e.target.value)}
+                            className="w-12 h-10 rounded cursor-pointer flex-shrink-0"
+                          />
+                          <input
+                            type="text"
+                            value={color.hex}
+                            onChange={(e) => updateColor(index, 'hex', e.target.value)}
+                            placeholder="#000000"
+                            className="w-24 px-2 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                          />
+                        </>
+                      )}
+                      {color.hex === '#multicolor' && (
+                        <div className="w-36 h-10 rounded flex-shrink-0 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500"></div>
+                      )}
+                      {colors.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeColor(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0"
+                          title="Remove color"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {color.hex !== '#multicolor' && (
+                    <label className="flex items-center gap-2 ml-1">
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            // Check if multicolor already exists
+                            const hasMulticolor = colors.some((c, i) => i !== index && c.hex === '#multicolor');
+                            if (hasMulticolor) {
+                              showToast('Multicolor is already selected', 'error');
+                              return;
+                            }
+                            updateColor(index, 'hex', '#multicolor');
+                            updateColor(index, 'name', 'Multicolor');
+                          }
+                        }}
+                        className="w-4 h-4 text-rose-500 rounded focus:ring-rose-400"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">🌈 Multicolor</span>
+                    </label>
+                  )}
+                  {color.hex === '#multicolor' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateColor(index, 'hex', '#000000');
+                        updateColor(index, 'name', 'Black');
+                      }}
+                      className="text-sm text-blue-500 hover:text-blue-600 ml-1"
+                    >
+                      Change to regular color
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1065,19 +1255,19 @@ export default function ProductForm() {
           <h2 className="text-lg sm:text-xl font-medium mb-4 text-gray-900 dark:text-gray-100">Additional Details</h2>
           
           <div>
-            <label className="block text-sm font-medium mb-2">Tags (comma separated)</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Tags (comma separated)</label>
             <input
               type="text"
               name="tags"
               value={formData.tags}
               onChange={handleChange}
               placeholder="saree, silk, traditional"
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Fabric Details</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Fabric Details</label>
             <RichTextEditor
               value={formData.fabric_details}
               onChange={(value) => {
@@ -1089,7 +1279,7 @@ export default function ProductForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Care Instructions</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Care Instructions</label>
             <RichTextEditor
               value={formData.care_instructions}
               onChange={(value) => {
@@ -1109,7 +1299,7 @@ export default function ProductForm() {
                 onChange={handleChange}
                 className="w-4 h-4 text-rose-500 rounded focus:ring-rose-400"
               />
-              <span className="text-sm font-medium">Featured Product</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Featured Product</span>
             </label>
 
             <label className="flex items-center gap-2">
@@ -1120,7 +1310,7 @@ export default function ProductForm() {
                 onChange={handleChange}
                 className="w-4 h-4 text-rose-500 rounded focus:ring-rose-400"
               />
-              <span className="text-sm font-medium">Active</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Active</span>
             </label>
           </div>
         </div>
@@ -1139,7 +1329,7 @@ export default function ProductForm() {
           <button
             type="button"
             onClick={handleCancelClick}
-            className="px-6 py-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="px-6 py-3 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-900 dark:text-gray-100"
           >
             Cancel
           </button>

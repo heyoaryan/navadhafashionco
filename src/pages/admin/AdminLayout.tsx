@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, Tag, Users, LogOut, RotateCcw, Menu, X, TrendingUp, MapPin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth();
@@ -18,13 +19,13 @@ export default function AdminLayout() {
   // Lock body scroll when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
+      lockScroll();
     } else {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     }
     
     return () => {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     };
   }, [sidebarOpen]);
 
@@ -70,7 +71,7 @@ export default function AdminLayout() {
         </Link>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-900 dark:text-gray-100"
         >
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>

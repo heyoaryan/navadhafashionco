@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Order, OrderItem, Return, ReturnReason } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface OrderTracking {
   id: string;
@@ -36,6 +37,15 @@ export default function OrderDetail() {
       fetchOrderDetails();
     }
   }, [user, orderId]);
+
+  useEffect(() => {
+    if (showReturnModal) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [showReturnModal]);
 
   const fetchOrderDetails = async () => {
     if (!user || !orderId) return;

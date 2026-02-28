@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MapPin, TrendingUp, AlertTriangle, Ban, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface AreaStats {
   city: string;
@@ -25,6 +26,15 @@ export default function AreaAnalytics() {
   useEffect(() => {
     fetchAreaStats();
   }, []);
+
+  useEffect(() => {
+    if (showBlacklistModal) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [showBlacklistModal]);
 
   const fetchAreaStats = async () => {
     try {

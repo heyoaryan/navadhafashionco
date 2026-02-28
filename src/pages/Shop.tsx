@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Product, Category } from '../types';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
+import { lockScroll, unlockScroll } from '../utils/scrollLock';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,13 +37,13 @@ export default function Shop() {
   useEffect(() => {
     // Lock body scroll when mobile filter is open
     if (showFilters && window.innerWidth < 1024) {
-      document.body.style.overflow = 'hidden';
+      lockScroll();
     } else {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     };
   }, [showFilters]);
 

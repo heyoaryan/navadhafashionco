@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Search, Menu, X, Moon, Sun } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, Moon, Sun, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { lockScroll, unlockScroll } from '../utils/scrollLock';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [expandedMobileSection, setExpandedMobileSection] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -25,6 +27,19 @@ export default function Header() {
     if (searchOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
+  }, [searchOpen]);
+
+  // Lock/unlock scroll when search opens/closes
+  useEffect(() => {
+    if (searchOpen) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+
+    return () => {
+      unlockScroll();
+    };
   }, [searchOpen]);
 
   // Close search on escape key
@@ -60,6 +75,19 @@ export default function Header() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [searchOpen]);
+
+  // Lock/unlock scroll when mobile menu opens/closes
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+
+    return () => {
+      unlockScroll();
+    };
+  }, [mobileMenuOpen]);
 
   // Close mobile menu on outside click
   useEffect(() => {
@@ -314,26 +342,49 @@ export default function Header() {
           <nav className="px-4 py-4 space-y-2">
             {categories.map((category) => (
               <div key={category.name}>
-                <Link
-                  to={category.path}
-                  onClick={() => !category.subcategories && setMobileMenuOpen(false)}
-                  className="block py-3 px-4 text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  {category.name}
-                </Link>
-                {category.subcategories && (
-                  <div className="ml-4 mt-1 space-y-1">
-                    {category.subcategories.map((sub) => (
-                      <Link
-                        key={sub.name}
-                        to={sub.path}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 px-4 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      >
-                        {sub.name}
-                      </Link>
-                    ))}
+                {category.subcategories ? (
+                  <div>
+                    <button
+                      onClick={() => setExpandedMobileSection(expandedMobileSection === category.name ? null : category.name)}
+                      className="w-full flex items-center justify-between py-3 px-4 text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <span>{category.name}</span>
+                      <ChevronDown 
+                        className={`w-5 h-5 transition-transform duration-300 ${
+                          expandedMobileSection === category.name ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                    <div 
+                      className={`overflow-hidden transition-all duration-300 ${
+                        expandedMobileSection === category.name ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <div className="ml-4 mt-1 space-y-1 pb-2">
+                        {category.subcategories.map((sub) => (
+                          <Link
+                            key={sub.name}
+                            to={sub.path}
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              setExpandedMobileSection(null);
+                            }}
+                            className="block py-2 px-4 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </div>
+                ) : (
+                  <Link
+                    to={category.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-3 px-4 text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    {category.name}
+                  </Link>
                 )}
               </div>
             ))}
@@ -358,6 +409,18 @@ export default function Header() {
             </button>
           </nav>
         </div>
+      )}
+
+      {/* Overlay for mobile menu and search */}
+      {(mobileMenuOpen || searchOpen) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => {
+            setMobileMenuOpen(false);
+            setSearchOpen(false);
+            setSearchQuery('');
+          }}
+        />
       )}
 
       {/* Full Width Dropdown Menu for Desktop */}

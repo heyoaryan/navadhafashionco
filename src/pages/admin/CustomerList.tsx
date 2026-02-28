@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, Users, AlertTriangle, Ban, Eye, TrendingUp, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Profile, Blacklist } from '../../types';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface CustomerWithStats extends Profile {
   order_count?: number;
@@ -24,6 +25,15 @@ export default function CustomerList() {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  useEffect(() => {
+    if (showDetailModal || showBlacklistModal) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [showDetailModal, showBlacklistModal]);
 
   const fetchCustomers = async () => {
     try {
