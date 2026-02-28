@@ -430,8 +430,8 @@ export default function ProductDetail() {
                   disabled={isTogglingWishlist}
                   className="p-3.5 sm:p-4 md:p-4.5 border-2 rounded-lg transition-all transform hover:scale-105 active:scale-95 min-w-[52px] min-h-[52px] flex items-center justify-center disabled:opacity-50"
                   style={{
-                    borderColor: inWishlist ? '#EE458F' : undefined,
-                    backgroundColor: inWishlist ? '#EE458F10' : undefined,
+                    borderColor: inWishlist ? '#E91E63' : undefined,
+                    backgroundColor: inWishlist ? '#E91E6310' : undefined,
                   }}
                   onMouseEnter={(e) => {
                     if (!inWishlist) {
@@ -448,7 +448,7 @@ export default function ProductDetail() {
                     className={`w-5 h-5 sm:w-6 sm:h-6 transition-all ${
                       inWishlist ? 'fill-current' : ''
                     }`}
-                    style={inWishlist ? { color: '#EE458F' } : {}}
+                    style={inWishlist ? { color: '#E91E63' } : {}}
                   />
                 </button>
               </>
@@ -509,9 +509,9 @@ export default function ProductDetail() {
                   <button
                     onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                     className="mt-2 text-sm font-medium flex items-center gap-1 transition-colors"
-                    style={{ color: '#EE458F' }}
+                    style={{ color: '#E91E63' }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#D63D7F'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#EE458F'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#E91E63'}
                   >
                     {isDescriptionExpanded ? (
                       <>
@@ -537,9 +537,9 @@ export default function ProductDetail() {
             <button
               onClick={() => setShowReviewForm(!showReviewForm)}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-              style={{ backgroundColor: '#EE458F', color: 'white' }}
+              style={{ backgroundColor: '#E91E63', color: 'white' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D63D7F'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EE458F'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#E91E63'}
             >
               {showReviewForm ? 'Cancel' : 'Write a Review'}
             </button>
@@ -600,9 +600,9 @@ export default function ProductDetail() {
                   type="submit"
                   disabled={submittingReview || reviewRating === 0}
                   className="px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
-                  style={{ backgroundColor: '#EE458F' }}
+                  style={{ backgroundColor: '#E91E63' }}
                   onMouseEnter={(e) => !submittingReview && (e.currentTarget.style.backgroundColor = '#D63D7F')}
-                  onMouseLeave={(e) => !submittingReview && (e.currentTarget.style.backgroundColor = '#EE458F')}
+                  onMouseLeave={(e) => !submittingReview && (e.currentTarget.style.backgroundColor = '#E91E63')}
                 >
                   {submittingReview ? 'Submitting...' : 'Submit Review'}
                 </button>

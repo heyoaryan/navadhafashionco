@@ -187,15 +187,15 @@ export default function Auth() {
         <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="inline-block mb-2">
-              <h1 className="brand-logo text-3xl mb-2" style={{ color: '#EE458F' }}>
+              <h1 className="brand-logo text-3xl mb-2" style={{ color: '#E91E63' }}>
                 NAVADHA
               </h1>
               <div className="flex items-center justify-center gap-1.5">
-                <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to right, transparent, #EE458F)' }}></div>
-                <span className="text-[0.45rem] sm:text-[0.5rem] font-light tracking-[0.2em] whitespace-nowrap" style={{ color: '#EE458F' }}>
+                <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to right, transparent, #E91E63)' }}></div>
+                <span className="text-[0.45rem] sm:text-[0.5rem] font-light tracking-[0.2em] whitespace-nowrap" style={{ color: '#E91E63' }}>
                   FASHION CO
                 </span>
-                <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to left, transparent, #EE458F)' }}></div>
+                <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to left, transparent, #E91E63)' }}></div>
               </div>
             </div>
             <p className="text-gray-600 dark:text-gray-400">Reset your password</p>
@@ -266,15 +266,15 @@ export default function Auth() {
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <div className="inline-block mb-2">
-            <h1 className="brand-logo text-3xl mb-2" style={{ color: '#EE458F' }}>
+            <h1 className="brand-logo text-3xl mb-2" style={{ color: '#E91E63' }}>
               NAVADHA
             </h1>
             <div className="flex items-center justify-center gap-1.5">
-              <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to right, transparent, #EE458F)' }}></div>
-              <span className="text-[0.45rem] sm:text-[0.5rem] font-light tracking-[0.2em] whitespace-nowrap" style={{ color: '#EE458F' }}>
+              <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to right, transparent, #E91E63)' }}></div>
+              <span className="text-[0.45rem] sm:text-[0.5rem] font-light tracking-[0.2em] whitespace-nowrap" style={{ color: '#E91E63' }}>
                 FASHION CO
               </span>
-              <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to left, transparent, #EE458F)' }}></div>
+              <div className="h-[0.5px] w-10 sm:w-12" style={{ background: 'linear-gradient(to left, transparent, #E91E63)' }}></div>
             </div>
           </div>
           <p className="text-gray-600 dark:text-gray-400">

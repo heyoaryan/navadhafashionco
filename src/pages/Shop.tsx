@@ -189,7 +189,7 @@ export default function Shop() {
         <section className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="text-center px-4">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3 md:mb-4">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#EE458F' }}>
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#E91E63' }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-wider">New Arrivals</h1>
@@ -430,19 +430,19 @@ export default function Shop() {
                     disabled={loadingMore}
                     className="px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2"
                     style={{ 
-                      color: loadingMore ? '#999' : '#EE458F', 
-                      borderColor: loadingMore ? '#999' : '#EE458F' 
+                      color: loadingMore ? '#999' : '#E91E63', 
+                      borderColor: loadingMore ? '#999' : '#E91E63' 
                     }}
                     onMouseEnter={(e) => {
                       if (!loadingMore) {
-                        e.currentTarget.style.backgroundColor = '#EE458F';
+                        e.currentTarget.style.backgroundColor = '#E91E63';
                         e.currentTarget.style.color = '#fff';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!loadingMore) {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#EE458F';
+                        e.currentTarget.style.color = '#E91E63';
                       }
                     }}
                   >
@@ -470,14 +470,14 @@ export default function Shop() {
               <button
                 onClick={clearFilters}
                 className="px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base rounded-lg transition-colors font-medium border-2"
-                style={{ color: '#EE458F', borderColor: '#EE458F' }}
+                style={{ color: '#E91E63', borderColor: '#E91E63' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#D63D7F';
                   e.currentTarget.style.borderColor = '#D63D7F';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#EE458F';
-                  e.currentTarget.style.borderColor = '#EE458F';
+                  e.currentTarget.style.color = '#E91E63';
+                  e.currentTarget.style.borderColor = '#E91E63';
                 }}
               >
                 Clear filters

@@ -104,22 +104,22 @@ export default function Header() {
   };
 
   const categories = [
-    { name: 'Boutique', path: '/boutique' },
-    { name: 'Western Wear', path: '/western-wear' },
+    { name: 'Western', path: '/western-wear' },
     { name: 'Indo Western', path: '/indo-western' },
-    { name: 'Ethnic Wear', path: '/ethnic-wear' },
-    { name: 'Work Wear', path: '/work-wear' },
-    { name: 'Occasional Wear', path: '/occasional-wear' },
+    { name: 'Ethnic', path: '/ethnic-wear' },
+    { name: 'Work', path: '/work-wear' },
+    { name: 'Occasional', path: '/occasional-wear' },
+    { name: 'Boutique', path: '/boutique' },
   ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors" ref={searchContainerRef}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2 sm:gap-4 lg:gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-8">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95"
+              className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95"
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -127,10 +127,10 @@ export default function Header() {
 
             <Link to="/" className="flex items-center flex-shrink-0">
               <div className="text-center">
-                <h1 className="brand-logo text-xl sm:text-2xl leading-tight mb-0.5" style={{ color: '#EE458F' }}>
+                <h1 className="brand-logo text-lg sm:text-xl md:text-2xl leading-tight mb-0.5" style={{ color: '#EE458F' }}>
                   NAVADHA
                 </h1>
-                <span className="text-[0.5rem] sm:text-[0.55rem] font-light tracking-[0.25em] block" style={{ color: '#EE458F' }}>
+                <span className="text-[0.45rem] sm:text-[0.5rem] md:text-[0.55rem] font-light tracking-[0.2em] sm:tracking-[0.25em] block" style={{ color: '#EE458F' }}>
                   FASHION CO
                 </span>
               </div>
@@ -141,7 +141,7 @@ export default function Header() {
                 <Link
                   key={category.name}
                   to={category.path}
-                  className="relative text-sm font-light tracking-wide whitespace-nowrap group"
+                  className="relative text-sm font-semibold tracking-wide whitespace-nowrap group"
                 >
                   {category.name}
                   <span className="absolute left-0 bottom-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full" style={{ backgroundColor: '#EE458F' }}></span>
@@ -150,7 +150,7 @@ export default function Header() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-0 sm:gap-2 md:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
             {/* Search Button - Same for all screens */}
             <button
               onClick={() => {
@@ -163,7 +163,7 @@ export default function Header() {
                   setSearchOpen(true);
                 }
               }}
-              className="p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95"
               aria-label="Search products"
             >
               {searchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
@@ -171,7 +171,7 @@ export default function Header() {
 
             <button
               onClick={toggleTheme}
-              className="hidden lg:flex p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[44px] min-h-[44px] items-center justify-center active:scale-95"
+              className="hidden lg:flex p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[40px] min-h-[40px] items-center justify-center active:scale-95"
               aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
             >
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -181,7 +181,7 @@ export default function Header() {
               <>
                 <Link
                   to="/wishlist"
-                  className="relative p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95"
+                  className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95"
                   aria-label={`Wishlist with ${wishlistCount} items`}
                 >
                   <Heart className="w-5 h-5" />
@@ -194,7 +194,7 @@ export default function Header() {
 
                 <Link
                   to="/cart"
-                  className="relative p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95"
+                  className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95"
                   aria-label={`Shopping cart with ${cartCount} items`}
                 >
                   <ShoppingBag className="w-5 h-5" />
@@ -207,17 +207,17 @@ export default function Header() {
 
                 <Link
                   to={profile?.role === 'admin' ? '/admin' : '/account'}
-                  className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95"
                   aria-label="View account"
                 >
                   {profile?.avatar_url ? (
                     <img
                       src={profile.avatar_url}
                       alt={profile.full_name || 'User'}
-                      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-medium text-sm border-2 border-gray-200 dark:border-gray-700">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-medium text-xs sm:text-sm border-2 border-gray-200 dark:border-gray-700">
                       {profile?.full_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || 'U'}
                     </div>
                   )}
@@ -226,7 +226,7 @@ export default function Header() {
             ) : (
               <Link
                 to="/auth"
-                className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-all transform hover:scale-105 active:scale-95 rounded-lg whitespace-nowrap flex-shrink-0 min-h-[40px] sm:min-h-[44px] flex items-center justify-center shadow-md hover:shadow-lg"
+                className="px-3 sm:px-4 md:px-6 py-2 text-xs sm:text-sm font-medium bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-all transform hover:scale-105 active:scale-95 rounded-lg whitespace-nowrap flex-shrink-0 min-h-[36px] sm:min-h-[40px] flex items-center justify-center shadow-md hover:shadow-lg"
               >
                 Sign In
               </Link>

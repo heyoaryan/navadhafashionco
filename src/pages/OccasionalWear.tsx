@@ -10,6 +10,7 @@ export default function OccasionalWear() {
   const [loading, setLoading] = useState(true);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [selectedGender, setSelectedGender] = useState<string>('all');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const subcategories = [
     { id: 'all', name: 'All Items' },
@@ -17,6 +18,31 @@ export default function OccasionalWear() {
     { id: 'festive', name: 'Festive' },
     { id: 'wedding-dresses', name: 'Wedding Dresses' },
   ];
+
+  // Hero images for different genders
+  const heroImages = {
+    women: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=1920&q=80',
+    men: 'https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    all: [
+      'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=1920&q=80',
+      'https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg?auto=compress&cs=tinysrgb&w=1920'
+    ]
+  };
+
+  const getCurrentHeroImage = () => {
+    if (selectedGender === 'women') return heroImages.women;
+    if (selectedGender === 'men') return heroImages.men;
+    return heroImages.all[currentImageIndex];
+  };
+
+  useEffect(() => {
+    if (selectedGender === 'all') {
+      const interval = setInterval(() => {
+        setCurrentImageIndex(prev => prev === 0 ? 1 : 0);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedGender]);
 
   useEffect(() => {
     fetchProducts();
@@ -54,19 +80,22 @@ export default function OccasionalWear() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-purple-100 dark:from-gray-900 dark:via-violet-900/20 dark:to-gray-900"></div>
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center opacity-5"></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-all duration-1000 blur-sm scale-110"
+          style={{ backgroundImage: `url('${getCurrentHeroImage()}')` }}
+        ></div>
+        <div className="absolute inset-0 bg-black/40"></div>
         
         <div className="relative z-10 text-center px-4 w-full max-w-6xl mx-auto">
-          <div className="inline-block mb-3 sm:mb-4 md:mb-6 px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-violet-200 dark:border-violet-800">
-            <span className="text-[10px] sm:text-xs md:text-sm font-light tracking-wider text-violet-600 dark:text-violet-400">SPECIAL MOMENTS</span>
+          <div className="inline-block mb-3 sm:mb-4 md:mb-6 px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full border border-white/30">
+            <span className="text-[10px] sm:text-xs md:text-sm font-medium tracking-widest text-gray-700 dark:text-gray-300 uppercase">SPECIAL MOMENTS</span>
           </div>
           
-          <h1 className="brand-title text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl mb-3 sm:mb-4 md:mb-6 animate-fade-in leading-tight" style={{ color: '#EE458F' }}>
-            Occasional Wear
+          <h1 className="brand-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl mb-3 sm:mb-4 md:mb-6 animate-fade-in leading-tight text-white drop-shadow-2xl">
+            Occasional
           </h1>
           
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl font-light text-gray-700 dark:text-gray-300 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto leading-relaxed px-2 sm:px-4">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl font-light text-white/95 drop-shadow-lg mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto leading-relaxed px-2 sm:px-4">
             Special outfits for your memorable moments
           </p>
 
@@ -74,16 +103,16 @@ export default function OccasionalWear() {
           <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6">
             {/* Gender Filter */}
             <div>
-              <h3 className="text-xs sm:text-sm md:text-base font-medium mb-2 sm:mb-3 text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+              <h3 className="text-xs sm:text-sm md:text-base font-semibold mb-2 sm:mb-3 text-white drop-shadow-md uppercase tracking-widest">
                 Select Gender
               </h3>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setSelectedGender('all')}
-                  className={`px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-w-[70px] sm:min-w-[80px] ${
+                  className={`px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 min-w-[80px] sm:min-w-[100px] ${
                     selectedGender === 'all'
-                      ? 'text-white shadow-md'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                      ? 'text-white shadow-lg scale-105'
+                      : 'bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white hover:scale-105 shadow-md border border-white/50'
                   }`}
                   style={selectedGender === 'all' ? { backgroundColor: '#EE458F' } : {}}
                 >
@@ -91,10 +120,10 @@ export default function OccasionalWear() {
                 </button>
                 <button
                   onClick={() => setSelectedGender('women')}
-                  className={`px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-w-[70px] sm:min-w-[80px] ${
+                  className={`px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 min-w-[80px] sm:min-w-[100px] ${
                     selectedGender === 'women'
-                      ? 'text-white shadow-md'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                      ? 'text-white shadow-lg scale-105'
+                      : 'bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white hover:scale-105 shadow-md border border-white/50'
                   }`}
                   style={selectedGender === 'women' ? { backgroundColor: '#EE458F' } : {}}
                 >
@@ -102,10 +131,10 @@ export default function OccasionalWear() {
                 </button>
                 <button
                   onClick={() => setSelectedGender('men')}
-                  className={`px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-w-[70px] sm:min-w-[80px] ${
+                  className={`px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 min-w-[80px] sm:min-w-[100px] ${
                     selectedGender === 'men'
-                      ? 'text-white shadow-md'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                      ? 'text-white shadow-lg scale-105'
+                      : 'bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white hover:scale-105 shadow-md border border-white/50'
                   }`}
                   style={selectedGender === 'men' ? { backgroundColor: '#EE458F' } : {}}
                 >
@@ -116,18 +145,18 @@ export default function OccasionalWear() {
 
             {/* Subcategory Filter */}
             <div>
-              <h3 className="text-xs sm:text-sm md:text-base font-medium mb-2 sm:mb-3 text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+              <h3 className="text-xs sm:text-sm md:text-base font-semibold mb-2 sm:mb-3 text-white drop-shadow-md uppercase tracking-widest">
                 Categories
               </h3>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                 {subcategories.map((sub) => (
                   <button
                     key={sub.id}
                     onClick={() => setSelectedSubcategory(sub.id)}
-                    className={`px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                    className={`px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 md:py-3.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 ${
                       selectedSubcategory === sub.id
-                        ? 'text-white shadow-md'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        ? 'text-white shadow-lg scale-105'
+                        : 'bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white hover:scale-105 shadow-md border border-white/50'
                     }`}
                     style={selectedSubcategory === sub.id ? { backgroundColor: '#EE458F' } : {}}
                   >
@@ -181,3 +210,4 @@ export default function OccasionalWear() {
     </div>
   );
 }
+
