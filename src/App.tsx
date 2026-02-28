@@ -24,11 +24,16 @@ import Boutique from './pages/Boutique';
 import BoutiqueReadyMade from './pages/BoutiqueReadyMade';
 import BoutiqueCustomization from './pages/BoutiqueCustomization';
 import SizeGuide from './pages/SizeGuide';
-import WesternWear from './pages/WesternWear';
-import IndoWestern from './pages/IndoWestern';
-import EthnicWear from './pages/EthnicWear';
-import WorkWear from './pages/WorkWear';
-import OccasionalWear from './pages/OccasionalWear';
+import MenCasuals from './pages/men/Casuals';
+import MenWorkwear from './pages/men/Workwear';
+import MenEthnic from './pages/men/Ethnic';
+import MenGymAttire from './pages/men/GymAttire';
+import WomenWestern from './pages/women/Western';
+import WomenIndoWestern from './pages/women/IndoWestern';
+import WomenEthnics from './pages/women/Ethnics';
+import WomenCasuals from './pages/women/Casuals';
+import WomenWorkwear from './pages/women/Workwear';
+import WomenGymAttire from './pages/women/GymAttire';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import Analytics from './pages/admin/Analytics';
@@ -67,11 +72,21 @@ function AppContent() {
             <Route path="/boutique" element={<Boutique />} />
             <Route path="/boutique/ready-made" element={<BoutiqueReadyMade />} />
             <Route path="/boutique/customization" element={<BoutiqueCustomization />} />
-            <Route path="/western-wear" element={<WesternWear />} />
-            <Route path="/indo-western" element={<IndoWestern />} />
-            <Route path="/ethnic-wear" element={<EthnicWear />} />
-            <Route path="/work-wear" element={<WorkWear />} />
-            <Route path="/occasional-wear" element={<OccasionalWear />} />
+            
+            {/* Men's Routes */}
+            <Route path="/men/casuals" element={<MenCasuals />} />
+            <Route path="/men/workwear" element={<MenWorkwear />} />
+            <Route path="/men/ethnic" element={<MenEthnic />} />
+            <Route path="/men/gym-attire" element={<MenGymAttire />} />
+            
+            {/* Women's Routes */}
+            <Route path="/women/western" element={<WomenWestern />} />
+            <Route path="/women/indo-western" element={<WomenIndoWestern />} />
+            <Route path="/women/ethnics" element={<WomenEthnics />} />
+            <Route path="/women/casuals" element={<WomenCasuals />} />
+            <Route path="/women/workwear" element={<WomenWorkwear />} />
+            <Route path="/women/gym-attire" element={<WomenGymAttire />} />
+            
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />

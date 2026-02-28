@@ -10,6 +10,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -103,13 +104,59 @@ export default function Header() {
     }
   };
 
+  // Determine season based on current date
+  const getCurrentSeason = () => {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    const day = now.getDate();
+    
+    // Summer: Feb 15 to Oct 4
+    // Winter: Oct 5 to Feb 14
+    if (month === 2 && day >= 15) {
+      return 'Summer';
+    } else if (month >= 3 && month <= 9) {
+      return 'Summer';
+    } else if (month === 10 && day >= 5) {
+      return 'Winter';
+    } else if (month >= 11 || month === 1) {
+      return 'Winter';
+    } else if (month === 2 && day < 15) {
+      return 'Winter';
+    } else if (month === 10 && day < 5) {
+      return 'Summer';
+    }
+    return 'Summer'; // default
+  };
+
+  const currentSeason = getCurrentSeason();
+
   const categories = [
-    { name: 'Western', path: '/western-wear' },
-    { name: 'Indo Western', path: '/indo-western' },
-    { name: 'Ethnic', path: '/ethnic-wear' },
-    { name: 'Work', path: '/work-wear' },
-    { name: 'Occasional', path: '/occasional-wear' },
+    { 
+      name: 'Men', 
+      path: '/shop?gender=men',
+      subcategories: [
+        { name: 'Casuals', path: '/men/casuals' },
+        { name: 'Workwear', path: '/men/workwear' },
+        { name: 'Ethnic', path: '/men/ethnic' },
+        { name: 'Gym Attire', path: '/men/gym-attire' },
+        { name: `${currentSeason} Collection`, path: `/shop?gender=men&category=seasonal&season=${currentSeason.toLowerCase()}` },
+      ]
+    },
+    { 
+      name: 'Women', 
+      path: '/shop?gender=women',
+      subcategories: [
+        { name: 'Western', path: '/women/western' },
+        { name: 'Indo-Western', path: '/women/indo-western' },
+        { name: 'Ethnics', path: '/women/ethnics' },
+        { name: 'Casuals', path: '/women/casuals' },
+        { name: 'Workwear', path: '/women/workwear' },
+        { name: 'Gym Attire', path: '/women/gym-attire' },
+        { name: `${currentSeason} Collection`, path: `/shop?gender=women&category=seasonal&season=${currentSeason.toLowerCase()}` },
+      ]
+    },
     { name: 'Boutique', path: '/boutique' },
+    { name: 'Best Sellers', path: '/shop?sort=bestselling' },
   ];
 
   return (
@@ -138,14 +185,41 @@ export default function Header() {
 
             <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
               {categories.map((category) => (
-                <Link
+                <div
                   key={category.name}
-                  to={category.path}
-                  className="relative text-sm font-semibold tracking-wide whitespace-nowrap group"
+                  className="relative h-full flex items-center"
+                  onMouseEnter={() => {
+                    if (category.subcategories) {
+                      setActiveDropdown(category.name);
+                    } else {
+                      setActiveDropdown(null);
+                    }
+                  }}
+                  onMouseLeave={() => {}}
                 >
-                  {category.name}
-                  <span className="absolute left-0 bottom-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full" style={{ backgroundColor: '#EE458F' }}></span>
-                </Link>
+                  {category.subcategories ? (
+                    <button
+                      onClick={() => setActiveDropdown(activeDropdown === category.name ? null : category.name)}
+                      className="relative text-sm font-semibold tracking-wide whitespace-nowrap group block py-2 pb-1 cursor-pointer"
+                    >
+                      {category.name}
+                      <span 
+                        className={`absolute left-0 bottom-0 h-0.5 transition-all duration-300 ${
+                          activeDropdown === category.name ? 'w-full' : 'w-0 group-hover:w-full'
+                        }`} 
+                        style={{ backgroundColor: '#EE458F' }}
+                      ></span>
+                    </button>
+                  ) : (
+                    <Link
+                      to={category.path}
+                      className="relative text-sm font-semibold tracking-wide whitespace-nowrap group block py-2 pb-1"
+                    >
+                      {category.name}
+                      <span className="absolute left-0 bottom-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full" style={{ backgroundColor: '#EE458F' }}></span>
+                    </Link>
+                  )}
+                </div>
               ))}
             </nav>
           </div>
@@ -239,14 +313,29 @@ export default function Header() {
         <div ref={mobileMenuRef} className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
           <nav className="px-4 py-4 space-y-2">
             {categories.map((category) => (
-              <Link
-                key={category.name}
-                to={category.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-3 px-4 text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                {category.name}
-              </Link>
+              <div key={category.name}>
+                <Link
+                  to={category.path}
+                  onClick={() => !category.subcategories && setMobileMenuOpen(false)}
+                  className="block py-3 px-4 text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  {category.name}
+                </Link>
+                {category.subcategories && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {category.subcategories.map((sub) => (
+                      <Link
+                        key={sub.name}
+                        to={sub.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-2 px-4 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                      >
+                        {sub.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
             <button
               onClick={toggleTheme}
@@ -268,6 +357,31 @@ export default function Header() {
               </span>
             </button>
           </nav>
+        </div>
+      )}
+
+      {/* Full Width Dropdown Menu for Desktop */}
+      {activeDropdown && (
+        <div 
+          className="hidden lg:block absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-t border-b border-gray-200 dark:border-gray-800 shadow-lg z-40"
+          onMouseEnter={() => setActiveDropdown(activeDropdown)}
+          onMouseLeave={() => setActiveDropdown(null)}
+        >
+          <div className="max-w-7xl mx-auto px-8 py-8">
+            <div className="flex gap-12 justify-center items-center flex-wrap">
+              {categories.find(cat => cat.name === activeDropdown)?.subcategories?.map((sub) => (
+                <Link
+                  key={sub.name}
+                  to={sub.path}
+                  className="relative text-base font-medium text-gray-700 dark:text-gray-300 hover:text-pink-500 transition-all duration-300 whitespace-nowrap group pb-1 py-2"
+                  onClick={() => setActiveDropdown(null)}
+                >
+                  {sub.name}
+                  <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-pink-500 transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
