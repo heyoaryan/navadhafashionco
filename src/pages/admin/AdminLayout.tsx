@@ -15,6 +15,19 @@ export default function AdminLayout() {
     }
   }, [profile, navigate]);
 
+  // Lock body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -72,10 +85,10 @@ export default function AdminLayout() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-transform duration-300 ${
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-transform duration-300 flex flex-col ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 hidden lg:block">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 hidden lg:block flex-shrink-0">
           <Link to="/" className="block mb-8">
             <div className="inline-block">
               <h1 className="brand-logo text-2xl mb-2" style={{ color: '#EE458F' }}>
@@ -95,7 +108,7 @@ export default function AdminLayout() {
           </Link>
         </div>
 
-        <nav className="px-4 py-6 lg:py-6 pt-20 lg:pt-6 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <nav className="px-4 py-6 lg:py-6 pt-20 lg:pt-6 space-y-1 overflow-y-auto flex-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.exact 
@@ -120,7 +133,7 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
           <div className="mb-3 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
             <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">{profile.email}</p>
