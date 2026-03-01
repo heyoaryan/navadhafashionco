@@ -77,6 +77,9 @@ export interface Product {
   price: number;
   compare_at_price: number | null;
   cost_per_item: number | null;
+  category: string | null;
+  subcategory: string | null;
+  gender: 'men' | 'women' | null;
   category_id: string | null;
   sku: string | null;
   barcode: string | null;
@@ -93,7 +96,7 @@ export interface Product {
   fabric_details: string | null;
   care_instructions: string | null;
   video_url: string | null;
-  season?: 'summer' | 'winter' | 'all-season' | null;
+  season: 'summer' | 'winter' | 'all-season' | null;
   created_at: string;
   updated_at: string;
 }

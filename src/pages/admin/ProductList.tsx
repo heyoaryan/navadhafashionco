@@ -302,6 +302,9 @@ export default function ProductList() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Gender</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Season</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Price</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Stock</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
@@ -323,6 +326,25 @@ export default function ProductList() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{product.sku || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 capitalize">
+                        {product.gender || '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 capitalize">
+                        {product.category || '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full capitalize ${
+                        product.season === 'summer' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                        product.season === 'winter' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                      }`}>
+                        {product.season?.replace('-', ' ') || '-'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
                       {product.compare_at_price && (
@@ -390,6 +412,27 @@ export default function ProductList() {
                     <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">{product.name}</h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{product.slug}</p>
                     {product.sku && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">SKU: {product.sku}</p>}
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {product.gender && (
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 capitalize">
+                          {product.gender}
+                        </span>
+                      )}
+                      {product.category && (
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 capitalize">
+                          {product.category}
+                        </span>
+                      )}
+                      {product.season && (
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
+                          product.season === 'summer' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                          product.season === 'winter' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                        }`}>
+                          {product.season.replace('-', ' ')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 

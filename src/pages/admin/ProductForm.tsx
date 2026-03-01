@@ -35,12 +35,12 @@ export default function ProductForm() {
     category: '',
     subcategory: '',
     gender: '',
+    season: '',
     sku: '',
     barcode: '',
     stock_quantity: '',
     low_stock_threshold: '10',
     sizes: '',
-    is_featured: false,
     is_active: true,
     tags: '',
     fabric_details: '',
@@ -182,12 +182,12 @@ export default function ProductForm() {
           category: data.category || '',
           subcategory: data.subcategory || '',
           gender: data.gender || '',
+          season: data.season || '',
           sku: data.sku || '',
           barcode: data.barcode || '',
           stock_quantity: data.stock_quantity.toString(),
           low_stock_threshold: data.low_stock_threshold?.toString() || '10',
           sizes: data.sizes?.join(', ') || '',
-          is_featured: data.is_featured,
           is_active: data.is_active,
           tags: data.tags?.join(', ') || '',
           fabric_details: data.fabric_details || '',
@@ -500,7 +500,9 @@ export default function ProductForm() {
       { name: 'name', label: 'Product Name', ref: 'name' },
       { name: 'slug', label: 'Slug', ref: 'slug' },
       { name: 'price', label: 'Price', ref: 'price' },
+      { name: 'gender', label: 'Gender', ref: 'gender' },
       { name: 'category', label: 'Main Category', ref: 'category' },
+      { name: 'season', label: 'Season', ref: 'season' },
       { name: 'stock_quantity', label: 'Stock Quantity', ref: 'stock_quantity' },
     ];
 
@@ -566,7 +568,9 @@ export default function ProductForm() {
         cost_per_item: formData.cost_per_item ? parseFloat(formData.cost_per_item) : null,
         category: formData.category || null,
         subcategory: formData.subcategory || null,
+        category_id: null, // Will be set based on category name
         gender: formData.gender || null,
+        season: formData.season || null,
         sku: formData.sku || null,
         barcode: formData.barcode || null,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
@@ -574,13 +578,26 @@ export default function ProductForm() {
         sizes: sizesArray,
         colors: validColors,
         main_image_url: imageUrls[0] || null,
-        is_featured: formData.is_featured,
+        is_featured: false,
         is_active: formData.is_active,
         tags: tagsArray,
         fabric_details: formData.fabric_details || null,
         care_instructions: formData.care_instructions || null,
         video_url: formData.video_url || null,
       };
+
+      // Get category_id from categories table based on category name
+      if (formData.category) {
+        const { data: categoryData } = await supabase
+          .from('categories')
+          .select('id')
+          .ilike('slug', formData.category.toLowerCase().replace(/\s+/g, '-'))
+          .maybeSingle();
+        
+        if (categoryData) {
+          productData.category_id = categoryData.id;
+        }
+      }
 
       let productId = id;
 
@@ -802,98 +819,85 @@ export default function ProductForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Main Category *</label>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Gender *</label>
             <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
+              name="gender"
+              value={formData.gender}
+              onChange={(e) => {
+                setHasUserInput(true);
+                setFormData(prev => ({ 
+                  ...prev, 
+                  gender: e.target.value,
+                  category: '', // Reset category when gender changes
+                  subcategory: '' // Reset subcategory when gender changes
+                }));
+              }}
               required
               className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
             >
-              <option value="">Select Main Category</option>
-              <option value="boutique">Boutique</option>
-              <option value="western">Western Wear</option>
-              <option value="indo-western">Indo Western</option>
-              <option value="ethnic">Ethnic Wear</option>
-              <option value="work">Work Wear</option>
-              <option value="occasional">Occasional Wear</option>
+              <option value="">Select Gender</option>
+              <option value="men">Men</option>
+              <option value="women">Women</option>
             </select>
           </div>
 
-          {formData.category && (
+          {formData.gender && (
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Subcategory</label>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Main Category *</label>
               <select
-                name="subcategory"
-                value={formData.subcategory}
-                onChange={handleChange}
+                name="category"
+                value={formData.category}
+                onChange={(e) => {
+                  setHasUserInput(true);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    category: e.target.value,
+                    subcategory: '' // Reset subcategory when category changes
+                  }));
+                }}
+                required
                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               >
-                <option value="">Select Subcategory</option>
-                {formData.category === 'boutique' && (
+                <option value="">Select Main Category</option>
+                {formData.gender === 'men' && (
                   <>
-                    <option value="ready-made">Ready-Made</option>
-                    <option value="customization">Customization</option>
+                    <option value="casuals">Casuals</option>
+                    <option value="workwear">Workwear</option>
+                    <option value="ethnic">Ethnic</option>
+                    <option value="gym-attire">Gym Attire</option>
                   </>
                 )}
-                {formData.category === 'western' && (
+                {formData.gender === 'women' && (
                   <>
-                    <option value="dress">Dresses</option>
-                    <option value="top-shirts">Top Shirts</option>
-                    <option value="jackets">Jackets</option>
-                    <option value="shrug">Shrugs</option>
-                  </>
-                )}
-                {formData.category === 'indo-western' && (
-                  <>
-                    <option value="indo-western-dresses">Indo Western Dresses</option>
-                    <option value="kurti">Kurtis</option>
-                    <option value="ethnic-coords">Ethnic Coords</option>
-                    <option value="shoti-sets">Shoti Sets</option>
-                  </>
-                )}
-                {formData.category === 'ethnic' && (
-                  <>
-                    <option value="kurtis">Kurtis</option>
-                    <option value="kurti-set">Kurti Sets</option>
-                    <option value="sarees">Sarees</option>
-                    <option value="lehengas">Lehengas</option>
-                    <option value="anarkalis">Anarkalis</option>
-                  </>
-                )}
-                {formData.category === 'work' && (
-                  <>
-                    <option value="formal-top-shirts">Formal Top Shirts</option>
-                    <option value="formal-trouser">Formal Trousers</option>
-                    <option value="smart-casuals">Smart Casuals</option>
-                    <option value="semi-formals">Semi Formals</option>
-                  </>
-                )}
-                {formData.category === 'occasional' && (
-                  <>
-                    <option value="party-wear">Party Wear</option>
-                    <option value="festive">Festive</option>
-                    <option value="wedding-dresses">Wedding Dresses</option>
+                    <option value="western">Western</option>
+                    <option value="indo-western">Indo-Western</option>
+                    <option value="ethnics">Ethnics</option>
+                    <option value="casuals">Casuals</option>
+                    <option value="workwear">Workwear</option>
+                    <option value="gym-attire">Gym Attire</option>
                   </>
                 )}
               </select>
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Gender</label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">Select Gender</option>
-              <option value="women">Women</option>
-              <option value="men">Men</option>
-              <option value="unisex">Unisex</option>
-            </select>
-          </div>
+          {formData.category && (
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Season *</label>
+              <select
+                name="season"
+                value={formData.season}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Select Season</option>
+                <option value="all-season">All Season</option>
+                <option value="summer">Summer</option>
+                <option value="winter">Winter</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Images */}
@@ -1283,18 +1287,7 @@ export default function ProductForm() {
             />
           </div>
 
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                name="is_featured"
-                checked={formData.is_featured}
-                onChange={handleChange}
-                className="w-4 h-4 text-rose-500 rounded focus:ring-rose-400"
-              />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Featured Product</span>
-            </label>
-
+          <div>
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"

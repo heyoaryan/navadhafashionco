@@ -136,27 +136,43 @@ export default function Auth() {
             await trackSignup(result.user.id, 'email');
           }
           
-          setSuccess('Account created successfully! Please check your email to verify your account before signing in.');
-          
-          setTimeout(() => {
-            setIsLogin(true);
-            setSuccess('');
-            setPassword('');
-            setConfirmPassword('');
-            setEmail('');
-            setFullName('');
-          }, 5000);
+          // Check if user is automatically confirmed (email confirmation disabled)
+          if (result?.user?.confirmed_at || result?.session) {
+            // User is auto-confirmed, they can login immediately
+            setSuccess('Account created successfully! You can now sign in.');
+            setTimeout(() => {
+              setIsLogin(true);
+              setSuccess('');
+              setPassword('');
+              setConfirmPassword('');
+            }, 2000);
+          } else {
+            // Email confirmation is required
+            setSuccess('Account created! Email verification is enabled but emails may not be working. Please contact support or ask admin to disable email confirmation in Supabase dashboard.');
+            setTimeout(() => {
+              setIsLogin(true);
+              setSuccess('');
+              setPassword('');
+              setConfirmPassword('');
+              setEmail('');
+              setFullName('');
+            }, 8000);
+          }
         } catch (signupError: any) {
           if (signupError.message?.includes('rate limit') || 
               signupError.message?.includes('Email rate limit exceeded')) {
-            setError('Too many signup attempts. Please wait a few minutes and try again, or use a different email address.');
+            setError('Too many signup attempts. Please wait 5 minutes and try again.');
           } else if (signupError.message?.includes('User already registered') || 
               signupError.message?.includes('already registered')) {
-            setError('This email is already registered. Please sign in instead.');
+            setError('This email is already registered. Please sign in instead or use forgot password.');
+            setTimeout(() => {
+              setIsLogin(true);
+              setError('');
+            }, 3000);
           } else if (signupError.message?.includes('Password')) {
             setError('Password must be at least 6 characters long.');
           } else {
-            setError(signupError.message || 'Signup failed. Please try again.');
+            setError(signupError.message || 'Signup failed. Please try again or contact support.');
           }
           throw signupError; // Re-throw to be caught by outer catch
         }
@@ -166,7 +182,7 @@ export default function Auth() {
       if (err.message?.includes('Failed to fetch') || 
           err.message?.includes('NetworkError') ||
           err.message?.includes('fetch failed')) {
-        setError('❌ Cannot connect to server. Please check your internet connection.');
+        setError('Cannot connect to server. Please check your internet connection.');
       } else if (err.message?.includes('Invalid login credentials')) {
         setError('Wrong email or password. Please try again.');
       } else if (err.message?.includes('Email not confirmed')) {
@@ -488,15 +504,7 @@ export default function Auth() {
 
               {success && (
                 <div className="p-3 sm:p-4 rounded-lg text-xs sm:text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
-                  <div className="flex items-start gap-2">
-                    <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      {success}
-                      <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs opacity-80">
-                        Didn't receive the email? Check your spam folder.
-                      </p>
-                    </div>
-                  </div>
+                  {success}
                 </div>
               )}
 

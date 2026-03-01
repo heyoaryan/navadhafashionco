@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Eye, MousePointerClick, Users, TrendingUp, Package } from 'lucide-react';
+import { MousePointerClick, Users, TrendingUp, Package } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface AnalyticsStats {
-  totalPageViews: number;
-  todayPageViews: number;
   totalProductClicks: number;
   todayProductClicks: number;
   totalSignups: number;
   todaySignups: number;
-  uniqueVisitors: number;
-  todayUniqueVisitors: number;
 }
 
 interface PopularProduct {
@@ -18,11 +14,6 @@ interface PopularProduct {
   product_name: string;
   click_count: number;
   product_image: string;
-}
-
-interface PopularPage {
-  page_path: string;
-  view_count: number;
 }
 
 interface CategoryView {
@@ -33,17 +24,12 @@ interface CategoryView {
 
 export default function Analytics() {
   const [stats, setStats] = useState<AnalyticsStats>({
-    totalPageViews: 0,
-    todayPageViews: 0,
     totalProductClicks: 0,
     todayProductClicks: 0,
     totalSignups: 0,
     todaySignups: 0,
-    uniqueVisitors: 0,
-    todayUniqueVisitors: 0,
   });
   const [popularProducts, setPopularProducts] = useState<PopularProduct[]>([]);
-  const [popularPages, setPopularPages] = useState<PopularPage[]>([]);
   const [categoryViews, setCategoryViews] = useState<CategoryView[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('today');
@@ -75,58 +61,39 @@ export default function Analytics() {
       today.setHours(0, 0, 0, 0);
       const dateFilter = getDateFilter();
 
-      // Total and today's page views
-      const { count: totalPageViews } = await supabase
-        .from('page_views')
-        .select('*', { count: 'exact', head: true });
-
-      const { count: todayPageViews } = await supabase
-        .from('page_views')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today.toISOString());
-
       // Total and today's product clicks
-      const { count: totalProductClicks } = await supabase
+      const { count: totalProductClicks, error: pcError } = await supabase
         .from('product_clicks')
         .select('*', { count: 'exact', head: true });
 
-      const { count: todayProductClicks } = await supabase
+      if (pcError) console.error('Product clicks error:', pcError);
+
+      const { count: todayProductClicks, error: todayPcError } = await supabase
         .from('product_clicks')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today.toISOString());
+
+      if (todayPcError) console.error('Today product clicks error:', todayPcError);
 
       // Total and today's signups
-      const { count: totalSignups } = await supabase
+      const { count: totalSignups, error: signupError } = await supabase
         .from('signup_tracking')
         .select('*', { count: 'exact', head: true });
 
-      const { count: todaySignups } = await supabase
+      if (signupError) console.error('Signup tracking error:', signupError);
+
+      const { count: todaySignups, error: todaySignupError } = await supabase
         .from('signup_tracking')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today.toISOString());
 
-      // Unique visitors (based on session_id)
-      const { data: allSessions } = await supabase
-        .from('page_views')
-        .select('session_id');
-
-      const { data: todaySessions } = await supabase
-        .from('page_views')
-        .select('session_id')
-        .gte('created_at', today.toISOString());
-
-      const uniqueVisitors = new Set(allSessions?.map(s => s.session_id)).size;
-      const todayUniqueVisitors = new Set(todaySessions?.map(s => s.session_id)).size;
+      if (todaySignupError) console.error('Today signup error:', todaySignupError);
 
       setStats({
-        totalPageViews: totalPageViews || 0,
-        todayPageViews: todayPageViews || 0,
         totalProductClicks: totalProductClicks || 0,
         todayProductClicks: todayProductClicks || 0,
         totalSignups: totalSignups || 0,
         todaySignups: todaySignups || 0,
-        uniqueVisitors,
-        todayUniqueVisitors,
       });
 
       // Popular products (with time filter)
@@ -168,7 +135,7 @@ export default function Analytics() {
         setPopularProducts(sortedProducts as PopularProduct[]);
       }
 
-      // Popular pages (with time filter)
+      // Category views from page_views table
       let pageQuery = supabase
         .from('page_views')
         .select('page_path');
@@ -217,22 +184,6 @@ export default function Analytics() {
           .sort((a, b) => b.view_count - a.view_count);
 
         setCategoryViews(sortedCategories);
-
-        // Regular page counts (for all pages)
-        const pageCounts = pageViewsData.reduce((acc: any, view: any) => {
-          const path = view.page_path;
-          if (!acc[path]) {
-            acc[path] = { page_path: path, view_count: 0 };
-          }
-          acc[path].view_count++;
-          return acc;
-        }, {});
-
-        const sortedPages = Object.values(pageCounts)
-          .sort((a: any, b: any) => b.view_count - a.view_count)
-          .slice(0, 10);
-
-        setPopularPages(sortedPages as PopularPage[]);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -272,20 +223,7 @@ export default function Analytics() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
-            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-              {timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : 'Total'}
-            </span>
-          </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">
-            {timeRange === 'today' ? stats.todayPageViews : stats.totalPageViews}
-          </p>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Page Views</p>
-        </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <MousePointerClick className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
@@ -310,19 +248,6 @@ export default function Analytics() {
             {timeRange === 'today' ? stats.todaySignups : stats.totalSignups}
           </p>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">New Signups</p>
-        </div>
-
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
-            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-              {timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : 'Total'}
-            </span>
-          </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">
-            {timeRange === 'today' ? stats.todayUniqueVisitors : stats.uniqueVisitors}
-          </p>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Unique Visitors</p>
         </div>
       </div>
 
@@ -376,29 +301,6 @@ export default function Analytics() {
           </div>
         ) : (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">No category views yet</p>
-        )}
-      </div>
-
-      {/* Popular Pages */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Eye className="w-5 h-5" />
-          Most Visited Pages
-        </h2>
-        {popularPages.length > 0 ? (
-          <div className="space-y-3">
-            {popularPages.map((page, index) => (
-              <div key={page.page_path} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-lg font-bold text-gray-400 dark:text-gray-500 w-6">{index + 1}</span>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100 font-mono text-sm">{page.page_path}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{page.view_count} views</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">No page views yet</p>
         )}
       </div>
     </div>

@@ -25,7 +25,7 @@ export const trackPageView = async (pageUrl: string, pageTitle?: string) => {
     const url = new URL(pageUrl, window.location.origin);
     const pagePath = url.pathname;
 
-    await supabase.from('page_views').insert({
+    const { error } = await supabase.from('page_views').insert({
       page_url: pageUrl,
       page_path: pagePath,
       page_title: pageTitle || document.title,
@@ -33,11 +33,14 @@ export const trackPageView = async (pageUrl: string, pageTitle?: string) => {
       session_id: sessionId,
       referrer: document.referrer || null,
       user_agent: navigator.userAgent,
-      created_at: new Date().toISOString(),
     });
+
+    if (error) {
+      console.error('Analytics: Page view tracking error:', error);
+    }
   } catch (error) {
     // Silently fail - analytics should not break the app
-    console.debug('Analytics: Could not track page view');
+    console.error('Analytics: Could not track page view', error);
   }
 };
 
@@ -50,16 +53,19 @@ export const trackProductAction = async (
     const sessionId = getSessionId();
     const { data: { user } } = await supabase.auth.getUser();
 
-    await supabase.from('product_analytics').insert({
+    const { error } = await supabase.from('product_analytics').insert({
       product_id: productId,
       user_id: user?.id || null,
       session_id: sessionId,
       action_type: actionType,
-      created_at: new Date().toISOString(),
     });
+
+    if (error) {
+      console.error('Analytics: Product action tracking error:', error);
+    }
   } catch (error) {
     // Silently fail - analytics should not break the app
-    console.debug('Analytics: Could not track product action');
+    console.error('Analytics: Could not track product action', error);
   }
 };
 
@@ -68,14 +74,17 @@ export const trackSignup = async (userId: string, signupMethod: string = 'email'
   try {
     const sessionId = getSessionId();
 
-    await supabase.from('signup_tracking').insert({
+    const { error } = await supabase.from('signup_tracking').insert({
       user_id: userId,
       session_id: sessionId,
       signup_method: signupMethod,
-      created_at: new Date().toISOString(),
     });
+
+    if (error) {
+      console.error('Analytics: Signup tracking error:', error);
+    }
   } catch (error) {
     // Silently fail - analytics should not break the app
-    console.debug('Analytics: Could not track signup');
+    console.error('Analytics: Could not track signup', error);
   }
 };

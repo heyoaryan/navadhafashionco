@@ -63,7 +63,7 @@ export default function MenGymAttire() {
         {loading ? (
           <div className="flex justify-center items-center py-16 sm:py-20">
             <div className="text-center">
-              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-green-200 border-t-green-500 mx-auto mb-4"></div>
+              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-green-200 border-t-green-500 animate-[spin_1s_linear_infinite_reverse] mx-auto mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
             </div>
           </div>

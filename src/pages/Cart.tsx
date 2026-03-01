@@ -1,9 +1,21 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Cart() {
   const { cartItems, cartTotal, updateCartItem, removeFromCart, loading } = useCart();
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleCheckout = () => {
+    // Check if user is admin
+    if (profile?.role === 'admin') {
+      alert('Admin accounts cannot place orders. Please use a customer account.');
+      return;
+    }
+    navigate('/checkout');
+  };
 
   if (loading) {
     return (
@@ -133,12 +145,13 @@ export default function Cart() {
               </div>
             </div>
 
-            <Link
-              to="/checkout"
-              className="block w-full py-3 sm:py-3.5 md:py-4 bg-black dark:bg-white text-white dark:text-black text-center hover:bg-gray-800 dark:hover:bg-gray-200 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 mb-3 text-sm sm:text-base font-medium min-h-[48px] flex items-center justify-center shadow-lg hover:shadow-xl"
+            <button
+              onClick={handleCheckout}
+              className="block w-full py-3 sm:py-3.5 md:py-4 bg-black dark:bg-white text-white dark:text-black text-center hover:bg-gray-800 dark:hover:bg-gray-200 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 mb-3 text-sm sm:text-base font-medium min-h-[48px] flex items-center justify-center shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              disabled={profile?.role === 'admin'}
             >
-              Proceed to Checkout
-            </Link>
+              {profile?.role === 'admin' ? 'Admin Cannot Checkout' : 'Proceed to Checkout'}
+            </button>
 
             <Link
               to="/shop"

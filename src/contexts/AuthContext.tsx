@@ -104,17 +104,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string): Promise<void> => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: undefined, // Disable email confirmation redirect
       },
     });
 
     if (error) throw error;
+    
+    // Return the signup data so we can check if user is confirmed
+    return data as any;
   };
 
   const signIn = async (email: string, password: string) => {

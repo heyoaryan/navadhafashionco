@@ -10,7 +10,7 @@ import { useToast } from '../contexts/ToastContext';
 // Updated: 3-Step Checkout with Security Indicators - v2.0
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { cartItems, cartTotal, clearCart } = useCart();
   const { showToast } = useToast();
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -55,6 +55,14 @@ export default function Checkout() {
       navigate('/cart');
     }
   }, [cartItems, navigate, orderConfirmed]);
+
+  // Admin restriction - admins cannot place orders
+  useEffect(() => {
+    if (profile?.role === 'admin') {
+      showToast('Admin accounts cannot place orders', 'error');
+      navigate('/admin');
+    }
+  }, [profile, navigate, showToast]);
 
   const fetchAddresses = async () => {
     if (!user) return;

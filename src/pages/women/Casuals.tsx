@@ -21,7 +21,7 @@ export default function WomenCasuals() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('category', 'casual')
+        .eq('category', 'casuals')
         .eq('gender', 'women')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
@@ -54,7 +54,7 @@ export default function WomenCasuals() {
           </h1>
           
           <p className="text-sm sm:text-base md:text-lg lg:text-xl font-light text-white/95 drop-shadow-lg mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto leading-relaxed px-2 sm:px-4">
-            Comfortable and stylish casual wear for women
+            Comfortable and stylish casual wear for everyday elegance
           </p>
         </div>
       </section>
@@ -63,7 +63,7 @@ export default function WomenCasuals() {
         {loading ? (
           <div className="flex justify-center items-center py-16 sm:py-20">
             <div className="text-center">
-              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-200 border-t-blue-500 mx-auto mb-4"></div>
+              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-rose-200 border-t-rose-500 animate-[spin_1s_linear_infinite_reverse] mx-auto mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
             </div>
           </div>
@@ -81,12 +81,12 @@ export default function WomenCasuals() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-16 sm:py-20 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
-            <Shirt className="w-12 h-12 sm:w-16 sm:h-16 text-blue-300 dark:text-blue-700 mx-auto mb-4" />
+          <div className="text-center py-16 sm:py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+            <Shirt className="w-12 h-12 sm:w-16 sm:h-16 text-rose-300 dark:text-rose-700 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">No products found in this category</p>
             <Link
               to="/shop"
-              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm sm:text-base"
+              className="inline-flex items-center gap-2 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-medium text-sm sm:text-base"
             >
               Browse all products
               <ArrowRight className="w-4 h-4" />
