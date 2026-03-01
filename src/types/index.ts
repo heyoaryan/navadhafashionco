@@ -92,6 +92,8 @@ export interface Product {
   meta_description: string | null;
   fabric_details: string | null;
   care_instructions: string | null;
+  video_url: string | null;
+  season?: 'summer' | 'winter' | 'all-season' | null;
   created_at: string;
   updated_at: string;
 }
