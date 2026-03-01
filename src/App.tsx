@@ -57,6 +57,7 @@ import ReturnList from './pages/admin/ReturnList';
 import AreaAnalytics from './pages/admin/AreaAnalytics';
 import JobApplications from './pages/admin/JobApplications';
 import JobPositions from './pages/admin/JobPositions';
+import AdminCareers from './pages/admin/Careers';
 import Careers from './pages/Careers';
 import StoreCareers from './pages/careers/Store';
 import RemoteCareers from './pages/careers/Remote';
@@ -129,7 +130,8 @@ function AppContent() {
               <Route path="orders" element={<OrderList />} />
               <Route path="orders/:orderId" element={<AdminOrderDetail />} />
               <Route path="returns" element={<ReturnList />} />
-              <Route path="careers" element={<JobApplications />} />
+              <Route path="careers" element={<AdminCareers />} />
+              <Route path="careers/applications" element={<JobApplications />} />
               <Route path="careers/positions" element={<JobPositions />} />
               <Route path="coupons" element={<CouponList />} />
               <Route path="customers" element={<CustomerList />} />

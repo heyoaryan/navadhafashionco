@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Tag, Users, LogOut, RotateCcw, Menu, X, TrendingUp, MapPin } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Tag, Users, LogOut, RotateCcw, Menu, X, TrendingUp, MapPin, Briefcase } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
@@ -51,6 +51,7 @@ export default function AdminLayout() {
     { to: '/admin/coupons', icon: Tag, label: 'Coupons' },
     { to: '/admin/customers', icon: Users, label: 'Customers' },
     { to: '/admin/area-analytics', icon: MapPin, label: 'Area Analytics' },
+    { to: '/admin/careers', icon: Briefcase, label: 'Careers' },
   ];
 
   return (
