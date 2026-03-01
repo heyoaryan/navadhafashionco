@@ -9,7 +9,8 @@ interface OrderItem {
   product_id: string;
   quantity: number;
   price: number;
-  size: string;
+  size: string | null;
+  color: string | null;
   product_name: string;
   product_image: string;
 }
@@ -211,11 +212,25 @@ export default function AdminOrderDetail() {
                   />
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 dark:text-gray-100">{item.product_name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Size: {item.size}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Quantity: {item.quantity}</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {item.size && (
+                        <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                          Size: {item.size}
+                        </span>
+                      )}
+                      {item.color && (
+                        <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                          Color: {item.color}
+                        </span>
+                      )}
+                      <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                        Qty: {item.quantity}
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-gray-900 dark:text-gray-100">₹{item.price.toLocaleString()}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">× {item.quantity}</p>
                   </div>
                 </div>
               ))}

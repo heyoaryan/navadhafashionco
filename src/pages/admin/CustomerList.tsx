@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Search, Users, AlertTriangle, Ban, Eye, TrendingUp, MapPin } from 'lucide-react';
+import { Search, Users, AlertTriangle, Ban, Eye, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Profile, Blacklist } from '../../types';
+import { Profile } from '../../types';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface CustomerWithStats extends Profile {

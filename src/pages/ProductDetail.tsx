@@ -311,8 +311,8 @@ export default function ProductDetail() {
   
   // Add images
   if (images.length > 0) {
-    galleryItems.push(...images.map(img => ({ type: 'image' as const, url: img.image_url, alt: img.alt_text })));
-  } else {
+    galleryItems.push(...images.map(img => ({ type: 'image' as const, url: img.image_url || '', alt: img.alt_text || product.name })));
+  } else if (product.main_image_url) {
     galleryItems.push({ type: 'image' as const, url: product.main_image_url, alt: product.name });
   }
   

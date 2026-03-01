@@ -150,35 +150,19 @@ export default function OrderList() {
             >
               Cancelled ({getOrderCount('cancelled')})
             </button>
+            <button
+              onClick={() => setStatusFilter('returned')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                statusFilter === 'returned'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              Returned ({getOrderCount('returned')})
+            </button>
           </div>
         </div>
       )}
-
-      {/* Status Filter Tabs */}
-      <div className="overflow-x-auto">
-        <div className="flex gap-2 min-w-max">
-          {[
-            { value: 'all', label: 'All' },
-            { value: 'processing', label: 'Processing' },
-            { value: 'shipped', label: 'Shipped' },
-            { value: 'delivered', label: 'Delivered' },
-            { value: 'cancelled', label: 'Cancelled' },
-            { value: 'returned', label: 'Returned' }
-          ].map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setStatusFilter(filter.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === filter.value
-                  ? 'bg-rose-500 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Orders Table - Desktop */}
       {filteredOrders.length > 0 ? (

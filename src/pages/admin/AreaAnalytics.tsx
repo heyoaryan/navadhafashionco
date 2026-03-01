@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, TrendingUp, AlertTriangle, Ban, Search } from 'lucide-react';
+import { MapPin, AlertTriangle, Ban, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 

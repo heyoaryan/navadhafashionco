@@ -8,7 +8,7 @@ interface JobApplicationModalProps {
   jobType: 'store' | 'remote';
 }
 
-export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType }: JobApplicationModalProps) {
+export default function JobApplicationModal({ isOpen, onClose, jobTitle }: JobApplicationModalProps) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',

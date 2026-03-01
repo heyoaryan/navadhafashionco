@@ -103,8 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({
+  const signUp = async (email: string, password: string, fullName: string): Promise<void> => {
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -115,8 +115,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) throw error;
-
-    return data;
   };
 
   const signIn = async (email: string, password: string) => {

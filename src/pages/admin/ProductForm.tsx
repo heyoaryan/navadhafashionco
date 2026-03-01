@@ -376,13 +376,6 @@ export default function ProductForm() {
     }
   };
 
-  const handleImageUrlChange = (index: number, url: string) => {
-    setHasUserInput(true);
-    const newUrls = [...imageUrls];
-    newUrls[index] = url;
-    setImageUrls(newUrls);
-  };
-
   const removeImage = (index: number) => {
     setHasUserInput(true);
     const newUrls = [...imageUrls];

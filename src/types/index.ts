@@ -172,6 +172,7 @@ export interface Order {
   user_id: string | null;
   status: OrderStatus;
   payment_status: PaymentStatus;
+  payment_method: 'online' | 'cod';
   subtotal: number;
   discount: number;
   shipping_cost: number;
