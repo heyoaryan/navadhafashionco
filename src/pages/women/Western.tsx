@@ -9,7 +9,7 @@ export default function WomenWestern() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const heroImage = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80';
+  const heroImage = 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=1920&q=80';
 
   useEffect(() => {
     fetchProducts();
@@ -63,7 +63,7 @@ export default function WomenWestern() {
         {loading ? (
           <div className="flex justify-center items-center py-16 sm:py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-200 border-t-blue-500 mx-auto mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
             </div>
           </div>

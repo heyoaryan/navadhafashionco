@@ -288,7 +288,7 @@ export default function Home() {
             <div ref={observerTarget} className="flex justify-center mt-8">
               {loadingMore && (
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#EE458F' }}></div>
+                  <div className="rounded-full h-6 w-6 border-4 border-rose-200 border-t-rose-400 animate-spin"></div>
                   <span className="text-sm sm:text-base">Loading more...</span>
                 </div>
               )}

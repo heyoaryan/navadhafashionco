@@ -20,6 +20,11 @@ import Orders from './pages/account/Orders';
 import OrderDetail from './pages/account/OrderDetail';
 import Wishlist from './pages/Wishlist';
 import About from './pages/About';
+import Shipping from './pages/Shipping';
+import Returns from './pages/Returns';
+import FAQ from './pages/FAQ';
+import Contact from './pages/Contact';
+import Sustainability from './pages/Sustainability';
 import Boutique from './pages/Boutique';
 import BoutiqueReadyMade from './pages/BoutiqueReadyMade';
 import BoutiqueCustomization from './pages/BoutiqueCustomization';
@@ -34,6 +39,11 @@ import WomenEthnics from './pages/women/Ethnics';
 import WomenCasuals from './pages/women/Casuals';
 import WomenWorkwear from './pages/women/Workwear';
 import WomenGymAttire from './pages/women/GymAttire';
+import MenSummerCollection from './pages/men/SummerCollection';
+import MenWinterCollection from './pages/men/WinterCollection';
+import WomenSummerCollection from './pages/women/SummerCollection';
+import WomenWinterCollection from './pages/women/WinterCollection';
+import BestSellers from './pages/BestSellers';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import Analytics from './pages/admin/Analytics';
@@ -41,9 +51,15 @@ import ProductList from './pages/admin/ProductList';
 import ProductForm from './pages/admin/ProductForm';
 import CouponList from './pages/admin/CouponList';
 import OrderList from './pages/admin/OrderList';
+import AdminOrderDetail from './pages/admin/OrderDetail';
 import CustomerList from './pages/admin/CustomerList';
 import ReturnList from './pages/admin/ReturnList';
 import AreaAnalytics from './pages/admin/AreaAnalytics';
+import JobApplications from './pages/admin/JobApplications';
+import JobPositions from './pages/admin/JobPositions';
+import Careers from './pages/Careers';
+import StoreCareers from './pages/careers/Store';
+import RemoteCareers from './pages/careers/Remote';
 
 function AppContent() {
   const { loading } = useAuth();
@@ -55,7 +71,7 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-400 mx-auto mb-4"></div>
+          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
@@ -69,6 +85,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/best-sellers" element={<BestSellers />} />
             <Route path="/boutique" element={<Boutique />} />
             <Route path="/boutique/ready-made" element={<BoutiqueReadyMade />} />
             <Route path="/boutique/customization" element={<BoutiqueCustomization />} />
@@ -78,6 +95,8 @@ function AppContent() {
             <Route path="/men/workwear" element={<MenWorkwear />} />
             <Route path="/men/ethnic" element={<MenEthnic />} />
             <Route path="/men/gym-attire" element={<MenGymAttire />} />
+            <Route path="/men/summer-collection" element={<MenSummerCollection />} />
+            <Route path="/men/winter-collection" element={<MenWinterCollection />} />
             
             {/* Women's Routes */}
             <Route path="/women/western" element={<WomenWestern />} />
@@ -86,6 +105,8 @@ function AppContent() {
             <Route path="/women/casuals" element={<WomenCasuals />} />
             <Route path="/women/workwear" element={<WomenWorkwear />} />
             <Route path="/women/gym-attire" element={<WomenGymAttire />} />
+            <Route path="/women/summer-collection" element={<WomenSummerCollection />} />
+            <Route path="/women/winter-collection" element={<WomenWinterCollection />} />
             
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
@@ -106,13 +127,24 @@ function AppContent() {
               <Route path="products/new" element={<ProductForm />} />
               <Route path="products/:id" element={<ProductForm />} />
               <Route path="orders" element={<OrderList />} />
+              <Route path="orders/:orderId" element={<AdminOrderDetail />} />
               <Route path="returns" element={<ReturnList />} />
+              <Route path="careers" element={<JobApplications />} />
+              <Route path="careers/positions" element={<JobPositions />} />
               <Route path="coupons" element={<CouponList />} />
               <Route path="customers" element={<CustomerList />} />
               <Route path="area-analytics" element={<AreaAnalytics />} />
             </Route>
 
             <Route path="/about" element={<About />} />
+            <Route path="/sustainability" element={<Sustainability />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/returns" element={<Returns />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/careers/store" element={<StoreCareers />} />
+            <Route path="/careers/remote" element={<RemoteCareers />} />
             <Route path="/sustainability" element={<About />} />
             <Route path="/contact" element={<About />} />
             <Route path="/faq" element={<About />} />

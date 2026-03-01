@@ -56,14 +56,15 @@ export const createPaymentSession = async (data: PaymentSessionData) => {
 export const openCashfreeCheckout = async (
   paymentSessionId: string,
   onSuccess: (data: any) => void,
-  onFailure: (error: any) => void
+  onFailure: (error: any) => void,
+  onCancel?: () => void
 ) => {
   try {
     const cashfree = await initializeCashfree();
     
     const checkoutOptions = {
       paymentSessionId: paymentSessionId,
-      redirectTarget: '_modal', // Opens in modal
+      redirectTarget: '_modal', // Opens in modal - no page reload
       appearance: {
         theme: 'light',
         variables: {
@@ -79,13 +80,33 @@ export const openCashfreeCheckout = async (
     const result = await (cashfree as any).checkout(checkoutOptions);
     
     if (result.error) {
-      onFailure(result.error);
+      // Payment failed with error
+      onFailure({
+        type: 'PAYMENT_FAILED',
+        message: result.error.message || 'Payment failed',
+        details: result.error
+      });
     } else if (result.paymentDetails) {
+      // Payment successful
       onSuccess(result.paymentDetails);
+    } else {
+      // Payment cancelled by user
+      if (onCancel) {
+        onCancel();
+      } else {
+        onFailure({
+          type: 'PAYMENT_CANCELLED',
+          message: 'Payment was cancelled'
+        });
+      }
     }
   } catch (error) {
     console.error('Cashfree checkout error:', error);
-    onFailure(error);
+    onFailure({
+      type: 'PAYMENT_ERROR',
+      message: 'Failed to process payment',
+      details: error
+    });
   }
 };
 

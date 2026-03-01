@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Save, Loader2, ArrowLeft } from 'lucide-react';
+import { Camera, Save, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -151,7 +151,7 @@ export default function Profile() {
               className="absolute bottom-0 right-0 p-1.5 sm:p-2 bg-black dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               {uploading ? (
-                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
               )}
@@ -216,7 +216,7 @@ export default function Profile() {
         >
           {loading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>Saving...</span>
             </>
           ) : (

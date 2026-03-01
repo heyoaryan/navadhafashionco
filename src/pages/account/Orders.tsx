@@ -1,21 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, ChevronRight, Loader2, RotateCcw, X } from 'lucide-react';
+import { Package, ChevronRight, RotateCcw, X, AlertCircle, CheckCircle, Clock, Upload } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Order } from '../../types';
+import { Order, Return } from '../../types';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function Orders() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returns, setReturns] = useState<Return[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [submittingReturn, setSubmittingReturn] = useState(false);
+  const [returnReason, setReturnReason] = useState('defective');
+  const [returnDetails, setReturnDetails] = useState('');
+  const [returnImages, setReturnImages] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchOrders();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (showCancelModal || showReturnModal) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [showCancelModal, showReturnModal]);
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -29,6 +51,16 @@ export default function Orders() {
 
       if (error) throw error;
       setOrders(data || []);
+
+      // Fetch returns for all orders
+      const { data: returnsData, error: returnsError } = await supabase
+        .from('returns')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (returnsError) throw returnsError;
+      setReturns(returnsData || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -49,6 +81,57 @@ export default function Orders() {
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
+  };
+
+  const getReturnStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  };
+
+  const getReturnStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'rejected':
+        return <X className="w-4 h-4" />;
+      case 'pending':
+        return <Clock className="w-4 h-4" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
+  const getReturnStatusMessage = (returnItem: Return) => {
+    switch (returnItem.status) {
+      case 'pending':
+        return 'Your return request is under review by admin';
+      case 'approved':
+        return 'Return approved! Pickup will be scheduled within 2 days';
+      case 'rejected':
+        return `Return rejected: ${returnItem.admin_notes || 'Please contact support for details'}`;
+      case 'completed':
+        return returnItem.return_type === 'exchange' 
+          ? 'Exchange completed! New item has been shipped'
+          : 'Refund completed! Amount credited to your account';
+      default:
+        return 'Return status unknown';
+    }
+  };
+
+  const getOrderReturns = (orderId: string) => {
+    return returns.filter(r => r.order_id === orderId);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -85,8 +168,7 @@ export default function Orders() {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
-    
+    setCancelling(true);
     try {
       const { error } = await supabase
         .from('orders')
@@ -96,11 +178,107 @@ export default function Orders() {
       if (error) throw error;
       
       // Refresh orders
-      fetchOrders();
-      alert('Order cancelled successfully');
+      await fetchOrders();
+      setShowCancelModal(false);
+      setSelectedOrder(null);
+      showToast('Order cancelled successfully. Refund will be processed within 5-7 business days.', 'success');
     } catch (error) {
       console.error('Error cancelling order:', error);
-      alert('Failed to cancel order. Please try again.');
+      showToast('Failed to cancel order. Please try again.', 'error');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setUploadingImage(true);
+    try {
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < Math.min(files.length, 3); i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id}-${Date.now()}-${i}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('returns')
+          .upload(fileName, file);
+        
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('returns')
+          .getPublicUrl(data.path);
+        
+        uploadedUrls.push(publicUrl);
+      }
+      
+      setReturnImages([...returnImages, ...uploadedUrls]);
+      showToast('Images uploaded successfully', 'success');
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      showToast('Failed to upload images', 'error');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSubmitReturn = async () => {
+    if (!selectedOrder || !user) return;
+    
+    if (!returnDetails.trim()) {
+      showToast('Please provide return details', 'error');
+      return;
+    }
+    
+    setSubmittingReturn(true);
+    try {
+      // Get order items
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', selectedOrder.id);
+
+      if (itemsError) throw itemsError;
+
+      // Create return for all items in the order
+      const returnPromises = (orderItems || []).map(item => 
+        supabase.from('returns').insert({
+          order_id: selectedOrder.id,
+          order_item_id: item.id,
+          user_id: user.id,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          product_image: item.product_image,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+          reason: returnReason,
+          reason_details: returnDetails,
+          refund_amount: item.subtotal,
+          images: returnImages,
+          return_type: 'refund',
+          status: 'pending'
+        })
+      );
+
+      await Promise.all(returnPromises);
+      
+      showToast('Return request submitted successfully', 'success');
+      setShowReturnModal(false);
+      setSelectedOrder(null);
+      setReturnReason('defective');
+      setReturnDetails('');
+      setReturnImages([]);
+      fetchOrders();
+    } catch (error) {
+      console.error('Error submitting return:', error);
+      showToast('Failed to submit return request', 'error');
+    } finally {
+      setSubmittingReturn(false);
     }
   };
 
@@ -126,7 +304,7 @@ export default function Orders() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
+        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -151,9 +329,9 @@ export default function Orders() {
             </button>
             <button
               onClick={() => setStatusFilter('processing')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                 statusFilter === 'processing'
-                  ? 'bg-yellow-500 text-white'
+                  ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/50 animate-pulse-yellow'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -161,9 +339,9 @@ export default function Orders() {
             </button>
             <button
               onClick={() => setStatusFilter('shipped')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                 statusFilter === 'shipped'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50 animate-pulse-blue'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -171,9 +349,9 @@ export default function Orders() {
             </button>
             <button
               onClick={() => setStatusFilter('delivered')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                 statusFilter === 'delivered'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-green-500 text-white shadow-lg shadow-green-500/50 animate-pulse-green'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -220,13 +398,25 @@ export default function Orders() {
           {filteredOrders.map((order) => (
             <div
               key={order.id}
-              className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               {/* Order Header */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
-                  <h3 className="font-medium text-lg mb-1">Order #{order.order_number}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-medium text-lg">Order #{order.order_number}</h3>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${getStatusColor(order.status)} ${
+                        order.status === 'delivered' ? 'animate-pulse-green' :
+                        order.status === 'shipped' ? 'animate-pulse-blue' :
+                        order.status === 'processing' ? 'animate-pulse-yellow' :
+                        ''
+                      }`}
+                    >
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                     Placed on {new Date(order.created_at).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'long',
@@ -239,69 +429,400 @@ export default function Orders() {
                     {getStatusMessage(order)}
                   </p>
                 </div>
-                <div className="flex flex-col sm:items-end gap-2">
-                  <span
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium self-start sm:self-end ${getStatusColor(order.status)}`}
-                  >
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </span>
-                  
-                  {/* Status-specific badges */}
-                  {canReturnOrder(order) && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded text-xs font-medium self-start sm:self-end">
-                      Return Available (5 days)
-                    </span>
-                  )}
-                  {canCancelOrder(order) && (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded text-xs font-medium self-start sm:self-end">
-                      Can Cancel (30 min)
-                    </span>
-                  )}
+                
+                <div className="flex flex-col gap-2 sm:items-end">
+                  <div className="text-right">
+                    <p className="font-semibold text-xl text-black dark:text-white">
+                      ₹{order.total.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                      {order.payment_status}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Order Details */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium text-black dark:text-white text-lg">
-                    ₹{order.total.toLocaleString()}
-                  </span>
-                  <span className="ml-2 capitalize">• {order.payment_status}</span>
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {canCancelOrder(order) && (
-                    <button
-                      onClick={(e) => handleCancelOrder(order.id, e)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                      Cancel Order
-                    </button>
-                  )}
-                  
+              {/* Status-specific Info Badges */}
+              {(canReturnOrder(order) || canCancelOrder(order)) && (
+                <div className="flex flex-wrap gap-2 mb-4">
                   {canReturnOrder(order) && (
-                    <Link
-                      to={`/account/orders/${order.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 transition-colors"
-                    >
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 border border-orange-200 dark:border-orange-800 rounded-lg text-xs font-medium">
                       <RotateCcw className="w-3 h-3" />
-                      Return/Exchange
-                    </Link>
+                      Return/Exchange Available (5 days left)
+                    </span>
                   )}
-                  
-                  <Link
-                    to={`/account/orders/${order.id}`}
-                    className="inline-flex items-center gap-1 text-sm text-rose-600 dark:text-rose-400 font-medium hover:underline"
-                  >
-                    View Details
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
+                  {canCancelOrder(order) && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg text-xs font-medium">
+                      <X className="w-3 h-3" />
+                      Can be cancelled (30 min window)
+                    </span>
+                  )}
                 </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Link
+                  to={`/account/orders/${order.id}`}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium text-sm"
+                >
+                  View Details
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+                
+                {canReturnOrder(order) && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedOrder(order);
+                      setShowReturnModal(true);
+                    }}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium text-sm"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Return/Exchange
+                  </button>
+                )}
+                
+                {canCancelOrder(order) && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedOrder(order);
+                      setShowCancelModal(true);
+                    }}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel Order
+                  </button>
+                )}
               </div>
+
+              {/* Return/Exchange Tracking */}
+              {getOrderReturns(order.id).length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4" />
+                    Return/Exchange Requests
+                  </h4>
+                  <div className="space-y-3">
+                    {getOrderReturns(order.id).map((returnItem) => (
+                      <div
+                        key={returnItem.id}
+                        className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getReturnStatusColor(returnItem.status)}`}>
+                                {getReturnStatusIcon(returnItem.status)}
+                                {returnItem.status.charAt(0).toUpperCase() + returnItem.status.slice(1)}
+                              </span>
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
+                                {returnItem.return_type === 'exchange' ? '🔄 Exchange' : '💰 Refund'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                              {returnItem.product_name}
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                            {new Date(returnItem.created_at).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short'
+                            })}
+                          </p>
+                        </div>
+                        
+                        <div className={`text-xs p-2 rounded ${
+                          returnItem.status === 'approved' 
+                            ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300'
+                            : returnItem.status === 'rejected'
+                            ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                            : returnItem.status === 'completed'
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                            : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
+                        }`}>
+                          {getReturnStatusMessage(returnItem)}
+                        </div>
+
+                        {returnItem.admin_notes && returnItem.status === 'rejected' && (
+                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 rounded">
+                            <span className="font-medium">Admin Note:</span> {returnItem.admin_notes}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 animate-fade-in-fast">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-medium">Cancel Order</h2>
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setSelectedOrder(null);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                <p className="text-sm font-medium mb-3">Order Details:</p>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex justify-between">
+                    <span>Order Number:</span>
+                    <span className="font-medium text-black dark:text-white">#{selectedOrder.order_number}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Amount:</span>
+                    <span className="font-medium text-black dark:text-white">₹{selectedOrder.total.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Payment Status:</span>
+                    <span className="font-medium text-black dark:text-white capitalize">{selectedOrder.payment_status}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Payment Method:</span>
+                    <span className="font-medium text-black dark:text-white capitalize">
+                      {selectedOrder.payment_method || 'Online'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Refund Information */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                  💰 Refund Information
+                </p>
+                {selectedOrder.payment_method === 'cod' ? (
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Since you selected Cash on Delivery, no refund is needed. Your order will be cancelled immediately.
+                  </p>
+                ) : (
+                  <div className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
+                    <p>✓ Your payment was made online</p>
+                    <p>✓ Full refund of ₹{selectedOrder.total.toLocaleString()} will be processed</p>
+                    <p>✓ Amount will be credited to your original payment method</p>
+                    <p>✓ Refund timeline: 5-7 business days</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setSelectedOrder(null);
+                }}
+                disabled={cancelling}
+                className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium disabled:opacity-50"
+              >
+                Keep Order
+              </button>
+              <button
+                onClick={(e) => handleCancelOrder(selectedOrder.id, e)}
+                disabled={cancelling}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {cancelling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <X className="w-4 h-4" />
+                    Yes, Cancel Order
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Return/Exchange Modal */}
+      {showReturnModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-medium">Request Return/Exchange</h2>
+                <button
+                  onClick={() => {
+                    setShowReturnModal(false);
+                    setSelectedOrder(null);
+                    setReturnReason('defective');
+                    setReturnDetails('');
+                    setReturnImages([]);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Return Info */}
+              <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                <p className="text-sm font-medium mb-1">📦 Full Order Return</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  All items in this order will be returned. Admin will review and approve your request.
+                </p>
+              </div>
+
+              {/* Order Info */}
+              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-sm font-medium mb-2">Order #{selectedOrder.order_number}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Total: ₹{selectedOrder.total.toLocaleString()}
+                </p>
+              </div>
+
+              {/* Return Reason */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Return Reason *</label>
+                <select
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                >
+                  <option value="defective">Defective Product</option>
+                  <option value="wrong_item">Wrong Item Received</option>
+                  <option value="not_as_described">Not as Described</option>
+                  <option value="size_issue">Size Issue</option>
+                  <option value="changed_mind">Changed Mind</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Return Details */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Details *</label>
+                <textarea
+                  value={returnDetails}
+                  onChange={(e) => setReturnDetails(e.target.value)}
+                  placeholder="Please describe the issue in detail..."
+                  rows={4}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
+                />
+              </div>
+
+              {/* Image Upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Upload Images (Optional, max 3)
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {returnImages.map((url, index) => (
+                    <div key={index} className="relative">
+                      <img src={url} alt={`Return ${index + 1}`} className="w-20 h-20 object-cover rounded" />
+                      <button
+                        onClick={() => setReturnImages(returnImages.filter((_, i) => i !== index))}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {returnImages.length < 3 && (
+                    <div className="flex gap-2">
+                      {/* Camera Option */}
+                      <label className="w-20 h-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded flex flex-col items-center justify-center cursor-pointer hover:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={uploadingImage}
+                        />
+                        {uploadingImage ? (
+                          <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                        ) : (
+                          <>
+                            <Package className="w-5 h-5 text-gray-400 mb-1" />
+                            <span className="text-[10px] text-gray-500">Camera</span>
+                          </>
+                        )}
+                      </label>
+                      
+                      {/* Gallery Option */}
+                      <label className="w-20 h-20 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded flex flex-col items-center justify-center cursor-pointer hover:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={uploadingImage}
+                        />
+                        {uploadingImage ? (
+                          <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                            <span className="text-[10px] text-gray-500">Gallery</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">📸 Click photo or upload from gallery</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowReturnModal(false);
+                    setSelectedOrder(null);
+                    setReturnReason('defective');
+                    setReturnDetails('');
+                    setReturnImages([]);
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitReturn}
+                  disabled={submittingReturn || !returnDetails.trim()}
+                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submittingReturn ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4" />
+                      Submit Return Request
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

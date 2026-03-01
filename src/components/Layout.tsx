@@ -9,7 +9,11 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const hideFooter = location.pathname === '/auth' || location.pathname.startsWith('/account');
+  const hideFooter = location.pathname === '/auth' || 
+                     location.pathname.startsWith('/account') || 
+                     location.pathname === '/checkout' ||
+                     location.pathname.startsWith('/careers');
+  const hideHeader = location.pathname.startsWith('/careers');
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   // Don't render layout for admin routes - they have their own layout
@@ -19,8 +23,8 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
-      <Header />
-      <main className="pt-16">
+      {!hideHeader && <Header />}
+      <main className={hideHeader ? '' : 'pt-16'}>
         {children}
       </main>
       {!hideFooter && <Footer />}

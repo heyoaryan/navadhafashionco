@@ -51,8 +51,12 @@ export default function Account() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    // Immediately navigate for instant feedback
+    navigate('/', { replace: true });
+    // Sign out in background
+    signOut().catch((error) => {
+      console.error('Sign out error:', error);
+    });
   };
 
   const getStatusColor = (status: string) => {

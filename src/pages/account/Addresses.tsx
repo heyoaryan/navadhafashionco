@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit2, Trash2, MapPin, Loader2, Navigation, ArrowLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Navigation, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Address } from '../../types';
@@ -225,7 +225,7 @@ export default function Addresses() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
+        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -268,7 +268,7 @@ export default function Addresses() {
               >
                 {fetchingLocation ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Detecting Location...
                   </>
                 ) : (

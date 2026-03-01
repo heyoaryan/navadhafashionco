@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8 mb-8">
           <div className="col-span-2 md:col-span-1">
             <div className="mb-3 sm:mb-4">
               <h3 className="brand-logo text-lg sm:text-xl leading-tight mb-1 text-center" style={{ color: '#EE458F' }}>
@@ -63,6 +63,27 @@ export default function Footer() {
           </div>
 
           <div>
+            <h4 className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Join Our Team</h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+              <li>
+                <Link to="/careers" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
+                  All Positions
+                </Link>
+              </li>
+              <li>
+                <Link to="/careers/store" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
+                  Store
+                </Link>
+              </li>
+              <li>
+                <Link to="/careers/remote" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
+                  Remote
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
             <h4 className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Help</h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li>
@@ -78,11 +99,6 @@ export default function Footer() {
               <li>
                 <Link to="/returns" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
                   Returns
-                </Link>
-              </li>
-              <li>
-                <Link to="/size-guide" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
-                  Size Guide
                 </Link>
               </li>
             </ul>

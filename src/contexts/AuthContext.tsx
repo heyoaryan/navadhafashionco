@@ -34,6 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        // Load cached profile immediately for instant UI
+        const cachedProfile = localStorage.getItem(`profile_${session.user.id}`);
+        if (cachedProfile) {
+          try {
+            setProfile(JSON.parse(cachedProfile));
+          } catch (e) {
+            // Invalid cache, ignore
+          }
+        }
+        // Then fetch fresh data
         fetchProfile(session.user.id);
       } else {
         setLoading(false);
@@ -48,6 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
+          // Load cached profile immediately
+          const cachedProfile = localStorage.getItem(`profile_${session.user.id}`);
+          if (cachedProfile) {
+            try {
+              setProfile(JSON.parse(cachedProfile));
+            } catch (e) {
+              // Invalid cache, ignore
+            }
+          }
           await fetchProfile(session.user.id);
         } else {
           setProfile(null);
@@ -72,6 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!error || error.code === 'PGRST116') {
         setProfile(data);
+        // Cache profile for instant load next time
+        if (data) {
+          localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
+        }
       }
     } catch (error) {
       // Silently handle errors
@@ -84,24 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
     });
 
     if (error) throw error;
 
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: data.user.id,
-            email: data.user.email!,
-            full_name: fullName,
-            role: 'customer',
-          },
-        ]);
-
-      if (profileError) throw profileError;
-    }
+    return data;
   };
 
   const signIn = async (email: string, password: string) => {
@@ -127,15 +142,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Immediately clear UI state for instant feedback
+      const userId = user?.id;
       setProfile(null);
       setUser(null);
       setSession(null);
       
-      // Don't clear cache - keep user data for next login
-      // Only clear UI state
+      // Clear profile cache
+      if (userId) {
+        localStorage.removeItem(`profile_${userId}`);
+      }
       
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Sign out from Supabase in background (don't wait)
+      supabase.auth.signOut().catch((error) => {
+        console.error('Background signout error:', error);
+      });
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
@@ -153,6 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
 
     await fetchProfile(user.id);
+    
+    // Update cache immediately
+    if (profile) {
+      const updatedProfile = { ...profile, ...updates };
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(updatedProfile));
+    }
   };
 
   const refreshProfile = async () => {

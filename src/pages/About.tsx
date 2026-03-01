@@ -1,123 +1,241 @@
-import { useLocation } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+interface ProductImage {
+  id: string;
+  product_id: string;
+  image_url: string;
+  alt_text: string | null;
+  display_order: number;
+}
 
 export default function About() {
-  const location = useLocation();
-  const path = location.pathname.slice(1);
+  const [allImages, setAllImages] = useState<ProductImage[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const content: Record<string, { title: string; subtitle: string; body: string[] }> = {
-    about: {
-      title: 'About Navadha',
-      subtitle: 'Redefining Fashion for the Modern Generation',
-      body: [
-        'Founded in 2026, Navadha Fashion Co. emerged from a simple vision: to create clothing that embodies both timeless elegance and contemporary style. We believe fashion should be an expression of individuality while maintaining the highest standards of quality and sustainability.',
-        'Our collections are thoughtfully curated to reflect the diverse tastes of our global community. From elegant ready-made pieces to personalized custom designs, each item in our catalog is designed to empower you to express your unique style with confidence.',
-        'We partner with ethical manufacturers and use premium, sustainable materials to create pieces that not only look good but also contribute to a better future for our planet. Every stitch, every fabric choice, and every design decision is made with both you and the environment in mind.',
-      ],
-    },
-    sustainability: {
-      title: 'Our Commitment to Sustainability',
-      subtitle: 'Fashion with a Conscience',
-      body: [
-        'At Navadha, we believe that great fashion should never come at the cost of our planet. Our sustainability commitment is woven into every aspect of our business, from sourcing to shipping.',
-        'We use organic and recycled materials whenever possible, partner with factories that meet strict environmental and labor standards, and implement eco-friendly packaging solutions. Our goal is to minimize our carbon footprint while maximizing quality and style.',
-        'We are constantly innovating to find new ways to reduce waste, conserve resources, and create a more circular fashion economy. Join us in our journey towards a more sustainable future, one beautiful piece at a time.',
-      ],
-    },
-    contact: {
-      title: 'Get in Touch',
-      subtitle: 'We Would Love to Hear from You',
-      body: [
-        'Have a question, suggestion, or just want to say hello? Our team is here to help.',
-        'Email: hello@navadha.com',
-        'Phone: +91 1800 123 4567',
-        'Address: 123 Fashion Street, Mumbai, Maharashtra 400001, India',
-        'Business Hours: Monday - Saturday, 10:00 AM - 7:00 PM IST',
-      ],
-    },
-    faq: {
-      title: 'Frequently Asked Questions',
-      subtitle: 'Everything You Need to Know',
-      body: [
-        'Q: What is your return policy? A: We offer hassle-free returns within 30 days of delivery. Items must be unworn, unwashed, and in original condition with tags attached.',
-        'Q: How long does shipping take? A: Standard shipping takes 5-7 business days. Express shipping is available for 2-3 business days delivery.',
-        'Q: Do you ship internationally? A: Yes, we ship to most countries worldwide. International shipping times vary by location.',
-        'Q: How do I track my order? A: Once your order ships, you will receive a tracking number via email.',
-        'Q: What payment methods do you accept? A: We accept all major credit cards, debit cards, UPI, and net banking.',
-      ],
-    },
-    shipping: {
-      title: 'Shipping Information',
-      subtitle: 'Fast and Reliable Delivery',
-      body: [
-        'We offer free standard shipping on all orders above ₹2,999. Orders below this amount have a flat shipping fee of ₹99.',
-        'Standard Shipping: 5-7 business days',
-        'Express Shipping: 2-3 business days (additional charges apply)',
-        'International Shipping: 10-15 business days',
-        'All orders are processed within 1-2 business days. You will receive a tracking number once your order ships.',
-      ],
-    },
-    returns: {
-      title: 'Returns & Exchanges',
-      subtitle: '30-Day Hassle-Free Returns',
-      body: [
-        'We want you to love your purchase. If for any reason you are not satisfied, we accept returns within 30 days of delivery.',
-        'Items must be unworn, unwashed, and in original condition with all tags attached.',
-        'To initiate a return, log in to your account and select the order you wish to return. Follow the instructions to generate a return label.',
-        'Refunds are processed within 7-10 business days of receiving your return. The amount will be credited to your original payment method.',
-        'Exchanges are subject to availability. If the item you want to exchange for is out of stock, we will process a full refund instead.',
-      ],
-    },
-    'size-guide': {
-      title: 'Size Guide',
-      subtitle: 'Find Your Perfect Fit',
-      body: [
-        'Our clothing is designed to fit true to size. Please refer to the size chart below for measurements.',
-        'Tops and Shirts: XS (Chest: 32-34"), S (36"), M (38"), L (40"), XL (42"), XXL (44")',
-        'Bottoms: XS (Waist: 26-28"), S (30"), M (32"), L (34"), XL (36"), XXL (38")',
-        'If you are between sizes, we recommend sizing up for a more relaxed fit.',
-        'For detailed measurements and fit guides for specific items, please check the product page.',
-      ],
-    },
-    privacy: {
-      title: 'Privacy Policy',
-      subtitle: 'Your Privacy Matters to Us',
-      body: [
-        'At Navadha, we are committed to protecting your privacy and ensuring the security of your personal information.',
-        'We collect information necessary to process your orders, improve your shopping experience, and communicate with you about products and promotions.',
-        'We do not sell, trade, or rent your personal information to third parties. Your data is stored securely and accessed only by authorized personnel.',
-        'By using our website, you consent to our privacy policy and agree to its terms.',
-        'For questions about our privacy practices, please contact us at privacy@navadha.com.',
-      ],
-    },
-    terms: {
-      title: 'Terms of Service',
-      subtitle: 'Important Information',
-      body: [
-        'By accessing and using this website, you accept and agree to be bound by the terms and conditions outlined here.',
-        'All content on this website, including text, graphics, logos, and images, is the property of Navadha Fashion Co. and protected by copyright laws.',
-        'You may not reproduce, distribute, or transmit any content from this site without our express written permission.',
-        'We reserve the right to refuse service, terminate accounts, or cancel orders at our discretion.',
-        'Prices and availability are subject to change without notice.',
-      ],
-    },
+  useEffect(() => {
+    fetchProductImages();
+  }, []);
+
+  const fetchProductImages = async () => {
+    try {
+      console.log('Fetching product images from Supabase...');
+      
+      // Fetch all product images from active products
+      const { data, error } = await supabase
+        .from('product_images')
+        .select(`
+          id,
+          product_id,
+          image_url,
+          alt_text,
+          display_order,
+          products!inner(is_active)
+        `)
+        .eq('products.is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Supabase error:', error);
+      } else {
+        console.log('Fetched product images:', data);
+        console.log('Total images:', data?.length);
+        
+        setAllImages(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching product images:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const page = content[path] || content.about;
+  // Create repeated array to fill marquee (minimum 12 items for smooth scroll)
+  const getRepeatedImages = () => {
+    if (allImages.length === 0) return [];
+    
+    const minItems = 12;
+    const repeatedImages = [];
+    
+    // Repeat images until we have at least minItems
+    while (repeatedImages.length < minItems) {
+      repeatedImages.push(...allImages);
+    }
+    
+    return repeatedImages;
+  };
+
+  const marqueeImages = getRepeatedImages();
+  
+  // Split into two rows
+  const halfLength = Math.ceil(marqueeImages.length / 2);
+  const firstRowImages = marqueeImages.slice(0, halfLength);
+  const secondRowImages = marqueeImages.slice(halfLength);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-      <div className="text-center mb-12 sm:mb-16">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-wider mb-3 sm:mb-4">{page.title}</h1>
-        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400">{page.subtitle}</p>
+    <div className="min-h-screen bg-gradient-to-b from-white via-pink-50/30 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900">
+      
+      {/* Founder Story Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          
+          {/* Image Side */}
+          <div className="order-2 lg:order-1">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-pink-400 to-purple-400 rounded-2xl blur-2xl opacity-20"></div>
+              <img
+                src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80"
+                alt="Navadha Fashion"
+                className="relative rounded-2xl shadow-2xl w-full h-64 sm:h-80 lg:h-96 object-cover"
+              />
+            </div>
+          </div>
+
+          {/* Content Side */}
+          <div className="order-1 lg:order-2 space-y-4 sm:space-y-6 text-center">
+            <div className="inline-block relative">
+              {/* Glow effect behind text */}
+              <div className="absolute inset-0 blur-3xl" style={{ backgroundColor: '#EE458F33' }}></div>
+              
+              <h1 className="brand-title text-4xl sm:text-5xl lg:text-7xl mb-3 sm:mb-4 relative drop-shadow-2xl" style={{ color: '#EE458F' }}>
+                NAVADHA
+              </h1>
+              
+              {/* Fashion Co with decorative lines */}
+              <div className="flex items-center justify-center gap-2 sm:gap-3 relative">
+                <div className="h-[1px] w-8 sm:w-12 lg:w-20" style={{ background: 'linear-gradient(to right, transparent, #EE458F80, #EE458F)' }}></div>
+                <span className="text-xs sm:text-sm font-light tracking-[0.3em] whitespace-nowrap" style={{ color: '#EE458F' }}>
+                  FASHION CO
+                </span>
+                <div className="h-[1px] w-8 sm:w-12 lg:w-20" style={{ background: 'linear-gradient(to left, transparent, #EE458F80, #EE458F)' }}></div>
+              </div>
+            </div>
+            
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white">
+              Founder - <span className="text-pink-600 dark:text-pink-400">Aanchal Mishra</span>
+            </h2>
+            
+            <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              In 2026, what started as a dream inspired by my mother's passion for fashion became Navadha Fashion Co. Growing up, I watched her create beautiful garments with love and dedication.
+            </p>
+            
+            <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              The name <span className="font-bold text-pink-600 dark:text-pink-400">"Navadha"</span> originates from the Ramayana, meaning <span className="italic">"nine forms of devotion"</span> or <span className="italic">"new path"</span> — reflecting our commitment to craftsmanship and innovation.
+            </p>
+
+            <div className="pt-4">
+              <div className="flex items-start gap-3 bg-pink-50 dark:bg-gray-800 p-4 sm:p-6 rounded-xl">
+                <Sparkles className="w-6 h-6 text-pink-500 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Creative Director's Vision</h4>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Every piece carries forward a legacy of love, excellence, and the timeless bond between tradition and modernity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="prose prose-sm sm:prose-lg dark:prose-invert max-w-none">
-        {page.body.map((paragraph, index) => (
-          <p key={index} className="mb-4 sm:mb-6 text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-            {paragraph}
+      {/* Marquee Grid Section */}
+      <div className="py-12 sm:py-16 lg:py-20 bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Our Collections
+          </h2>
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
+            Discover the beauty of tradition and modernity
           </p>
-        ))}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-600 animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+            </div>
+          </div>
+        ) : allImages.length > 0 ? (
+          <>
+            {/* First Row - Left to Right */}
+            <div className="relative mb-6">
+              <div className="flex gap-6 animate-marquee">
+                <div className="flex gap-6 min-w-max">
+                  {firstRowImages.map((image, index) => (
+                    <img 
+                      key={`${image.id}-${index}`}
+                      src={image.image_url} 
+                      alt={image.alt_text || 'Product'}
+                      onError={(e) => {
+                        console.error('Image load error for:', image.image_url);
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=400&q=80';
+                      }}
+                      className="w-64 h-80 object-cover rounded-xl shadow-lg" 
+                    />
+                  ))}
+                </div>
+                {/* Duplicate for seamless loop */}
+                <div className="flex gap-6 min-w-max">
+                  {firstRowImages.map((image, index) => (
+                    <img 
+                      key={`${image.id}-${index}-dup`}
+                      src={image.image_url} 
+                      alt={image.alt_text || 'Product'}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=400&q=80';
+                      }}
+                      className="w-64 h-80 object-cover rounded-xl shadow-lg" 
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Second Row - Right to Left */}
+            <div className="relative">
+              <div className="flex gap-6 animate-marquee-reverse">
+                <div className="flex gap-6 min-w-max">
+                  {secondRowImages.map((image, index) => (
+                    <img 
+                      key={`${image.id}-${index}`}
+                      src={image.image_url} 
+                      alt={image.alt_text || 'Product'}
+                      onError={(e) => {
+                        console.error('Image load error for:', image.image_url);
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80';
+                      }}
+                      className="w-64 h-80 object-cover rounded-xl shadow-lg" 
+                    />
+                  ))}
+                </div>
+                {/* Duplicate for seamless loop */}
+                <div className="flex gap-6 min-w-max">
+                  {secondRowImages.map((image, index) => (
+                    <img 
+                      key={`${image.id}-${index}-dup`}
+                      src={image.image_url} 
+                      alt={image.alt_text || 'Product'}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80';
+                      }}
+                      className="w-64 h-80 object-cover rounded-xl shadow-lg" 
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-20">
+            <p className="text-gray-600 dark:text-gray-400">No products available at the moment.</p>
+          </div>
+        )}
       </div>
+
+
+
     </div>
   );
 }

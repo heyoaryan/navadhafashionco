@@ -13,7 +13,7 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+        <div className="rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-600"></div>
       </div>
     );
   }

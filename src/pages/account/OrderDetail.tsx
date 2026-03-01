@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Package, MapPin, CreditCard, Truck, Loader2, ArrowLeft, RotateCcw, Upload, X } from 'lucide-react';
+import { Package, MapPin, CreditCard, Truck, ArrowLeft, RotateCcw, Upload, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Order, OrderItem, Return, ReturnReason } from '../../types';
@@ -245,7 +245,7 @@ export default function OrderDetail() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" />
+        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -259,205 +259,343 @@ export default function OrderDetail() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
       <Link
         to="/account/orders"
-        className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white mb-4 sm:mb-6"
+        className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white mb-4 sm:mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Orders
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-light mb-1 sm:mb-2">Order #{order.order_number}</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-            Placed on {new Date(order.created_at).toLocaleDateString('en-IN', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </p>
+      {/* Order Header Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-light">Order #{order.order_number}</h1>
+              <span
+                className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(order.status)} ${
+                  order.status === 'delivered' ? 'animate-pulse-green' :
+                  order.status === 'shipped' ? 'animate-pulse-blue' :
+                  order.status === 'processing' ? 'animate-pulse-yellow' :
+                  ''
+                }`}
+              >
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Placed on {new Date(order.created_at).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-semibold text-black dark:text-white">
+              ₹{order.total.toLocaleString()}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+              {order.payment_method || 'Online Payment'}
+            </p>
+          </div>
         </div>
-        <span
-          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap self-start ${getStatusColor(order.status)}`}
-        >
-          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-        </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {/* Order Items */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 flex items-center gap-2">
-              <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Order Items & Timeline */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Order Items Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-medium mb-4 flex items-center gap-2">
+              <Package className="w-5 h-5" />
               Order Items
             </h2>
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4">
               {orderItems.map((item) => (
-                <div key={item.id} className="flex gap-3 sm:gap-4 p-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
+                <div key={item.id} className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                   {item.product_image && (
                     <img
                       src={item.product_image}
                       alt={item.product_name}
-                      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded flex-shrink-0"
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm sm:text-base line-clamp-2">{item.product_name}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      {item.size && `Size: ${item.size}`}
-                      {item.size && item.color && ' • '}
-                      {item.color && `Color: ${item.color}`}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      Qty: {item.quantity}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <p className="font-medium text-sm sm:text-base">₹{item.price.toLocaleString()}</p>
-                      {canReturnItem(item) && (
-                        <button
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setShowReturnModal(true);
-                          }}
-                          className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center gap-1"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          {returns.filter(r => 
-                            r.product_id === item.product_id && 
-                            r.size === item.size && 
-                            r.color === item.color &&
-                            r.status === 'approved'
-                          ).length === 0 ? 'Exchange' : 'Return'}
-                        </button>
-                      )}
-                      {returns.some(r => 
-                        r.product_id === item.product_id && 
-                        r.size === item.size && 
-                        r.color === item.color
-                      ) && (
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
-                          {returns.find(r => 
-                            r.product_id === item.product_id && 
-                            r.size === item.size && 
-                            r.color === item.color
-                          )?.status === 'pending' ? 'Return Pending' : 
-                          returns.find(r => 
-                            r.product_id === item.product_id && 
-                            r.size === item.size && 
-                            r.color === item.color
-                          )?.status === 'approved' ? 'Return Approved' : 'Return Rejected'}
+                    <h3 className="font-medium text-base line-clamp-2 mb-2">{item.product_name}</h3>
+                    <div className="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      {item.size && (
+                        <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
+                          Size: {item.size}
                         </span>
                       )}
+                      {item.color && (
+                        <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
+                          Color: {item.color}
+                        </span>
+                      )}
+                      <span className="px-2 py-1 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
+                        Qty: {item.quantity}
+                      </span>
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      ₹{item.subtotal.toLocaleString()}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-lg">₹{item.subtotal.toLocaleString()}</p>
+                      <div className="flex items-center gap-2">
+                        {canReturnItem(item) && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedItem(item);
+                              setShowReturnModal(true);
+                            }}
+                            className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1 font-medium"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            {returns.filter(r => 
+                              r.product_id === item.product_id && 
+                              r.size === item.size && 
+                              r.color === item.color &&
+                              r.status === 'approved'
+                            ).length === 0 ? 'Exchange' : 'Return'}
+                          </button>
+                        )}
+                        {returns.some(r => 
+                          r.product_id === item.product_id && 
+                          r.size === item.size && 
+                          r.color === item.color
+                        ) && (
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded font-medium">
+                            {returns.find(r => 
+                              r.product_id === item.product_id && 
+                              r.size === item.size && 
+                              r.color === item.color
+                            )?.status === 'pending' ? 'Return Pending' : 
+                            returns.find(r => 
+                              r.product_id === item.product_id && 
+                              r.size === item.size && 
+                              r.color === item.color
+                            )?.status === 'approved' ? 'Return Approved' : 'Return Rejected'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Order Tracking */}
-          {tracking.length > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 flex items-center gap-2">
-                <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
-                Order Tracking
-              </h2>
-              <div className="space-y-3 sm:space-y-4">
-                {tracking.map((track, index) => (
-                  <div key={track.id} className="flex gap-3 sm:gap-4">
-                    <div className="flex flex-col items-center flex-shrink-0">
-                      <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${
-                        index === 0 ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                      }`} />
-                      {index !== tracking.length - 1 && (
-                        <div className="w-0.5 h-full bg-gray-300 dark:bg-gray-600 mt-1" />
-                      )}
+          {/* Order Timeline Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-medium mb-6 flex items-center gap-2">
+              <Truck className="w-5 h-5" />
+              Order Timeline
+            </h2>
+            
+            {/* Visual Progress Bar */}
+            <div className="mb-6 sm:mb-8">
+              <div className="flex items-center justify-between mb-2">
+                {order.status === 'cancelled' ? (
+                  // Show cancelled status
+                  <div className="flex-1 flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm bg-red-500 text-white shadow-lg shadow-red-500/50 animate-pulse">
+                      ✕
                     </div>
-                    <div className="flex-1 pb-3 sm:pb-4 min-w-0">
-                      <p className="font-medium text-sm sm:text-base">
-                        {track.status.charAt(0).toUpperCase() + track.status.slice(1)}
-                      </p>
-                      {track.location && (
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">{track.location}</p>
-                      )}
-                      {track.notes && (
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">{track.notes}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(track.created_at).toLocaleString('en-IN')}
-                      </p>
-                    </div>
+                    <p className="text-xs mt-2 text-center font-medium text-red-600 dark:text-red-400">
+                      Cancelled
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  // Show normal progress
+                  ['pending', 'processing', 'shipped', 'delivered'].map((status, idx) => {
+                    const statusOrder = ['pending', 'processing', 'shipped', 'delivered'];
+                    const currentStatusIndex = statusOrder.indexOf(order.status);
+                    const thisStatusIndex = statusOrder.indexOf(status);
+                    const isCompleted = thisStatusIndex < currentStatusIndex;
+                    const isCurrent = order.status === status;
+                    
+                    return (
+                      <div key={status} className="flex-1 flex items-center">
+                        <div className="flex flex-col items-center flex-1">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm transition-all duration-300 ${
+                            isCompleted
+                              ? 'bg-green-500 text-white shadow-lg shadow-green-500/50'
+                              : isCurrent
+                              ? status === 'delivered'
+                                ? 'bg-green-500 text-white shadow-lg shadow-green-500/50 animate-pulse-green'
+                                : status === 'shipped'
+                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50 animate-pulse-blue'
+                                : status === 'processing'
+                                ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/50 animate-pulse-yellow'
+                                : 'bg-purple-500 text-white shadow-lg shadow-purple-500/50 animate-pulse-purple'
+                              : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {isCompleted ? '✓' : idx + 1}
+                          </div>
+                          <p className={`text-xs mt-2 text-center font-medium ${
+                            isCompleted || isCurrent 
+                              ? 'text-black dark:text-white' 
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </p>
+                        </div>
+                        {idx < 3 && (
+                          <div className={`h-1 flex-1 mx-1 sm:mx-2 transition-all duration-300 ${
+                            thisStatusIndex < currentStatusIndex
+                              ? 'bg-green-500'
+                              : 'bg-gray-300 dark:bg-gray-600'
+                          }`} />
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
-          )}
+
+            {/* Detailed Tracking History */}
+            {tracking.length > 0 && (
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Tracking History</h3>
+                {tracking.map((track, index) => {
+                  const isCompleted = index !== 0; // All previous steps are completed
+                  const statusColor = track.status === 'cancelled' ? 'bg-red-500' :
+                    isCompleted ? 'bg-green-500' : 
+                    track.status === 'delivered' ? 'bg-green-500' :
+                    track.status === 'shipped' ? 'bg-blue-500' :
+                    track.status === 'processing' ? 'bg-yellow-500' :
+                    track.status === 'pending' ? 'bg-purple-500' :
+                    'bg-gray-500';
+                  
+                  return (
+                    <div key={track.id} className="flex gap-3 sm:gap-4">
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${statusColor} ${
+                          index === 0 ? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''
+                        } ${
+                          index === 0 && track.status === 'cancelled' ? 'ring-red-200 dark:ring-red-800' :
+                          index === 0 && isCompleted ? 'ring-green-200 dark:ring-green-800' :
+                          index === 0 && track.status === 'delivered' ? 'ring-green-200 dark:ring-green-800' :
+                          index === 0 && track.status === 'shipped' ? 'ring-blue-200 dark:ring-blue-800' :
+                          index === 0 && track.status === 'processing' ? 'ring-yellow-200 dark:ring-yellow-800' :
+                          index === 0 ? 'ring-purple-200 dark:ring-purple-800' : ''
+                        }`} />
+                        {index !== tracking.length - 1 && (
+                          <div className={`w-0.5 h-full mt-1 ${
+                            track.status === 'cancelled' ? 'bg-red-500' :
+                            isCompleted ? 'bg-green-500' : statusColor
+                          }`} />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-3 sm:pb-4 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium text-sm sm:text-base">
+                            {track.status.charAt(0).toUpperCase() + track.status.slice(1)}
+                          </p>
+                          {index === 0 && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              track.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                              track.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                              track.status === 'shipped' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                              track.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                              'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                            }`}>
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        {track.location && (
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words mt-1">
+                            📍 {track.location}
+                          </p>
+                        )}
+                        {track.notes && (
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words mt-1">
+                            💬 {track.notes}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                          🕐 {new Date(track.created_at).toLocaleString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Order Summary */}
-        <div className="space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+        {/* Right Column - Summary & Address */}
+        <div className="space-y-6">
+          {/* Order Summary Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
               Order Summary
             </h2>
-            <div className="space-y-2 text-xs sm:text-sm">
+            <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span>₹{order.subtotal.toLocaleString()}</span>
+                <span className="font-medium">₹{order.subtotal.toLocaleString()}</span>
               </div>
               {order.discount > 0 && (
-                <div className="flex justify-between text-green-600">
+                <div className="flex justify-between text-green-600 dark:text-green-400">
                   <span>Discount</span>
-                  <span>-₹{order.discount.toLocaleString()}</span>
+                  <span className="font-medium">-₹{order.discount.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Shipping</span>
-                <span>₹{order.shipping_cost.toLocaleString()}</span>
+                <span className="font-medium">₹{order.shipping_cost.toLocaleString()}</span>
               </div>
               {order.tax > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                  <span>₹{order.tax.toLocaleString()}</span>
+                  <span className="font-medium">₹{order.tax.toLocaleString()}</span>
                 </div>
               )}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                <div className="flex justify-between font-medium text-base sm:text-lg">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+                <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
                   <span>₹{order.total.toLocaleString()}</span>
                 </div>
               </div>
             </div>
-            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Payment Status</p>
-              <p className="font-medium capitalize text-sm sm:text-base">{order.payment_status}</p>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Payment Method</p>
+                <p className="font-medium capitalize text-sm">{order.payment_method || 'Online'}</p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 flex items-center gap-2">
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
+          {/* Shipping Address Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
               Shipping Address
             </h2>
-            <div className="text-xs sm:text-sm space-y-1">
-              <p className="font-medium">{order.shipping_address.full_name}</p>
+            <div className="text-sm space-y-2">
+              <p className="font-medium text-base">{order.shipping_address.full_name}</p>
               <p className="text-gray-600 dark:text-gray-400">{order.shipping_address.phone}</p>
-              <p className="text-gray-600 dark:text-gray-400 break-words">
+              <p className="text-gray-600 dark:text-gray-400">
                 {order.shipping_address.address_line1}
               </p>
               {order.shipping_address.address_line2 && (
-                <p className="text-gray-600 dark:text-gray-400 break-words">
+                <p className="text-gray-600 dark:text-gray-400">
                   {order.shipping_address.address_line2}
                 </p>
               )}
@@ -468,10 +606,11 @@ export default function OrderDetail() {
             </div>
           </div>
 
+          {/* Tracking Number Card */}
           {order.tracking_number && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-medium mb-2">Tracking Number</h2>
-              <p className="text-xs sm:text-sm font-mono bg-white dark:bg-gray-900 p-2 rounded break-all">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+              <h2 className="text-lg font-medium mb-3">Tracking Number</h2>
+              <p className="text-sm font-mono bg-gray-50 dark:bg-gray-700 p-3 rounded-lg break-all border border-gray-200 dark:border-gray-600">
                 {order.tracking_number}
               </p>
             </div>
@@ -600,7 +739,7 @@ export default function OrderDetail() {
                         disabled={uploadingImage}
                       />
                       {uploadingImage ? (
-                        <Loader2 className="w-6 h-6 animate-spin" />
+                        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
                       ) : (
                         <Upload className="w-6 h-6 text-gray-400" />
                       )}
@@ -631,7 +770,7 @@ export default function OrderDetail() {
                 >
                   {submittingReturn ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Submitting...
                     </>
                   ) : (

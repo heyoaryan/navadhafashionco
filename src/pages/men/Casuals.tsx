@@ -9,7 +9,7 @@ export default function MenCasuals() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const heroImage = 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=1920';
+  const heroImage = 'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=1920';
 
   useEffect(() => {
     fetchProducts();
@@ -65,7 +65,7 @@ export default function MenCasuals() {
         {loading ? (
           <div className="flex justify-center items-center py-16 sm:py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-200 border-t-blue-500 mx-auto mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
             </div>
           </div>

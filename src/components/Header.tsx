@@ -12,10 +12,12 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [lockedDropdown, setLockedDropdown] = useState<string | null>(null);
   const [expandedMobileSection, setExpandedMobileSection] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, profile } = useAuth();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
@@ -110,6 +112,28 @@ export default function Header() {
     };
   }, [mobileMenuOpen]);
 
+  // Close locked dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        lockedDropdown &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setLockedDropdown(null);
+        setActiveDropdown(null);
+      }
+    };
+
+    if (lockedDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [lockedDropdown]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -167,7 +191,7 @@ export default function Header() {
         { name: 'Workwear', path: '/men/workwear' },
         { name: 'Ethnic', path: '/men/ethnic' },
         { name: 'Gym Attire', path: '/men/gym-attire' },
-        { name: `${currentSeason} Collection`, path: `/shop?gender=men&category=seasonal&season=${currentSeason.toLowerCase()}` },
+        { name: `${currentSeason} Collection`, path: `/men/${currentSeason.toLowerCase()}-collection` },
       ]
     },
     { 
@@ -180,15 +204,24 @@ export default function Header() {
         { name: 'Casuals', path: '/women/casuals' },
         { name: 'Workwear', path: '/women/workwear' },
         { name: 'Gym Attire', path: '/women/gym-attire' },
-        { name: `${currentSeason} Collection`, path: `/shop?gender=women&category=seasonal&season=${currentSeason.toLowerCase()}` },
+        { name: `${currentSeason} Collection`, path: `/women/${currentSeason.toLowerCase()}-collection` },
       ]
     },
     { name: 'Boutique', path: '/boutique' },
-    { name: 'Best Sellers', path: '/shop?sort=bestselling' },
+    { name: 'Best Sellers', path: '/best-sellers' },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors" ref={searchContainerRef}>
+    <header 
+      className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors" 
+      ref={searchContainerRef}
+      onMouseLeave={() => {
+        // Close dropdown when mouse leaves the entire header area (unless locked)
+        if (!lockedDropdown) {
+          setActiveDropdown(null);
+        }
+      }}
+    >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center gap-1 sm:gap-2 lg:gap-8">
@@ -200,7 +233,15 @@ export default function Header() {
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            <Link to="/" className="flex items-center flex-shrink-0">
+            <Link 
+              to="/" 
+              className="flex items-center flex-shrink-0"
+              onMouseEnter={() => {
+                if (!lockedDropdown) {
+                  setActiveDropdown(null);
+                }
+              }}
+            >
               <div className="text-center">
                 <h1 className="brand-logo text-lg sm:text-xl md:text-2xl leading-tight mb-0.5" style={{ color: '#EE458F' }}>
                   NAVADHA
@@ -217,23 +258,34 @@ export default function Header() {
                   key={category.name}
                   className="relative h-full flex items-center"
                   onMouseEnter={() => {
-                    if (category.subcategories) {
+                    if (category.subcategories && !lockedDropdown) {
                       setActiveDropdown(category.name);
-                    } else {
+                    } else if (!category.subcategories && !lockedDropdown) {
+                      // Close dropdown when hovering over items without subcategories
                       setActiveDropdown(null);
                     }
                   }}
-                  onMouseLeave={() => {}}
+                  onMouseLeave={() => {
+                    // Don't close immediately - let dropdown handle it
+                  }}
                 >
                   {category.subcategories ? (
                     <button
-                      onClick={() => setActiveDropdown(activeDropdown === category.name ? null : category.name)}
+                      onClick={() => {
+                        if (lockedDropdown === category.name) {
+                          setLockedDropdown(null);
+                          setActiveDropdown(null);
+                        } else {
+                          setLockedDropdown(category.name);
+                          setActiveDropdown(category.name);
+                        }
+                      }}
                       className="relative text-sm font-semibold tracking-wide whitespace-nowrap group block py-2 pb-1 cursor-pointer"
                     >
                       {category.name}
                       <span 
                         className={`absolute left-0 bottom-0 h-0.5 transition-all duration-300 ${
-                          activeDropdown === category.name ? 'w-full' : 'w-0 group-hover:w-full'
+                          activeDropdown === category.name || lockedDropdown === category.name ? 'w-full' : 'w-0 group-hover:w-full'
                         }`} 
                         style={{ backgroundColor: '#EE458F' }}
                       ></span>
@@ -316,11 +368,14 @@ export default function Header() {
                     <img
                       src={profile.avatar_url}
                       alt={profile.full_name || 'User'}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 transition-all duration-300 animate-in fade-in zoom-in"
                     />
                   ) : (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-medium text-xs sm:text-sm border-2 border-gray-200 dark:border-gray-700">
-                      {profile?.full_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || 'U'}
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-medium text-xs sm:text-sm border-2 border-gray-200 dark:border-gray-700 transition-all duration-300 animate-in fade-in zoom-in">
+                      {profile?.full_name?.[0]?.toUpperCase() || 
+                       user?.user_metadata?.full_name?.[0]?.toUpperCase() || 
+                       user?.email?.[0]?.toUpperCase() || 
+                       'U'}
                     </div>
                   )}
                 </Link>
@@ -427,9 +482,18 @@ export default function Header() {
       {/* Full Width Dropdown Menu for Desktop */}
       {activeDropdown && (
         <div 
+          ref={dropdownRef}
           className="hidden lg:block absolute top-full left-0 right-0 bg-white dark:bg-gray-900 border-t border-b border-gray-200 dark:border-gray-800 shadow-lg z-40"
-          onMouseEnter={() => setActiveDropdown(activeDropdown)}
-          onMouseLeave={() => setActiveDropdown(null)}
+          onMouseEnter={() => {
+            // Keep dropdown open when hovering over it
+            setActiveDropdown(activeDropdown);
+          }}
+          onMouseLeave={() => {
+            // Close dropdown only if not locked
+            if (!lockedDropdown) {
+              setActiveDropdown(null);
+            }
+          }}
         >
           <div className="max-w-7xl mx-auto px-8 py-8">
             <div className="flex gap-12 justify-center items-center flex-wrap">
@@ -438,7 +502,10 @@ export default function Header() {
                   key={sub.name}
                   to={sub.path}
                   className="relative text-base font-medium text-gray-700 dark:text-gray-300 hover:text-pink-500 transition-all duration-300 whitespace-nowrap group pb-1 py-2"
-                  onClick={() => setActiveDropdown(null)}
+                  onClick={() => {
+                    setActiveDropdown(null);
+                    setLockedDropdown(null);
+                  }}
                 >
                   {sub.name}
                   <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-pink-500 transition-all duration-300 group-hover:w-full"></span>

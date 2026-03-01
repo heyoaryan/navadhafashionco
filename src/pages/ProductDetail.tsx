@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import ProductCard from '../components/ProductCard';
+import ImageLightbox from '../components/ImageLightbox';
 import { trackProductAction } from '../utils/analytics';
 
 export default function ProductDetail() {
@@ -33,6 +34,11 @@ export default function ProductDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [pincode, setPincode] = useState('');
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState<{ days: number; message: string } | null>(null);
+  const [pincodeError, setPincodeError] = useState('');
 
   const inWishlist = product ? isInWishlist(product.id) : false;
 
@@ -210,6 +216,66 @@ export default function ProductDetail() {
     }
   };
 
+  const checkDeliveryAvailability = async () => {
+    if (!user) {
+      navigate('/auth', { state: { from: `/product/${slug}` } });
+      return;
+    }
+
+    if (!pincode || pincode.length !== 6) {
+      setPincodeError('Please enter a valid 6-digit pincode');
+      return;
+    }
+
+    setPincodeError('');
+    setCheckingDelivery(true);
+    
+    try {
+      // Simulate API call - In production, integrate with actual courier API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get first digit of pincode to determine region
+      const firstDigit = parseInt(pincode[0]);
+      
+      // Gujarat pincodes start with 3 or 4
+      // Calculate delivery days based on region
+      let deliveryDays = 5; // Default
+      let region = '';
+      
+      if (firstDigit === 3 || firstDigit === 4) {
+        // Gujarat - faster delivery
+        deliveryDays = 3;
+        region = 'Gujarat';
+      } else if (firstDigit === 1 || firstDigit === 2) {
+        // North India
+        deliveryDays = 5;
+        region = 'North India';
+      } else if (firstDigit === 5 || firstDigit === 6) {
+        // South India
+        deliveryDays = 6;
+        region = 'South India';
+      } else if (firstDigit === 7 || firstDigit === 8) {
+        // East & Northeast India
+        deliveryDays = 7;
+        region = 'East India';
+      } else {
+        // Other regions
+        deliveryDays = 5;
+        region = 'your area';
+      }
+      
+      setDeliveryInfo({
+        days: deliveryDays,
+        message: `Delivery to ${region} (${pincode})`
+      });
+    } catch (error) {
+      console.error('Error checking delivery:', error);
+      setPincodeError('Unable to check delivery. Please try again.');
+    } finally {
+      setCheckingDelivery(false);
+    }
+  };
+
   const averageRating = reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
@@ -240,36 +306,91 @@ export default function ProductDetail() {
     );
   }
 
-  const displayImages = images.length > 0 ? images : [{ image_url: product.main_image_url, alt_text: product.name }];
+  // Combine images and video into gallery items
+  const galleryItems = [];
+  
+  // Add images
+  if (images.length > 0) {
+    galleryItems.push(...images.map(img => ({ type: 'image' as const, url: img.image_url, alt: img.alt_text })));
+  } else {
+    galleryItems.push({ type: 'image' as const, url: product.main_image_url, alt: product.name });
+  }
+  
+  // Add video if exists
+  if (product.video_url) {
+    galleryItems.push({ type: 'video' as const, url: product.video_url, alt: `${product.name} video` });
+  }
+
+  const handleNextImage = () => {
+    setSelectedImage((prev) => (prev + 1) % galleryItems.length);
+  };
+
+  const handlePreviousImage = () => {
+    setSelectedImage((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
         <div className="space-y-4">
-          <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-            <img
-              src={displayImages[selectedImage]?.image_url || 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=800'}
-              alt={displayImages[selectedImage]?.alt_text || product.name}
-              className="w-full h-full object-cover"
-            />
+          <div 
+            className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 cursor-pointer group relative"
+            onClick={() => setIsLightboxOpen(true)}
+          >
+            {galleryItems[selectedImage]?.type === 'video' ? (
+              <video
+                src={galleryItems[selectedImage]?.url || ''}
+                className="w-full h-full object-cover"
+                controls
+                playsInline
+              />
+            ) : (
+              <>
+                <img
+                  src={galleryItems[selectedImage]?.url || 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                  alt={galleryItems[selectedImage]?.alt || product.name}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium bg-black/50 px-4 py-2 rounded-lg">
+                    Click to view full size
+                  </span>
+                </div>
+              </>
+            )}
           </div>
-          {displayImages.length > 1 && (
+          {galleryItems.length > 1 && (
             <div className="grid grid-cols-4 gap-4">
-              {displayImages.map((image, index) => (
+              {galleryItems.map((item, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
-                  className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                  className={`aspect-square overflow-hidden rounded-lg border-2 transition-all relative ${
                     selectedImage === index
                       ? 'border-rose-400'
                       : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
-                  <img
-                    src={image.image_url || ''}
-                    alt={image.alt_text || `${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                  {item.type === 'video' ? (
+                    <>
+                      <video
+                        src={item.url || ''}
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                      </div>
+                    </>
+                  ) : (
+                    <img
+                      src={item.url || ''}
+                      alt={item.alt || `${product.name} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </button>
               ))}
             </div>
@@ -337,21 +458,31 @@ export default function ProductDetail() {
           {product.colors && product.colors.length > 0 && (
             <div>
               <span className="text-sm font-medium block mb-3">Color</span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {product.colors.map((color: { name: string; hex: string }) => (
                   <button
                     key={color.name}
                     onClick={() => setSelectedColor(color.name)}
                     className={`group relative`}
                   >
-                    <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 ${
-                        selectedColor === color.name
-                          ? 'border-black dark:border-white'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                    />
+                    {color.hex === '#multicolor' || color.name.toLowerCase() === 'multicolor' ? (
+                      <div
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 ${
+                          selectedColor === color.name
+                            ? 'border-black dark:border-white'
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      />
+                    ) : (
+                      <div
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 ${
+                          selectedColor === color.name
+                            ? 'border-black dark:border-white'
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                      />
+                    )}
                     <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {color.name}
                     </span>
@@ -465,15 +596,77 @@ export default function ProductDetail() {
           <div className="grid grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-800">
             <div className="text-center">
               <Truck className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
-              <p className="text-xs">Free Shipping</p>
+              <p className="text-xs font-medium">Free Shipping</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Pan India 3-7 days</p>
             </div>
             <div className="text-center">
               <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
-              <p className="text-xs">5-Day Returns</p>
+              <p className="text-xs font-medium">5-Day Returns</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Easy & Hassle-free</p>
             </div>
             <div className="text-center">
               <Shield className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1 sm:mb-2" />
-              <p className="text-xs">Secure Payment</p>
+              <p className="text-xs font-medium">Secure Payment</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">100% Protected</p>
+            </div>
+          </div>
+
+          {/* Delivery Time Checker */}
+          <div className="pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-800">
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <Truck className="w-4 h-4" />
+              Check Delivery Time
+            </h3>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={pincode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPincode(value);
+                    setPincodeError('');
+                    setDeliveryInfo(null);
+                  }}
+                  placeholder="Enter pincode"
+                  className="flex-1 px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  maxLength={6}
+                  disabled={!user}
+                />
+                <button
+                  onClick={checkDeliveryAvailability}
+                  disabled={checkingDelivery || !user || pincode.length !== 6}
+                  className="px-6 py-2.5 text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {checkingDelivery ? 'Checking...' : 'Check'}
+                </button>
+              </div>
+              
+              {!user && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Please <button onClick={() => navigate('/auth', { state: { from: `/product/${slug}` } })} className="text-rose-500 hover:text-rose-600 underline">sign in</button> to check delivery time
+                </p>
+              )}
+              
+              {pincodeError && (
+                <p className="text-xs text-red-500">{pincodeError}</p>
+              )}
+              
+              {deliveryInfo && (
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Truck className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                        {deliveryInfo.message}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        Expected delivery in {deliveryInfo.days} days
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -681,6 +874,17 @@ export default function ProductDetail() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Image Lightbox */}
+      {isLightboxOpen && (
+        <ImageLightbox
+          items={galleryItems}
+          currentIndex={selectedImage}
+          onClose={() => setIsLightboxOpen(false)}
+          onNext={handleNextImage}
+          onPrevious={handlePreviousImage}
+        />
       )}
     </div>
   );
