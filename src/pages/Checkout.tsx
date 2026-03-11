@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { openCashfreeCheckout, createPaymentSession, simulateTestPayment } from '../lib/cashfree';
 import { Address } from '../types';
 import { useToast } from '../contexts/ToastContext';
+import { useScrollLock } from '../hooks/useScrollLock';
+import { validatePhone } from '../utils/validation';
 
 // Updated: 3-Step Checkout with Security Indicators - v2.0
 export default function Checkout() {
@@ -27,6 +29,7 @@ export default function Checkout() {
     country: 'India',
   });
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -42,6 +45,10 @@ export default function Checkout() {
     paymentMethod: 'cod' | 'online';
     deliveryMethod: 'delivery' | 'pickup';
   } | null>(null);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+
+  // Lock scroll when payment modal is open
+  useScrollLock(paymentStatus !== null);
 
   useEffect(() => {
     if (user) {
@@ -85,6 +92,13 @@ export default function Checkout() {
   const handleAddAddress = async () => {
     if (!user) return;
 
+    // Validate phone number
+    if (!validatePhone(newAddress.phone)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      showToast('Please enter a valid 10-digit phone number', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -98,6 +112,7 @@ export default function Checkout() {
       setAddresses([...addresses, data]);
       setSelectedAddress(data.id);
       setShowNewAddressForm(false);
+      setPhoneError('');
       setNewAddress({
         full_name: '',
         phone: '',
@@ -192,6 +207,11 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     if (!user) return;
     
+    // Prevent duplicate submissions
+    if (isProcessingOrder || loading) {
+      return;
+    }
+    
     // Validate based on delivery method
     if (deliveryMethod === 'delivery' && !selectedAddress) {
       showToast('Please select a delivery address', 'error');
@@ -199,12 +219,17 @@ export default function Checkout() {
     }
 
     setLoading(true);
+    setIsProcessingOrder(true);
+    
     try {
       let shippingAddress;
       
       if (deliveryMethod === 'delivery') {
         const address = addresses.find(a => a.id === selectedAddress);
-        if (!address) return;
+        if (!address) {
+          showToast('Selected address not found', 'error');
+          return;
+        }
         shippingAddress = address;
       } else {
         // Store pickup address
@@ -308,6 +333,7 @@ export default function Checkout() {
       if (paymentMethod === 'cod') {
         setConfirmedOrderId(order.id);
         setOrderConfirmed(true);
+        setIsProcessingOrder(false);
       } else {
         // Initiate Cashfree payment
         await initiateCashfreePayment(order, total);
@@ -316,6 +342,7 @@ export default function Checkout() {
       console.error('Error placing order:', error);
       const errorMessage = error?.message || error?.error_description || 'Failed to place order. Please try again.';
       showToast(errorMessage, 'error');
+      setIsProcessingOrder(false);
     } finally {
       setLoading(false);
     }
@@ -326,14 +353,34 @@ export default function Checkout() {
       setPaymentStatus('processing');
       setPaymentError('');
       
-      // Create payment session
-      const session = await createPaymentSession({
-        orderId: order.order_number,
-        orderAmount: amount,
-        customerName: user?.email || 'Customer',
-        customerEmail: user?.email || '',
-        customerPhone: '9999999999',
-      });
+      // Create payment session with retry logic
+      let session;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          session = await createPaymentSession({
+            orderId: order.order_number,
+            orderAmount: amount,
+            customerName: user?.email || 'Customer',
+            customerEmail: user?.email || '',
+            customerPhone: '9999999999',
+          });
+          break; // Success, exit retry loop
+        } catch (error) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw new Error('Failed to create payment session after multiple attempts. Please try again.');
+          }
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+
+      if (!session) {
+        throw new Error('Failed to create payment session');
+      }
 
       // For test mode, simulate payment
       if (import.meta.env.VITE_CASHFREE_MODE === 'sandbox') {
@@ -341,24 +388,33 @@ export default function Checkout() {
         
         // Simulate payment processing
         setTimeout(async () => {
-          const paymentResult = await simulateTestPayment(order.order_number);
-          
-          if (paymentResult.paymentStatus === 'SUCCESS') {
-            // Update order payment status
-            await supabase
-              .from('orders')
-              .update({ 
-                payment_status: 'paid',
-                status: 'processing'
-              })
-              .eq('id', order.id);
+          try {
+            const paymentResult = await simulateTestPayment(order.order_number);
             
-            setPaymentStatus('success');
-            setConfirmedOrderId(order.id);
-            setOrderConfirmed(true);
-          } else {
+            if (paymentResult.paymentStatus === 'SUCCESS') {
+              // Update order payment status
+              await supabase
+                .from('orders')
+                .update({ 
+                  payment_status: 'paid',
+                  status: 'processing'
+                })
+                .eq('id', order.id);
+              
+              setPaymentStatus('success');
+              setConfirmedOrderId(order.id);
+              setOrderConfirmed(true);
+              setIsProcessingOrder(false);
+            } else {
+              setPaymentStatus('failed');
+              setPaymentError('Payment failed. Please try again.');
+              setIsProcessingOrder(false);
+            }
+          } catch (error) {
+            console.error('Test payment error:', error);
             setPaymentStatus('failed');
-            setPaymentError('Payment failed. Please try again.');
+            setPaymentError('Payment processing failed. Please try again.');
+            setIsProcessingOrder(false);
           }
         }, 2000);
       } else {
@@ -379,36 +435,43 @@ export default function Checkout() {
               setPaymentStatus('success');
               setConfirmedOrderId(order.id);
               setOrderConfirmed(true);
+              setIsProcessingOrder(false);
             } catch (error) {
               console.error('Error updating order:', error);
               setPaymentStatus('failed');
-              setPaymentError('Payment successful but order update failed. Please contact support.');
+              setPaymentError('Payment successful but order update failed. Please contact support with order number: ' + order.order_number);
+              setIsProcessingOrder(false);
             }
           },
           (error) => {
             // Payment failed
             console.error('Payment failed:', error);
             setPaymentStatus('failed');
+            setIsProcessingOrder(false);
             
             if (error.type === 'PAYMENT_CANCELLED') {
               setPaymentError('Payment was cancelled. You can try again.');
             } else if (error.type === 'PAYMENT_FAILED') {
-              setPaymentError(error.message || 'Payment failed. Please try again.');
+              setPaymentError(error.message || 'Payment failed. Please check your payment details and try again.');
+            } else if (error.type === 'NETWORK_ERROR') {
+              setPaymentError('Network error. Please check your internet connection and try again.');
             } else {
-              setPaymentError('Payment could not be processed. Please try again.');
+              setPaymentError('Payment could not be processed. Please try again or contact support.');
             }
           },
           () => {
             // Payment cancelled
             setPaymentStatus('cancelled');
             setPaymentError('Payment was cancelled. You can try again or choose a different payment method.');
+            setIsProcessingOrder(false);
           }
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment initiation error:', error);
       setPaymentStatus('failed');
-      setPaymentError('Failed to initiate payment. Please check your connection and try again.');
+      setPaymentError(error?.message || 'Failed to initiate payment. Please check your connection and try again.');
+      setIsProcessingOrder(false);
     }
   };
 
@@ -597,19 +660,22 @@ export default function Checkout() {
                   onClick={() => {
                     setPaymentStatus(null);
                     setPaymentError('');
-                    setCurrentStep(3);
+                    // Don't go back to step 3, just allow retry with same order
                   }}
-                  className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all"
+                  disabled={isProcessingOrder}
+                  className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Try Again
+                  {isProcessingOrder ? 'Processing...' : 'Try Again'}
                 </button>
                 <button
                   onClick={() => {
                     setPaymentStatus(null);
                     setPaymentError('');
                     setCurrentStep(2);
+                    setIsProcessingOrder(false);
                   }}
-                  className="w-full py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                  disabled={isProcessingOrder}
+                  className="w-full py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Change Payment Method
                 </button>
@@ -633,19 +699,22 @@ export default function Checkout() {
                   onClick={() => {
                     setPaymentStatus(null);
                     setPaymentError('');
-                    setCurrentStep(3);
+                    // Don't go back to step 3, just allow retry
                   }}
-                  className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all"
+                  disabled={isProcessingOrder}
+                  className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Try Again
+                  {isProcessingOrder ? 'Processing...' : 'Try Again'}
                 </button>
                 <button
                   onClick={() => {
                     setPaymentStatus(null);
                     setPaymentError('');
                     setCurrentStep(2);
+                    setIsProcessingOrder(false);
                   }}
-                  className="w-full py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                  disabled={isProcessingOrder}
+                  className="w-full py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Choose Different Method
                 </button>
@@ -886,12 +955,18 @@ export default function Checkout() {
                   />
                   <input
                     type="tel"
-                    placeholder="Phone Number *"
+                    placeholder="Phone Number (10 digits) *"
                     value={newAddress.phone}
-                    onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })}
-                    className="px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    onChange={e => {
+                      const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                      setNewAddress({ ...newAddress, phone: value });
+                      setPhoneError('');
+                    }}
+                    maxLength={10}
+                    className={`px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border ${phoneError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent`}
                   />
                 </div>
+                {phoneError && <p className="text-red-500 text-sm">{phoneError}</p>}
                 <input
                   type="text"
                   placeholder="Address Line 1 *"
@@ -1348,13 +1423,22 @@ export default function Checkout() {
             </button>
             <button
               onClick={handlePlaceOrder}
-              disabled={loading}
-              className="order-1 sm:order-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none"
+              disabled={loading || isProcessingOrder}
+              className="order-1 sm:order-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-sm sm:text-base">{loading ? 'Processing...' : (paymentMethod === 'online' ? 'Proceed to Secure Payment' : 'Place Order')}</span>
+              {loading || isProcessingOrder ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm sm:text-base">Processing...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm sm:text-base">{paymentMethod === 'online' ? 'Proceed to Secure Payment' : 'Place Order'}</span>
+                </>
+              )}
             </button>
           </div>
           </>

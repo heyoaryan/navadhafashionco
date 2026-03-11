@@ -1,7 +1,42 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Wifi, Briefcase, ArrowRight, Users, Target, Rocket, Home, FileText, Video, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 export default function Careers() {
+  const [storePositionsCount, setStorePositionsCount] = useState(0);
+  const [remotePositionsCount, setRemotePositionsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPositionCounts = async () => {
+      try {
+        // Fetch store positions count
+        const { count: storeCount } = await supabase
+          .from('job_positions')
+          .select('*', { count: 'exact', head: true })
+          .eq('location_type', 'store')
+          .eq('status', 'active');
+
+        // Fetch remote positions count
+        const { count: remoteCount } = await supabase
+          .from('job_positions')
+          .select('*', { count: 'exact', head: true })
+          .eq('location_type', 'remote')
+          .eq('status', 'active');
+
+        setStorePositionsCount(storeCount || 0);
+        setRemotePositionsCount(remoteCount || 0);
+      } catch (error) {
+        console.error('Error fetching position counts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPositionCounts();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Hero Section with Background Image */}
@@ -217,7 +252,9 @@ export default function Careers() {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <Briefcase className="w-4 h-4" />
-                  <span>4 Open Positions</span>
+                  <span>
+                    {loading ? 'Loading...' : `${storePositionsCount} Open Position${storePositionsCount !== 1 ? 's' : ''}`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <MapPin className="w-4 h-4" />
@@ -262,7 +299,9 @@ export default function Careers() {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <Briefcase className="w-4 h-4" />
-                  <span>6 Open Positions</span>
+                  <span>
+                    {loading ? 'Loading...' : `${remotePositionsCount} Open Position${remotePositionsCount !== 1 ? 's' : ''}`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <Wifi className="w-4 h-4" />

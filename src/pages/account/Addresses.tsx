@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Address } from '../../types';
 import { toast } from '../../utils/toast';
+import { validatePhone } from '../../utils/validation';
 
 export default function Addresses() {
   const { user } = useAuth();
@@ -13,6 +14,7 @@ export default function Addresses() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -132,6 +134,13 @@ export default function Addresses() {
     e.preventDefault();
     if (!user) return;
 
+    // Validate phone number
+    if (!validatePhone(formData.phone)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
     try {
       if (editingId) {
         const { error } = await supabase
@@ -150,6 +159,7 @@ export default function Addresses() {
 
       await fetchAddresses();
       resetForm();
+      setPhoneError('');
       toast.success(editingId ? 'Address updated!' : 'Address added!');
     } catch (error) {
       console.error('Error saving address:', error);
@@ -293,14 +303,21 @@ export default function Addresses() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Phone *</label>
+                <label className="block text-sm font-medium mb-2">Phone (10 digits) *</label>
                 <input
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rose-400 dark:bg-gray-700"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                    setFormData({ ...formData, phone: value });
+                    setPhoneError('');
+                  }}
+                  maxLength={10}
+                  className={`w-full px-4 py-2 border ${phoneError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-rose-400 dark:bg-gray-700`}
+                  placeholder="9876543210"
                 />
+                {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
               </div>
             </div>
 

@@ -129,8 +129,8 @@ export default function Cart() {
                 <span>{cartTotal >= 2999 ? 'Free' : '₹99'}</span>
               </div>
               <div className="flex justify-between text-sm sm:text-base">
-                <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                <span>₹{Math.round(cartTotal * 0.18).toLocaleString()}</span>
+                <span className="text-gray-600 dark:text-gray-400">Tax (5%)</span>
+                <span>₹{Math.round(cartTotal * 0.05).toLocaleString()}</span>
               </div>
               <div className="border-t border-gray-300 dark:border-gray-600 pt-2 sm:pt-3 flex justify-between text-base sm:text-lg font-medium">
                 <span>Total</span>
@@ -139,7 +139,7 @@ export default function Cart() {
                   {(
                     cartTotal +
                     (cartTotal >= 2999 ? 0 : 99) +
-                    Math.round(cartTotal * 0.18)
+                    Math.round(cartTotal * 0.05)
                   ).toLocaleString()}
                 </span>
               </div>

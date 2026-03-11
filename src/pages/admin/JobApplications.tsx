@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { FileText, Download, Eye, Trash2, Filter } from 'lucide-react';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface JobApplication {
   id: string;
@@ -26,6 +27,16 @@ export default function JobApplications() {
   useEffect(() => {
     fetchApplications();
   }, [statusFilter]);
+
+  // Lock scroll when detail modal is open
+  useEffect(() => {
+    if (selectedApp) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [selectedApp]);
 
   const fetchApplications = async () => {
     try {

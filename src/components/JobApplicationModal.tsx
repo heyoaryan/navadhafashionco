@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, Mail, Phone, User, FileText, Briefcase } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useScrollLock } from '../hooks/useScrollLock';
+import { validateEmail, validatePhone } from '../utils/validation';
 
 interface JobApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   jobTitle: string;
   jobType: 'store' | 'remote';
+  jobPositionId?: string;
 }
 
-export default function JobApplicationModal({ isOpen, onClose, jobTitle }: JobApplicationModalProps) {
+export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType, jobPositionId }: JobApplicationModalProps) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -18,47 +22,96 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle }: JobAp
   });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ email?: string; phone?: string }>({});
 
   // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
+    setValidationErrors({});
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Validate email
+    if (!validateEmail(formData.email)) {
+      setValidationErrors({ email: 'Please use a valid email from: Gmail, Yahoo, Hotmail, Outlook, etc.' });
+      setIsSubmitting(false);
+      return;
+    }
 
-    // Here you would typically send the data to your backend
-    console.log('Form Data:', formData);
-    console.log('Resume:', resumeFile);
+    // Validate phone
+    if (!validatePhone(formData.phone)) {
+      setValidationErrors({ phone: 'Please enter a valid 10-digit phone number' });
+      setIsSubmitting(false);
+      return;
+    }
 
-    alert('Application submitted successfully! We will contact you soon.');
-    setIsSubmitting(false);
-    onClose();
-    
-    // Reset form
-    setFormData({
-      fullName: '',
-      email: '',
-      phone: '',
-      experience: '',
-      coverLetter: '',
-    });
-    setResumeFile(null);
+    try {
+      let resumeUrl = null;
+
+      // Upload resume to Supabase Storage if file exists
+      if (resumeFile) {
+        const fileExt = resumeFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${formData.fullName.replace(/\s+/g, '_')}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('resumes')
+          .upload(fileName, resumeFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Resume upload error:', uploadError);
+          throw new Error('Failed to upload resume. Please try again.');
+        }
+
+        resumeUrl = uploadData.path;
+      }
+
+      // Insert application into database
+      const { error: insertError } = await supabase
+        .from('job_applications')
+        .insert({
+          job_position_id: jobPositionId || null,
+          job_title: jobTitle,
+          location_type: jobType,
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          experience: formData.experience,
+          cover_letter: formData.coverLetter,
+          resume_url: resumeUrl,
+          status: 'pending'
+        });
+
+      if (insertError) {
+        console.error('Application insert error:', insertError);
+        throw new Error('Failed to submit application. Please try again.');
+      }
+
+      alert('Application submitted successfully! We will contact you soon.');
+      
+      // Reset form
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        experience: '',
+        coverLetter: '',
+      });
+      setResumeFile(null);
+      onClose();
+    } catch (err: any) {
+      console.error('Submission error:', err);
+      setError(err.message || 'Failed to submit application. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +147,12 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle }: JobAp
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              </div>
+            )}
             {/* Full Name */}
             <div>
               <label className="block text-sm font-semibold mb-2">
@@ -123,17 +182,21 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle }: JobAp
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700"
-                  placeholder="your.email@example.com"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    setValidationErrors({ ...validationErrors, email: undefined });
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border ${validationErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700`}
+                  placeholder="name@gmail.com"
                 />
               </div>
+              {validationErrors.email && <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>}
             </div>
 
             {/* Phone */}
             <div>
               <label className="block text-sm font-semibold mb-2">
-                Phone Number <span className="text-red-500">*</span>
+                Phone Number (10 digits) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -141,11 +204,17 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle }: JobAp
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700"
-                  placeholder="+91 XXXXX XXXXX"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                    setFormData({ ...formData, phone: value });
+                    setValidationErrors({ ...validationErrors, phone: undefined });
+                  }}
+                  maxLength={10}
+                  className={`w-full pl-10 pr-4 py-3 border ${validationErrors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700`}
+                  placeholder="9876543210"
                 />
               </div>
+              {validationErrors.phone && <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>}
             </div>
 
             {/* Experience */}

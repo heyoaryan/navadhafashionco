@@ -7,6 +7,7 @@ import { useWishlist } from '../contexts/WishlistContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { trackProductAction } from '../utils/analytics';
+import OptimizedImage from './OptimizedImage';
 
 interface ProductCardProps {
   product: Product;
@@ -108,17 +109,22 @@ export default function ProductCard({ product }: ProductCardProps) {
       className="group block relative overflow-hidden rounded-lg"
     >
       <div className="aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
-        {/* Image Slideshow */}
+        {/* Image Slideshow with Optimization */}
         {images.map((image, index) => (
-          <img
+          <div
             key={index}
-            src={image}
-            alt={`${product.name} - View ${index + 1}`}
-            loading="lazy"
-            className={`absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-all duration-500 ${
+            className={`absolute inset-0 transition-opacity duration-500 ${
               index === currentImageIndex ? 'opacity-100' : 'opacity-0'
             }`}
-          />
+          >
+            <OptimizedImage
+              src={image}
+              alt={`${product.name} - View ${index + 1}`}
+              className="group-hover:scale-110 transition-transform duration-500"
+              aspectRatio="3/4"
+              priority={index === 0} // Load first image with priority
+            />
+          </div>
         ))}
         
         {/* Image Indicators */}

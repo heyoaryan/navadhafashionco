@@ -1,7 +1,51 @@
 import { Link } from 'react-router-dom';
 import { Briefcase, FileText, PlusCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export default function Careers() {
+  const [stats, setStats] = useState({
+    totalApplications: 0,
+    activePositions: 0,
+    pendingReview: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch total applications count
+        const { count: totalApps } = await supabase
+          .from('job_applications')
+          .select('*', { count: 'exact', head: true });
+
+        // Fetch active positions count
+        const { count: activePos } = await supabase
+          .from('job_positions')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true);
+
+        // Fetch pending review count
+        const { count: pendingCount } = await supabase
+          .from('job_applications')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
+        setStats({
+          totalApplications: totalApps || 0,
+          activePositions: activePos || 0,
+          pendingReview: pendingCount || 0,
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="px-4 sm:px-0">
       <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-gray-100">Careers Management</h1>
@@ -62,7 +106,9 @@ export default function Careers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-semibold mb-1 text-gray-600 dark:text-gray-400">Total Applications</p>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: '#EE458F' }}>-</p>
+              <p className="text-xl sm:text-2xl font-bold" style={{ color: '#EE458F' }}>
+                {loading ? '...' : stats.totalApplications}
+              </p>
             </div>
             <div className="p-2 sm:p-3 rounded-lg" style={{ backgroundColor: '#FEE2F8' }}>
               <FileText className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#EE458F' }} />
@@ -74,7 +120,9 @@ export default function Careers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-semibold mb-1 text-gray-600 dark:text-gray-400">Active Positions</p>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: '#EE458F' }}>-</p>
+              <p className="text-xl sm:text-2xl font-bold" style={{ color: '#EE458F' }}>
+                {loading ? '...' : stats.activePositions}
+              </p>
             </div>
             <div className="p-2 sm:p-3 rounded-lg" style={{ backgroundColor: '#FEE2F8' }}>
               <Briefcase className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#EE458F' }} />
@@ -86,7 +134,9 @@ export default function Careers() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-semibold mb-1 text-gray-600 dark:text-gray-400">Pending Review</p>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: '#EE458F' }}>-</p>
+              <p className="text-xl sm:text-2xl font-bold" style={{ color: '#EE458F' }}>
+                {loading ? '...' : stats.pendingReview}
+              </p>
             </div>
             <div className="p-2 sm:p-3 rounded-lg" style={{ backgroundColor: '#FEE2F8' }}>
               <FileText className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#EE458F' }} />

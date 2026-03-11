@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, ShoppingBag, Users, TrendingUp, IndianRupee, Tag } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import FullScreenLoader from '../../components/FullScreenLoader';
 
 interface Stats {
   todaySales: number;
@@ -96,11 +97,16 @@ export default function AdminDashboard() {
 
   const fetchRecentOrders = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .select('id, order_number, total, status, created_at')
         .order('created_at', { ascending: false })
         .limit(5);
+
+      if (error) {
+        console.error('Error fetching recent orders:', error);
+        return;
+      }
 
       setRecentOrders(data || []);
     } catch (error) {
@@ -124,14 +130,7 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="Loading Dashboard..." />;
   }
 
   return (

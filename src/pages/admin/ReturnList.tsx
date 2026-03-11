@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Package, Search, Eye, Check, X, RefreshCw, DollarSign } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Return } from '../../types';
+import FullScreenLoader from '../../components/FullScreenLoader';
 
 export default function ReturnList() {
   const [returns, setReturns] = useState<Return[]>([]);
@@ -26,14 +27,31 @@ export default function ReturnList() {
     try {
       const { data, error } = await supabase
         .from('returns')
-        .select(`
-          *,
-          user:profiles(full_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReturns(data || []);
+
+      // Fetch user details for each return
+      const returnsWithUsers = await Promise.all(
+        (data || []).map(async (ret: any) => {
+          if (ret.user_id) {
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', ret.user_id)
+              .single();
+
+            return {
+              ...ret,
+              user: userData
+            };
+          }
+          return ret;
+        })
+      );
+
+      setReturns(returnsWithUsers);
     } catch (error) {
       console.error('Error fetching returns:', error);
     } finally {
@@ -102,14 +120,7 @@ export default function ReturnList() {
   });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="Loading Returns..." />;
   }
 
   return (

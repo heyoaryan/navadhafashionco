@@ -60,6 +60,15 @@ export const openCashfreeCheckout = async (
   onCancel?: () => void
 ) => {
   try {
+    // Check network connectivity
+    if (!navigator.onLine) {
+      onFailure({
+        type: 'NETWORK_ERROR',
+        message: 'No internet connection. Please check your network and try again.'
+      });
+      return;
+    }
+
     const cashfree = await initializeCashfree();
     
     const checkoutOptions = {
@@ -100,13 +109,23 @@ export const openCashfreeCheckout = async (
         });
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cashfree checkout error:', error);
-    onFailure({
-      type: 'PAYMENT_ERROR',
-      message: 'Failed to process payment',
-      details: error
-    });
+    
+    // Detect network errors
+    if (error.message?.includes('network') || error.message?.includes('fetch') || !navigator.onLine) {
+      onFailure({
+        type: 'NETWORK_ERROR',
+        message: 'Network error occurred. Please check your connection and try again.',
+        details: error
+      });
+    } else {
+      onFailure({
+        type: 'PAYMENT_ERROR',
+        message: 'Failed to process payment. Please try again.',
+        details: error
+      });
+    }
   }
 };
 

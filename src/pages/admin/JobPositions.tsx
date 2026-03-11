@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 interface JobPosition {
   id: string;
@@ -36,6 +37,16 @@ export default function JobPositions() {
   useEffect(() => {
     fetchPositions();
   }, []);
+
+  // Lock scroll when form modal is open
+  useEffect(() => {
+    if (showForm) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+    return () => unlockScroll();
+  }, [showForm]);
 
   const fetchPositions = async () => {
     try {

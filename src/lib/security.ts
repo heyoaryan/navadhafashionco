@@ -11,8 +11,41 @@ export const sanitizeInput = (input: string): string => {
 
 // Email validation
 export const isValidEmail = (email: string): boolean => {
+  // List of allowed email domains
+  const allowedDomains = [
+    'gmail.com',
+    'yahoo.com',
+    'yahoo.co.in',
+    'hotmail.com',
+    'outlook.com',
+    'rediffmail.com',
+    'aol.com',
+    'icloud.com',
+    'protonmail.com',
+    'zoho.com',
+    'mail.com',
+    'yandex.com',
+    'gmx.com',
+    'inbox.com',
+    'live.com',
+    'msn.com',
+    'ymail.com',
+    'rocketmail.com'
+  ];
+  
   const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-  return emailRegex.test(email);
+  const trimmedEmail = email.trim().toLowerCase();
+  
+  // First check basic email format
+  if (!emailRegex.test(trimmedEmail)) {
+    return false;
+  }
+  
+  // Extract domain from email
+  const domain = trimmedEmail.split('@')[1];
+  
+  // Check if domain is in allowed list
+  return allowedDomains.includes(domain);
 };
 
 // Phone validation (Indian format)

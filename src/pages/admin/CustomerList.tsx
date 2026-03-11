@@ -3,6 +3,7 @@ import { Search, Users, AlertTriangle, Ban, Eye, TrendingUp } from 'lucide-react
 import { supabase } from '../../lib/supabase';
 import { Profile } from '../../types';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
+import FullScreenLoader from '../../components/FullScreenLoader';
 
 interface CustomerWithStats extends Profile {
   order_count?: number;
@@ -37,23 +38,39 @@ export default function CustomerList() {
 
   const fetchCustomers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profiles with role customer
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          orders:orders(count),
-          total_spent:orders(total)
-        `)
+        .select('*')
         .eq('role', 'customer')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      const customersWithStats = (data || []).map((customer: any) => ({
-        ...customer,
-        order_count: customer.orders?.[0]?.count || 0,
-        total_spent: customer.total_spent?.reduce((sum: number, o: any) => sum + (o.total || 0), 0) || 0
-      }));
+      if (profilesError) throw profilesError;
+
+      // For each customer, fetch their order stats
+      const customersWithStats = await Promise.all(
+        (profilesData || []).map(async (customer: any) => {
+          // Get order count
+          const { count: orderCount } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', customer.id);
+
+          // Get total spent
+          const { data: ordersData } = await supabase
+            .from('orders')
+            .select('total')
+            .eq('user_id', customer.id);
+
+          const totalSpent = ordersData?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+
+          return {
+            ...customer,
+            order_count: orderCount || 0,
+            total_spent: totalSpent
+          };
+        })
+      );
       
       setCustomers(customersWithStats);
     } catch (error) {
@@ -179,14 +196,7 @@ export default function CustomerList() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="Loading Customers..." />;
   }
 
   return (

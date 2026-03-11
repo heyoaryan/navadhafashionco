@@ -4,6 +4,7 @@ import { Camera, Save, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
+import { validatePhone } from '../../utils/validation';
 
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -11,6 +12,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [phoneError, setPhoneError] = useState('');
   
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
@@ -93,6 +95,13 @@ export default function Profile() {
     e.preventDefault();
     if (!user) return;
 
+    // Validate phone if provided
+    if (formData.phone && !validatePhone(formData.phone)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      showToast('Please enter a valid 10-digit phone number', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -106,6 +115,7 @@ export default function Profile() {
       if (error) throw error;
 
       await refreshProfile();
+      setPhoneError('');
       showToast('Profile updated successfully!', 'success');
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -198,14 +208,20 @@ export default function Profile() {
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-medium mb-2">Phone Number</label>
+          <label className="block text-sm font-medium mb-2">Phone Number (10 digits)</label>
           <input
             type="tel"
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rose-400 dark:bg-gray-800"
-            placeholder="+91 XXXXX XXXXX"
+            onChange={(e) => {
+              const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+              setFormData({ ...formData, phone: value });
+              setPhoneError('');
+            }}
+            maxLength={10}
+            className={`w-full px-4 py-2 border ${phoneError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-rose-400 dark:bg-gray-800`}
+            placeholder="9876543210"
           />
+          {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
         </div>
 
         {/* Submit Button */}

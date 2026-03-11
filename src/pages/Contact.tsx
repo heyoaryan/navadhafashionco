@@ -1,5 +1,6 @@
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import { useState } from 'react';
+import { validateEmail, validatePhone } from '../utils/validation';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -9,9 +10,24 @@ export default function Contact() {
     subject: '',
     message: '',
   });
+  const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate email
+    if (!validateEmail(formData.email)) {
+      setErrors({ ...errors, email: 'Please use a valid email from: Gmail, Yahoo, Hotmail, Outlook, Rediffmail, etc.' });
+      return;
+    }
+    
+    // Validate phone if provided
+    if (formData.phone && !validatePhone(formData.phone)) {
+      setErrors({ ...errors, phone: 'Please enter a valid 10-digit phone number' });
+      return;
+    }
+    
+    setErrors({});
     // Handle form submission
     alert('Thank you for contacting us! We will get back to you soon.');
     setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -112,21 +128,31 @@ export default function Contact() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-800"
-                  placeholder="your.email@example.com"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    setErrors({ ...errors, email: undefined });
+                  }}
+                  className={`w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-800`}
+                  placeholder="name@gmail.com"
                 />
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Phone Number</label>
+                <label className="block text-sm font-semibold mb-2">Phone Number (10 digits)</label>
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-800"
-                  placeholder="+91 XXXXX XXXXX"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                    setFormData({ ...formData, phone: value });
+                    setErrors({ ...errors, phone: undefined });
+                  }}
+                  className={`w-full px-4 py-3 border ${errors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-800`}
+                  placeholder="9876543210"
+                  maxLength={10}
                 />
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
 
               <div>

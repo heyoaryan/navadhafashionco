@@ -18,9 +18,14 @@ interface JobPosition {
 export default function RemoteCareers() {
   const [selectedType, setSelectedType] = useState<'all' | 'internship' | 'fulltime'>('all');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
-  const [applicationModal, setApplicationModal] = useState<{ isOpen: boolean; jobTitle: string }>({
+  const [applicationModal, setApplicationModal] = useState<{ 
+    isOpen: boolean; 
+    jobTitle: string;
+    jobPositionId: string;
+  }>({
     isOpen: false,
     jobTitle: '',
+    jobPositionId: '',
   });
   const [jobPositions, setJobPositions] = useState<JobPosition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,7 +224,11 @@ export default function RemoteCareers() {
                   </div>
 
                   <button
-                    onClick={() => setApplicationModal({ isOpen: true, jobTitle: job.title })}
+                    onClick={() => setApplicationModal({ 
+                      isOpen: true, 
+                      jobTitle: job.title,
+                      jobPositionId: job.id 
+                    })}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all"
                   >
                     Apply for this position
@@ -240,9 +249,10 @@ export default function RemoteCareers() {
       {/* Application Modal */}
       <JobApplicationModal
         isOpen={applicationModal.isOpen}
-        onClose={() => setApplicationModal({ isOpen: false, jobTitle: '' })}
+        onClose={() => setApplicationModal({ isOpen: false, jobTitle: '', jobPositionId: '' })}
         jobTitle={applicationModal.jobTitle}
         jobType="remote"
+        jobPositionId={applicationModal.jobPositionId}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, User, MapPin, CreditCard, Truck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/useToast';
+import FullScreenLoader from '../../components/FullScreenLoader';
 
 interface OrderItem {
   id: string;
@@ -139,14 +140,7 @@ export default function AdminOrderDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="rounded-full h-12 w-12 border-4 border-rose-200 border-t-rose-500 animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="Loading Order Details..." />;
   }
 
   if (!order) {

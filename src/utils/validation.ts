@@ -1,8 +1,46 @@
 // Input validation utilities for security
 
+// List of allowed email domains
+const ALLOWED_EMAIL_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'yahoo.co.in',
+  'hotmail.com',
+  'outlook.com',
+  'rediffmail.com',
+  'aol.com',
+  'icloud.com',
+  'protonmail.com',
+  'zoho.com',
+  'mail.com',
+  'yandex.com',
+  'gmx.com',
+  'inbox.com',
+  'live.com',
+  'msn.com',
+  'ymail.com',
+  'rocketmail.com'
+];
+
 export const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+  const trimmedEmail = email.trim().toLowerCase();
+  
+  // First check basic email format
+  if (!emailRegex.test(trimmedEmail)) {
+    return false;
+  }
+  
+  // Extract domain from email
+  const domain = trimmedEmail.split('@')[1];
+  
+  // Check if domain is in allowed list
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
+
+// Get list of allowed email domains for display
+export const getAllowedEmailDomains = (): string[] => {
+  return [...ALLOWED_EMAIL_DOMAINS];
 };
 
 export const validatePassword = (password: string): { valid: boolean; message?: string } => {
@@ -22,8 +60,10 @@ export const validatePassword = (password: string): { valid: boolean; message?: 
 };
 
 export const validatePhone = (phone: string): boolean => {
-  const phoneRegex = /^[6-9]\d{9}$/; // Indian phone number
-  return phoneRegex.test(phone.replace(/\s/g, ''));
+  // Exactly 10 digits, starting with 6-9 (Indian mobile numbers)
+  const cleanPhone = phone.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+  const phoneRegex = /^[6-9]\d{9}$/;
+  return phoneRegex.test(cleanPhone);
 };
 
 export const sanitizeInput = (input: string): string => {

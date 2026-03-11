@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 interface GalleryItem {
   type: 'image' | 'video';
@@ -22,6 +23,8 @@ export default function ImageLightbox({
   onNext,
   onPrevious,
 }: ImageLightboxProps) {
+  // Lock scroll when lightbox is open
+  useScrollLock(true);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();

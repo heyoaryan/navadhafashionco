@@ -224,78 +224,113 @@ export default function Auth() {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-4 overflow-hidden">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 max-h-[calc(100vh-2rem)] overflow-y-auto">
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="inline-block mb-2">
-              <h1 className="brand-logo text-2xl sm:text-3xl mb-1 sm:mb-2" style={{ color: '#EE458F' }}>
-                NAVADHA
-              </h1>
-              <div className="flex items-center justify-center gap-1.5">
-                <div className="h-[0.5px] w-8 sm:w-12" style={{ background: 'linear-gradient(to right, transparent, #EE458F)' }}></div>
-                <span className="text-[0.4rem] sm:text-[0.5rem] font-light tracking-[0.2em] whitespace-nowrap" style={{ color: '#EE458F' }}>
-                  FASHION CO
-                </span>
-                <div className="h-[0.5px] w-8 sm:w-12" style={{ background: 'linear-gradient(to left, transparent, #EE458F)' }}></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 px-4 py-6 sm:py-8">
+        <div className="w-full max-w-md lg:max-w-lg">
+          {/* Card with better shadow and border */}
+          <div className="bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 sm:p-8 lg:p-10 transition-all duration-300">
+            {/* Logo Section */}
+            <div className="text-center mb-6 sm:mb-8">
+              <div className="inline-block mb-3 sm:mb-4">
+                <h1 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-1.5 sm:mb-2 bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
+                  NAVADHA
+                </h1>
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                  <div className="h-[1px] w-8 sm:w-12 bg-gradient-to-r from-transparent via-rose-400 to-rose-500"></div>
+                  <span className="text-[0.45rem] sm:text-[0.5rem] font-light tracking-[0.3em] text-rose-500">
+                    FASHION CO
+                  </span>
+                  <div className="h-[1px] w-8 sm:w-12 bg-gradient-to-l from-transparent via-rose-400 to-rose-500"></div>
+                </div>
               </div>
-            </div>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Reset your password</p>
-          </div>
-
-          <form onSubmit={handleForgotPassword} className="space-y-4 sm:space-y-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                placeholder="Enter your email"
-                required
-              />
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2">
-                We'll send you a password reset link
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 dark:text-white mb-1.5 sm:mb-2">
+                Reset Password
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                Enter your email to receive a reset link
               </p>
             </div>
 
-            {error && (
-              <div className="p-3 sm:p-4 rounded-lg text-xs sm:text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="p-3 sm:p-4 rounded-lg text-xs sm:text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
-                <div className="flex items-start gap-2">
-                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
-                  <div>{success}</div>
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 text-base bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                    placeholder="your@email.com"
+                    required
+                  />
                 </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-1">
+                  We'll send you a secure password reset link
+                </p>
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-medium flex items-center justify-center shadow-lg hover:shadow-xl"
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </form>
+              {error && (
+                <div className="p-4 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-2 border-red-200 dark:border-red-800 animate-shake">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span>{error}</span>
+                  </div>
+                </div>
+              )}
 
-          <div className="mt-4 sm:mt-6 text-center">
-            <button
-              onClick={() => {
-                setShowForgotPassword(false);
-                setError('');
-                setSuccess('');
-                setEmail('');
-              }}
-              className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors"
-            >
-              Back to Sign In
-            </button>
+              {success && (
+                <div className="p-4 rounded-xl text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800 animate-slideDown">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>{success}</span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 text-base font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5" />
+                    <span>Send Reset Link</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setError('');
+                  setSuccess('');
+                  setEmail('');
+                }}
+                className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Sign In
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -303,107 +338,113 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-4 overflow-hidden">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 max-h-[calc(100vh-2rem)] overflow-y-auto">
-        <div className="text-center mb-6">
-          <div className="inline-block mb-2">
-            <h1 className="brand-logo text-2xl sm:text-3xl mb-1" style={{ color: '#EE458F' }}>
-              NAVADHA
-            </h1>
-            <div className="flex items-center justify-center gap-1.5">
-              <div className="h-[0.5px] w-8 sm:w-12" style={{ background: 'linear-gradient(to right, transparent, #EE458F)' }}></div>
-              <span className="text-[0.4rem] sm:text-[0.5rem] font-light tracking-[0.2em] whitespace-nowrap" style={{ color: '#EE458F' }}>
-                FASHION CO
-              </span>
-              <div className="h-[0.5px] w-8 sm:w-12" style={{ background: 'linear-gradient(to left, transparent, #EE458F)' }}></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 px-4 py-8 sm:py-12">
+      <div className="w-full max-w-md">
+        {/* Card with better shadow and border */}
+        <div className="bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 sm:p-10 transition-all duration-300">
+          {/* Logo Section */}
+          <div className="text-center mb-8">
+            <div className="inline-block mb-4">
+              <h1 className="brand-logo text-3xl sm:text-4xl mb-2 bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
+                NAVADHA
+              </h1>
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-[1px] w-12 bg-gradient-to-r from-transparent via-rose-400 to-rose-500"></div>
+                <span className="text-[0.5rem] font-light tracking-[0.3em] text-rose-500">
+                  FASHION CO
+                </span>
+                <div className="h-[1px] w-12 bg-gradient-to-l from-transparent via-rose-400 to-rose-500"></div>
+              </div>
             </div>
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-2">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {isLogin ? 'Sign in to continue shopping' : 'Join us for exclusive fashion'}
+            </p>
           </div>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            {isLogin ? 'Welcome back' : 'Create your account'}
-          </p>
-        </div>
 
         {/* Social Login Buttons or Email Form */}
         {!showEmailForm ? (
-          <>
-            <div className="space-y-2.5 sm:space-y-3 mb-5 sm:mb-6">
+          <div className="space-y-6">
+            {/* Social Login Buttons */}
+            <div className="space-y-3">
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
                 disabled={loading}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 sm:gap-3 font-medium text-sm sm:text-base text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="w-full px-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 flex items-center justify-center gap-3 font-medium text-base text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transform hover:scale-[1.01] active:scale-[0.99]"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                <span>{isLogin ? 'Continue with Google' : 'Create account with Google'}</span>
+                <span>{isLogin ? 'Continue with Google' : 'Sign up with Google'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSocialLogin('apple')}
                 disabled={loading}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-black dark:bg-white border-2 border-black dark:border-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-100 transition-all flex items-center justify-center gap-2 sm:gap-3 font-medium text-sm sm:text-base text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="w-full px-4 py-3.5 bg-black dark:bg-white border-2 border-black dark:border-white rounded-xl hover:bg-gray-900 dark:hover:bg-gray-100 transition-all duration-200 flex items-center justify-center gap-3 font-medium text-base text-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transform hover:scale-[1.01] active:scale-[0.99]"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                 </svg>
-                <span>{isLogin ? 'Continue with Apple' : 'Create account with Apple'}</span>
+                <span>{isLogin ? 'Continue with Apple' : 'Sign up with Apple'}</span>
               </button>
             </div>
 
-            {/* Continue with Email Button */}
-            <div className="space-y-3 sm:space-y-4">
-              <div className="relative mb-4 sm:mb-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                </div>
-                <div className="relative flex justify-center text-xs sm:text-sm">
-                  <span className="px-3 sm:px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    Or
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowEmailForm(true)}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 sm:gap-3 font-medium text-sm sm:text-base text-gray-700 dark:text-gray-200"
-              >
-                <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>{isLogin ? 'Continue with Email' : 'Create account with Email'}</span>
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
             {/* Divider */}
-            <div className="relative mb-5 sm:mb-6">
+            <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                <div className="w-full border-t-2 border-gray-200 dark:border-gray-700"></div>
               </div>
-              <div className="relative flex justify-center text-xs sm:text-sm">
-                <span className="px-3 sm:px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                  {isLogin ? 'Sign in with email' : 'Create account with email'}
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white/80 dark:bg-gray-800/90 text-gray-500 dark:text-gray-400 font-medium">
+                  Or continue with email
                 </span>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            {/* Email Button */}
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(true)}
+              className="w-full px-4 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-200 flex items-center justify-center gap-3 font-semibold text-base shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Mail className="w-5 h-5" />
+              <span>{isLogin ? 'Sign in with Email' : 'Sign up with Email'}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Back Button */}
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(false)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors mb-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Other sign in options
+            </button>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
               {!isLogin && (
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    placeholder="Enter your full name"
+                    className="w-full px-4 py-3.5 text-base bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                    placeholder="John Doe"
                     required
                     minLength={3}
                   />
@@ -411,21 +452,24 @@ export default function Auth() {
               )}
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
-                  Email <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Address <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  placeholder="Enter your email"
-                  required
-                />
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 text-base bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                    placeholder="your@email.com"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -433,33 +477,33 @@ export default function Auth() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 text-sm sm:text-base bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    placeholder="Enter your password"
+                    className="w-full px-4 py-3.5 pr-12 text-base bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                    placeholder="••••••••"
                     required
                     minLength={6}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                   >
                     {showPassword ? (
-                      <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <EyeOff className="w-5 h-5" />
                     ) : (
-                      <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Eye className="w-5 h-5" />
                     )}
                   </button>
                 </div>
                 {!isLogin && (
-                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Password must be at least 6 characters long
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-1">
+                    Must be at least 6 characters
                   </p>
                 )}
               </div>
 
               {!isLogin && (
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Confirm Password <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -467,20 +511,20 @@ export default function Auth() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 text-sm sm:text-base bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                      placeholder="Confirm your password"
+                      className="w-full px-4 py-3.5 pr-12 text-base bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
+                      placeholder="••••••••"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <EyeOff className="w-5 h-5" />
                       ) : (
-                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Eye className="w-5 h-5" />
                       )}
                     </button>
                   </div>
@@ -488,12 +532,15 @@ export default function Auth() {
               )}
 
               {error && (
-                <div className="p-3 sm:p-4 rounded-lg text-xs sm:text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
-                  <div className="flex items-start gap-2">
+                <div className="p-4 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-2 border-red-200 dark:border-red-800 animate-shake">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
                     <div className="flex-1">
                       {error}
                       {error.includes('verify your email') && (
-                        <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs opacity-80">
+                        <p className="mt-2 text-xs opacity-80">
                           Didn't receive the email? Check your spam folder or contact support.
                         </p>
                       )}
@@ -503,17 +550,32 @@ export default function Auth() {
               )}
 
               {success && (
-                <div className="p-3 sm:p-4 rounded-lg text-xs sm:text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
-                  {success}
+                <div className="p-4 rounded-xl text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800 animate-slideDown">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>{success}</span>
+                  </div>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-medium flex items-center justify-center shadow-lg hover:shadow-xl"
+                className="w-full py-4 text-base font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
-                {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Sign Up'}
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                )}
               </button>
 
               {isLogin && (
@@ -521,43 +583,38 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(true)}
-                    className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 text-rose-500 dark:text-pink-400 hover:text-rose-600 dark:hover:text-pink-300 transition-colors"
+                    className="text-sm font-medium text-rose-500 dark:text-pink-400 hover:text-rose-600 dark:hover:text-pink-300 transition-colors"
                   >
-                    Forgot Password?
+                    Forgot your password?
                   </button>
                 </div>
               )}
-
-              <button
-                type="button"
-                onClick={() => setShowEmailForm(false)}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 sm:gap-3 font-medium text-sm sm:text-base text-gray-700 dark:text-gray-200"
-              >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span>Back to other options</span>
-              </button>
             </form>
-          </>
+          </div>
         )}
 
-        <div className="mt-4 sm:mt-6 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-              setSuccess('');
-              setPassword('');
-              setConfirmPassword('');
-              setShowEmailForm(false);
-            }}
-            className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors"
-          >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </button>
+        {/* Toggle between Login/Signup */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            {' '}
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+                setSuccess('');
+                setPassword('');
+                setConfirmPassword('');
+                setShowEmailForm(false);
+              }}
+              className="font-semibold text-rose-500 dark:text-pink-400 hover:text-rose-600 dark:hover:text-pink-300 transition-colors"
+            >
+              {isLogin ? 'Sign up' : 'Sign in'}
+            </button>
+          </p>
         </div>
       </div>
     </div>
+  </div>
   );
 }

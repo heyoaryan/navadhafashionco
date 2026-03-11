@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import FullScreenLoader from '../../components/FullScreenLoader';
 
 interface Coupon {
   id: string;
@@ -144,14 +145,7 @@ export default function CouponList() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="Loading Coupons..." />;
   }
 
   return (

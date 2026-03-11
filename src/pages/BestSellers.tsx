@@ -3,6 +3,7 @@ import { Award } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import FullScreenLoader from '../components/FullScreenLoader';
 import { Product } from '../types';
 import SEO from '../components/SEO';
 
@@ -14,15 +15,25 @@ export default function BestSellers() {
   const [products, setProducts] = useState<ProductWithSales[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'men' | 'women'>('all');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PRODUCTS_PER_PAGE = 12;
 
   useEffect(() => {
-    fetchBestSellers();
+    setPage(1);
+    setProducts([]);
+    fetchBestSellers(1);
   }, [filter]);
 
-  const fetchBestSellers = async () => {
-    try {
+  const fetchBestSellers = async (pageNum: number = 1) => {
+    if (pageNum === 1) {
       setLoading(true);
-      
+    } else {
+      setLoadingMore(true);
+    }
+    
+    try {
       // Get products with their sales count from order_items
       let query = supabase
         .from('products')
@@ -59,29 +70,38 @@ export default function BestSellers() {
       });
 
       // Convert map to array and sort by sales count
-      const sortedProducts = Array.from(productsMap.values())
-        .sort((a, b) => b.sales_count - a.sales_count)
-        .slice(0, 20); // Top 20 best sellers
+      const allSortedProducts = Array.from(productsMap.values())
+        .sort((a, b) => b.sales_count - a.sales_count);
 
-      setProducts(sortedProducts);
+      // Pagination
+      const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
+      const to = from + PRODUCTS_PER_PAGE;
+      const paginatedProducts = allSortedProducts.slice(from, to);
+
+      if (pageNum === 1) {
+        setProducts(paginatedProducts);
+      } else {
+        setProducts(prev => [...prev, ...paginatedProducts]);
+      }
+
+      setHasMore(allSortedProducts.length > pageNum * PRODUCTS_PER_PAGE);
     } catch (error) {
       console.error('Error fetching best sellers:', error);
       setProducts([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchBestSellers(nextPage);
+  };
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <LoadingSpinner 
-          message="Finding Best Sellers..." 
-          size="lg"
-          variant="trending"
-        />
-      </div>
-    );
+    return <FullScreenLoader message="Finding Best Sellers..." size="lg" variant="trending" />;
   }
 
   return (
@@ -148,19 +168,44 @@ export default function BestSellers() {
               <p className="text-gray-600 dark:text-gray-400 text-lg">No best sellers available at the moment.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product, index) => (
-                <div key={product.id} className="relative">
-                  {index < 3 && (
-                    <div className="absolute -top-2 -left-2 z-10 bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                      <Award className="w-3 h-3" />
-                      #{index + 1}
-                    </div>
-                  )}
-                  <ProductCard product={product} />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {products.map((product, index) => (
+                  <div key={product.id} className="relative">
+                    {index < 3 && (
+                      <div className="absolute -top-2 -left-2 z-10 bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                        <Award className="w-3 h-3" />
+                        #{index + 1}
+                      </div>
+                    )}
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="flex justify-center mt-12">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="px-8 py-4 text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white"
+                  >
+                    {loadingMore ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </span>
+                    ) : (
+                      'Load More'
+                    )}
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
