@@ -6,6 +6,7 @@ import { WishlistProvider } from './contexts/WishlistContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout';
 import ScrollToTop from './components/ScrollToTop';
+import NetworkStatus from './components/NetworkStatus';
 import { usePageTracking } from './hooks/usePageTracking';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
@@ -166,6 +167,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <NetworkStatus />
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>

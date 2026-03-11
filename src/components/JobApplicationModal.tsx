@@ -129,43 +129,43 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
       ></div>
 
       {/* Modal */}
-      <div className="relative min-h-screen flex items-center justify-center p-4">
-        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative min-h-screen flex items-center justify-center p-3 sm:p-4">
+        <div className="relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Header */}
-          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
-            <div>
-              <h2 className="text-2xl font-bold mb-1">Apply for Position</h2>
-              <p className="text-gray-600 dark:text-gray-400">{jobTitle}</p>
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6 flex items-center justify-between z-10">
+            <div className="flex-1 min-w-0 pr-2">
+              <h2 className="text-lg sm:text-2xl font-bold mb-1">Apply for Position</h2>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 truncate">{jobTitle}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{error}</p>
               </div>
             )}
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2">
                 Full Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 <input
                   type="text"
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -173,11 +173,11 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2">
                 Email Address <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 <input
                   type="email"
                   required
@@ -186,20 +186,20 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
                     setFormData({ ...formData, email: e.target.value });
                     setValidationErrors({ ...validationErrors, email: undefined });
                   }}
-                  className={`w-full pl-10 pr-4 py-3 border ${validationErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700`}
+                  className={`w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border ${validationErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700`}
                   placeholder="name@gmail.com"
                 />
               </div>
-              {validationErrors.email && <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>}
+              {validationErrors.email && <p className="text-red-500 text-xs sm:text-sm mt-1">{validationErrors.email}</p>}
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2">
                 Phone Number (10 digits) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 <input
                   type="tel"
                   required
@@ -210,26 +210,26 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
                     setValidationErrors({ ...validationErrors, phone: undefined });
                   }}
                   maxLength={10}
-                  className={`w-full pl-10 pr-4 py-3 border ${validationErrors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700`}
+                  className={`w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border ${validationErrors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700`}
                   placeholder="9876543210"
                 />
               </div>
-              {validationErrors.phone && <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>}
+              {validationErrors.phone && <p className="text-red-500 text-xs sm:text-sm mt-1">{validationErrors.phone}</p>}
             </div>
 
             {/* Experience */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2">
                 Years of Experience <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 <input
                   type="text"
                   required
                   value={formData.experience}
                   onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700"
                   placeholder="e.g., 2 years or Fresher"
                 />
               </div>
@@ -237,7 +237,7 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
 
             {/* Resume Upload */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2">
                 Upload Resume <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -251,10 +251,10 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
                 />
                 <label
                   htmlFor="resume-upload"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-900 dark:hover:border-white transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700/50"
+                  className="flex items-center justify-center gap-2 w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-900 dark:hover:border-white transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700/50"
                 >
-                  <Upload className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                     {resumeFile ? resumeFile.name : 'Click to upload resume (PDF, DOC, DOCX)'}
                   </span>
                 </label>
@@ -263,35 +263,35 @@ export default function JobApplicationModal({ isOpen, onClose, jobTitle, jobType
 
             {/* Cover Letter */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2">
                 Cover Letter / Why do you want to join? <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <FileText className="absolute left-3 top-2.5 sm:top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 <textarea
                   required
                   value={formData.coverLetter}
                   onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
-                  rows={5}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700 resize-none"
+                  rows={4}
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent bg-white dark:bg-gray-700 resize-none"
                   placeholder="Tell us why you're interested in this position and what makes you a great fit..."
                 />
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:flex-1 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </button>
