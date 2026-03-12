@@ -126,7 +126,25 @@ export default function ProductDetail() {
 
   const handleAddToCart = async () => {
     if (!user) {
-      navigate('/auth', { state: { from: `/product/${slug}` } });
+      // Store pending cart item in localStorage
+      if (product) {
+        const pendingCartItem = {
+          productId: product.id,
+          quantity: quantity,
+          size: selectedSize,
+          color: selectedColor,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('pendingCartItem', JSON.stringify(pendingCartItem));
+      }
+      
+      // Redirect to auth with action flag
+      navigate('/auth', { 
+        state: { 
+          from: `/product/${slug}`,
+          action: 'addToCart'
+        } 
+      });
       return;
     }
     

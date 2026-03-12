@@ -3,7 +3,7 @@ import { Search, Users, AlertTriangle, Ban, Eye, TrendingUp } from 'lucide-react
 import { supabase } from '../../lib/supabase';
 import { Profile } from '../../types';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 interface CustomerWithStats extends Profile {
   order_count?: number;
@@ -196,7 +196,7 @@ export default function CustomerList() {
   );
 
   if (loading) {
-    return <FullScreenLoader message="Loading Customers..." />;
+    return <LoadingState type="page" message="Loading Customers..." variant="spinner" />;
   }
 
   return (

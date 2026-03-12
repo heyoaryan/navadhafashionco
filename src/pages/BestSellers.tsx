@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Award } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
-import LoadingSpinner from '../components/LoadingSpinner';
-import FullScreenLoader from '../components/FullScreenLoader';
+import LoadingState from '../components/LoadingState';
 import { Product } from '../types';
 import SEO from '../components/SEO';
 
@@ -101,7 +100,7 @@ export default function BestSellers() {
   };
 
   if (loading) {
-    return <FullScreenLoader message="Finding Best Sellers..." size="lg" variant="trending" />;
+    return <LoadingState type="page" message="Finding Best Sellers..." variant="pulse" />;
   }
 
   return (

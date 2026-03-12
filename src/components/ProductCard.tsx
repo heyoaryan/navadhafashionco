@@ -66,7 +66,23 @@ export default function ProductCard({ product }: ProductCardProps) {
     
     // Check if user is logged in
     if (!user) {
-      navigate('/auth', { state: { from: `/product/${product.slug}` } });
+      // Store pending cart item in localStorage
+      const pendingCartItem = {
+        productId: product.id,
+        quantity: 1,
+        size: undefined,
+        color: undefined,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pendingCartItem', JSON.stringify(pendingCartItem));
+      
+      // Redirect to auth with action flag
+      navigate('/auth', { 
+        state: { 
+          from: `/product/${product.slug}`,
+          action: 'addToCart'
+        } 
+      });
       return;
     }
 

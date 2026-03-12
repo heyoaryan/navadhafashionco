@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
 import { trackSignup } from '../utils/analytics';
 
@@ -21,6 +22,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, signUp: authSignUp, signIn: authSignIn } = useAuth();
+  const { addToCart } = useCart();
 
   // Get redirect path from location state
   const from = (location.state as any)?.from || null;
@@ -28,24 +30,65 @@ export default function Auth() {
 
   // Redirect based on role when user is logged in
   useEffect(() => {
-    if (user && profile) {
-      // If there's a redirect path, go there
-      if (from) {
-        if (action === 'buyNow') {
-          // If user was trying to buy now, redirect to checkout
-          navigate('/checkout');
-        } else {
-          // Otherwise go back to the product page
-          navigate(from);
+    const handlePostLoginRedirect = async () => {
+      if (user && profile) {
+        // Check for pending cart item
+        const pendingCartItemStr = localStorage.getItem('pendingCartItem');
+        
+        if (pendingCartItemStr) {
+          try {
+            const pendingCartItem = JSON.parse(pendingCartItemStr);
+            
+            // Check if item is not too old (within 1 hour)
+            const oneHour = 60 * 60 * 1000;
+            if (Date.now() - pendingCartItem.timestamp < oneHour) {
+              // Add item to cart
+              await addToCart(
+                pendingCartItem.productId,
+                pendingCartItem.quantity,
+                pendingCartItem.size,
+                pendingCartItem.color
+              );
+              
+              // Clear the pending item
+              localStorage.removeItem('pendingCartItem');
+              
+              // Redirect to cart page
+              navigate('/cart');
+              return;
+            } else {
+              // Item too old, clear it
+              localStorage.removeItem('pendingCartItem');
+            }
+          } catch (error) {
+            console.error('Error processing pending cart item:', error);
+            localStorage.removeItem('pendingCartItem');
+          }
         }
-      } else if (profile.role === 'admin') {
-        navigate('/admin');
-      } else {
-        // Redirect to account page for regular users
-        navigate('/account');
+        
+        // If there's a redirect path, go there
+        if (from) {
+          if (action === 'buyNow') {
+            // If user was trying to buy now, redirect to checkout
+            navigate('/checkout');
+          } else if (action === 'addToCart') {
+            // If user was trying to add to cart, redirect to cart
+            navigate('/cart');
+          } else {
+            // Otherwise go back to the product page
+            navigate(from);
+          }
+        } else if (profile.role === 'admin') {
+          navigate('/admin');
+        } else {
+          // Redirect to account page for regular users
+          navigate('/account');
+        }
       }
-    }
-  }, [user, profile, navigate, from, action]);
+    };
+    
+    handlePostLoginRedirect();
+  }, [user, profile, navigate, from, action, addToCart]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();

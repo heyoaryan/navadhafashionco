@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, ShoppingBag, Users, TrendingUp, IndianRupee, Tag } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 interface Stats {
   todaySales: number;
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return <FullScreenLoader message="Loading Dashboard..." />;
+    return <LoadingState type="page" message="Loading Dashboard..." variant="spinner" />;
   }
 
   return (

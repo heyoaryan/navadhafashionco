@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { Product } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 interface QuickEditData {
   price: string;
@@ -142,7 +142,7 @@ export default function ProductList() {
   );
 
   if (loading) {
-    return <FullScreenLoader message="Loading Products..." />;
+    return <LoadingState type="page" message="Loading Products..." variant="spinner" />;
   }
 
   return (

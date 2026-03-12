@@ -1,20 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Wifi, WifiOff } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { useToast } from '../contexts/ToastContext';
 
 const NetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isSlowConnection, setIsSlowConnection] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
+  const { showToast } = useToast();
+  const hasShownToast = useRef(false);
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setShowWarning(false);
+      hasShownToast.current = false;
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      setShowWarning(true);
+      showToast('Please check your internet connection', 'error');
+      hasShownToast.current = true;
     };
 
     // Check connection speed
@@ -23,16 +24,10 @@ const NetworkStatus = () => {
         const connection = (navigator as any).connection;
         const effectiveType = connection?.effectiveType;
         
-        // Show warning for slow connections (2g, slow-2g)
-        if (effectiveType === '2g' || effectiveType === 'slow-2g') {
-          setIsSlowConnection(true);
-          setShowWarning(true);
-        } else if (effectiveType === '3g') {
-          setIsSlowConnection(true);
-          setShowWarning(true);
-        } else {
-          setIsSlowConnection(false);
-          setShowWarning(false);
+        // Show warning for slow connections (2g, slow-2g, 3g)
+        if ((effectiveType === '2g' || effectiveType === 'slow-2g' || effectiveType === '3g') && !hasShownToast.current) {
+          showToast('Your Network Connection is Poor', 'warning');
+          hasShownToast.current = true;
         }
       }
     };
@@ -58,49 +53,10 @@ const NetworkStatus = () => {
         connection?.removeEventListener('change', checkConnectionSpeed);
       }
     };
-  }, []);
+  }, [showToast]);
 
-  if (!showWarning) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 max-w-sm mx-4 shadow-2xl pointer-events-auto animate-fade-in">
-        <div className="flex items-center gap-4">
-          <div className="flex-shrink-0">
-            {isOnline ? (
-              <div className="bg-yellow-500/20 p-3 rounded-full">
-                <Wifi className="w-6 h-6 text-yellow-400" />
-              </div>
-            ) : (
-              <div className="bg-red-500/20 p-3 rounded-full">
-                <WifiOff className="w-6 h-6 text-red-400" />
-              </div>
-            )}
-          </div>
-          
-          <div className="flex-1">
-            <h3 className="text-white font-semibold text-lg mb-1">
-              {isOnline ? 'Slow Connection' : 'No Internet'}
-            </h3>
-            <p className="text-gray-300 text-sm">
-              {isOnline 
-                ? 'Your network is slow. Content is loading in background...'
-                : 'Please check your internet connection'}
-            </p>
-          </div>
-        </div>
-        
-        {/* Loading indicator for slow connection */}
-        {isOnline && isSlowConnection && (
-          <div className="mt-4">
-            <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-pulse-slow"></div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Component doesn't render anything - uses toast instead
+  return null;
 };
 
 export default NetworkStatus;

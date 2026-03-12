@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Package, ArrowRight, Star } from 'lucide-react';
+import { Sparkles, Package, ArrowRight, Star, Scissors, Palette, Ruler, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
@@ -22,7 +22,7 @@ export default function Boutique() {
         .select('*')
         .eq('is_active', true)
         .contains('tags', ['customize'])
-        .limit(6);
+        .limit(4);
 
       // Fetch products with 'made' tag
       const { data: made } = await supabase
@@ -30,7 +30,7 @@ export default function Boutique() {
         .select('*')
         .eq('is_active', true)
         .contains('tags', ['made'])
-        .limit(6);
+        .limit(4);
 
       setCustomizeProducts(customize || []);
       setMadeProducts(made || []);
@@ -42,76 +42,245 @@ export default function Boutique() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-white via-rose-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Hero Section */}
-      <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-rose-50 to-pink-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900"></div>
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center opacity-5"></div>
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+        {/* Background with overlay */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-rose-50 to-pink-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900"></div>
+          <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center opacity-5"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-white/50 dark:from-gray-900/50 via-transparent to-transparent"></div>
+        </div>
         
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <div className="inline-block mb-6 px-6 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-purple-200 dark:border-purple-800">
-            <span className="text-sm font-light tracking-wider text-purple-600 dark:text-purple-400">EXCLUSIVE COLLECTION</span>
+        <div className="relative z-10 text-center px-4 max-w-6xl mx-auto py-20">
+          <div className="inline-block mb-6 px-6 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full border border-purple-200 dark:border-purple-800 shadow-lg">
+            <span className="text-sm font-medium tracking-wider text-purple-600 dark:text-purple-400">NAVADHA BOUTIQUE</span>
           </div>
           
-          <h1 className="brand-title text-4xl sm:text-6xl md:text-8xl mb-6 sm:mb-8 animate-fade-in" style={{ color: '#EE458F' }}>
-            Boutique
+          <h1 className="brand-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-6 animate-fade-in" style={{ color: '#EE458F' }}>
+            The Ultimate Expression of Self
           </h1>
           
-          <p className="text-base sm:text-xl md:text-2xl font-light text-gray-700 dark:text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed px-4">
-            Where craftsmanship meets personalization. Discover handpicked ready-made pieces or create your own bespoke design.
+          <p className="text-lg sm:text-xl md:text-2xl font-light text-gray-700 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            Experience luxury fashion with our exclusive boutique collection. Choose from exquisite ready-made pieces or create your dream outfit with our bespoke customization service.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+          {/* Two Main Options */}
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 max-w-7xl mx-auto mb-12">
+            {/* Ready-Made Card */}
             <Link
               to="/boutique/ready-made"
-              className="group w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm sm:text-base"
+              className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-[1.02]"
             >
-              <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-              Explore Ready-Made
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative p-8 lg:p-10 h-full flex flex-col">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                </div>
+                
+                <h2 className="text-2xl lg:text-3xl font-semibold mb-3 text-gray-900 dark:text-white">
+                  Ready-Made Collection
+                </h2>
+                
+                <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed flex-grow">
+                  Handpicked premium pieces crafted with finest fabrics. Ready to wear, perfect to impress.
+                </p>
+                
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <Star className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                    <span>Premium quality fabrics</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <Star className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                    <span>Immediate availability</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <Star className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                    <span>Fast delivery</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-medium group-hover:gap-4 transition-all">
+                  <span>Explore Collection</span>
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+              </div>
             </Link>
+
+            {/* Customization Card */}
             <Link
               to="/boutique/customization"
-              className="group w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border-2 border-purple-200 dark:border-purple-800 rounded-full transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm sm:text-base"
+              className="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-[1.02]"
             >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              Start Customizing
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+              <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/10 dark:from-rose-500/20 dark:to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative p-8 lg:p-10 h-full flex flex-col">
+                <div className="w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/50 dark:to-pink-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Sparkles className="w-8 h-8 text-rose-600 dark:text-rose-400" />
+                </div>
+                
+                <h2 className="text-2xl lg:text-3xl font-semibold mb-3 text-gray-900 dark:text-white">
+                  Bespoke Customization
+                </h2>
+                
+                <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed flex-grow">
+                  Design your dream outfit. Choose fabrics, colors, and details. Made exclusively for you.
+                </p>
+                
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <Palette className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>Personalized design choices</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <Ruler className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>Perfect fit guarantee</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <Scissors className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>Expert craftsmanship</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-medium group-hover:gap-4 transition-all">
+                  <span>Start Designing</span>
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+              </div>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-12 sm:py-16 bg-white dark:bg-gray-900 border-y border-gray-200 dark:border-gray-800">
+      {/* How It Works Section */}
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="text-center p-4 sm:p-6">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Star className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600 dark:text-purple-400" />
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-wider mb-4">
+              How It Works
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+              Your journey to perfect fashion in simple steps
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12 lg:gap-16">
+            {/* Ready-Made Process */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-8">
+                <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                <h3 className="text-2xl font-semibold">Ready-Made</h3>
               </div>
-              <h3 className="text-base sm:text-lg font-medium mb-2">Premium Quality</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                Handcrafted with finest fabrics and attention to detail
-              </p>
+              
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 font-semibold">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Browse Collection</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Explore our curated selection of premium boutique pieces
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 font-semibold">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Select Your Piece</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Choose your favorite design and size
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 font-semibold">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Place Order</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Add to cart and complete secure checkout
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 font-semibold">
+                    4
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Fast Delivery</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Receive your order within 3-5 business days
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-center p-4 sm:p-6">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-rose-600 dark:text-rose-400" />
+
+            {/* Customization Process */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-8">
+                <Sparkles className="w-8 h-8 text-rose-600 dark:text-rose-400" />
+                <h3 className="text-2xl font-semibold">Customization</h3>
               </div>
-              <h3 className="text-base sm:text-lg font-medium mb-2">Bespoke Designs</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                Personalize every aspect to match your unique style
-              </p>
-            </div>
-            <div className="text-center p-4 sm:p-6">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Package className="w-6 h-6 sm:w-7 sm:h-7 text-pink-600 dark:text-pink-400" />
+              
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 font-semibold">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Choose Base Design</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Select from our customizable design templates
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 font-semibold">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Personalize Details</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Choose fabrics, colors, embellishments & provide measurements
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 font-semibold">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Expert Crafting</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Our artisans create your unique piece (2-3 weeks)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 font-semibold">
+                    4
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">Delivered to You</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Receive your one-of-a-kind creation
+                    </p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-base sm:text-lg font-medium mb-2">Expert Artisans</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                Crafted by skilled artisans with years of experience
-              </p>
             </div>
           </div>
         </div>
@@ -120,29 +289,18 @@ export default function Boutique() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Ready-Made Section */}
         <section className="mb-24">
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl">
-                <Package className="w-7 h-7 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-wider mb-2">Ready-Made Collection</h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                  Curated pieces ready to elevate your wardrobe
-                </p>
-              </div>
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <Package className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              <h2 className="text-3xl sm:text-4xl font-light tracking-wider">Ready-Made Collection</h2>
             </div>
-            <Link 
-              to="/boutique/ready-made"
-              className="hidden md:flex items-center gap-2 px-6 py-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg transition-colors group"
-            >
-              View All
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Handpicked boutique pieces ready to elevate your wardrobe instantly
+            </p>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg mb-4"></div>
@@ -153,74 +311,90 @@ export default function Boutique() {
             </div>
           ) : madeProducts.length > 0 ? (
             <>
-              <div className="relative overflow-hidden">
-                <div className="flex gap-8 animate-marquee hover:pause-marquee">
-                  {[...madeProducts, ...madeProducts].map((product, index) => (
-                    <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[280px]">
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {madeProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
               </div>
-              <div className="text-center mt-8">
+              <div className="text-center">
                 <Link 
                   to="/boutique/ready-made"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full transition-all transform hover:scale-105 shadow-lg hover:shadow-xl font-medium"
                 >
-                  View All
-                  <ArrowRight className="w-4 h-4" />
+                  View Full Collection
+                  <ArrowRight className="w-5 h-5" />
                 </Link>
               </div>
             </>
           ) : (
-            <div className="text-center py-16 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-2xl border border-purple-100 dark:border-purple-900/30">
-              <Package className="w-16 h-16 text-purple-300 dark:text-purple-700 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                New ready-made pieces arriving soon
+            <div className="text-center py-20 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-3xl border-2 border-dashed border-purple-200 dark:border-purple-900/30">
+              <Package className="w-20 h-20 text-purple-300 dark:text-purple-700 mx-auto mb-4" />
+              <h3 className="text-xl font-medium mb-2 text-gray-900 dark:text-white">Coming Soon</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Exquisite ready-made pieces arriving soon
               </p>
             </div>
           )}
         </section>
 
+        {/* Divider */}
+        <div className="relative mb-24">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t-2 border-gray-200 dark:border-gray-800"></div>
+          </div>
+          <div className="relative flex justify-center">
+            <span className="px-6 py-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-medium">
+              OR
+            </span>
+          </div>
+        </div>
+
         {/* Customization Section */}
         <section>
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 rounded-xl">
-                <Sparkles className="w-7 h-7 text-rose-600 dark:text-rose-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-wider mb-2">Customization</h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                  Design your perfect outfit, made just for you
-                </p>
-              </div>
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <Sparkles className="w-8 h-8 text-rose-600 dark:text-rose-400" />
+              <h2 className="text-3xl sm:text-4xl font-light tracking-wider">Bespoke Customization</h2>
             </div>
-            <Link 
-              to="/boutique/customization"
-              className="hidden md:flex items-center gap-2 px-6 py-3 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg transition-colors group"
-            >
-              View All
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Design your dream outfit with personalized fabrics, colors, and perfect measurements
+            </p>
           </div>
 
-          {/* Info Banner */}
-          <div className="mb-8 p-6 bg-gradient-to-r from-rose-50 via-pink-50 to-purple-50 dark:from-rose-900/20 dark:via-pink-900/20 dark:to-purple-900/20 rounded-xl border border-rose-200 dark:border-rose-900/30">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium mb-1 text-gray-900 dark:text-white">How It Works</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                  Choose a base design, customize fabrics, colors, and embellishments, provide your measurements, 
-                  and our artisans will craft your unique piece. Delivery in 2-3 weeks.
-                </p>
-              </div>
+          {/* Customization Benefits */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="text-center p-6 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+              <Palette className="w-10 h-10 text-rose-600 dark:text-rose-400 mx-auto mb-3" />
+              <h4 className="font-medium mb-2">Choose Fabrics</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Select from premium materials
+              </p>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+              <Sparkles className="w-10 h-10 text-rose-600 dark:text-rose-400 mx-auto mb-3" />
+              <h4 className="font-medium mb-2">Pick Colors</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Match your unique style
+              </p>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+              <Ruler className="w-10 h-10 text-rose-600 dark:text-rose-400 mx-auto mb-3" />
+              <h4 className="font-medium mb-2">Perfect Fit</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Custom measurements
+              </p>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+              <Clock className="w-10 h-10 text-rose-600 dark:text-rose-400 mx-auto mb-3" />
+              <h4 className="font-medium mb-2">2-3 Weeks</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Crafted with care
+              </p>
             </div>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg mb-4"></div>
@@ -231,62 +405,32 @@ export default function Boutique() {
             </div>
           ) : customizeProducts.length > 0 ? (
             <>
-              <div className="relative overflow-hidden">
-                <div className="flex gap-8 animate-marquee-reverse hover:pause-marquee">
-                  {[...customizeProducts, ...customizeProducts].map((product, index) => (
-                    <div key={`${product.id}-${index}`} className="flex-shrink-0 w-[280px]">
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {customizeProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
               </div>
-              <div className="text-center mt-8">
+              <div className="text-center">
                 <Link 
                   to="/boutique/customization"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white rounded-full transition-all transform hover:scale-105 shadow-lg hover:shadow-xl font-medium"
                 >
-                  View All
-                  <ArrowRight className="w-4 h-4" />
+                  Start Customizing
+                  <ArrowRight className="w-5 h-5" />
                 </Link>
               </div>
             </>
           ) : (
-            <div className="text-center py-16 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
-              <Sparkles className="w-16 h-16 text-rose-300 dark:text-rose-700 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Customization options coming soon
+            <div className="text-center py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-3xl border-2 border-dashed border-rose-200 dark:border-rose-900/30">
+              <Sparkles className="w-20 h-20 text-rose-300 dark:text-rose-700 mx-auto mb-4" />
+              <h3 className="text-xl font-medium mb-2 text-gray-900 dark:text-white">Coming Soon</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Customization options will be available soon
               </p>
             </div>
           )}
         </section>
       </div>
-
-      {/* CTA Section */}
-      <section className="py-16 sm:py-20 bg-gradient-to-br from-purple-600 via-rose-500 to-pink-500 dark:from-purple-900 dark:via-rose-900 dark:to-pink-900">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-wider mb-4 sm:mb-6 text-white">
-            Ready to Create Something Special?
-          </h2>
-          <p className="text-base sm:text-lg text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            Whether you choose from our ready-made collection or design your own, 
-            every piece is crafted with love and attention to detail.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <Link
-              to="/boutique/ready-made"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white text-purple-600 hover:bg-gray-100 rounded-full transition-all transform hover:scale-105 font-medium shadow-xl text-sm sm:text-base"
-            >
-              Shop Ready-Made
-            </Link>
-            <Link
-              to="/boutique/customization"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-transparent border-2 border-white text-white hover:bg-white/10 rounded-full transition-all transform hover:scale-105 font-medium text-sm sm:text-base"
-            >
-              Start Customizing
-            </Link>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

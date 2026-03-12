@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Search, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 interface Order {
   id: string;
@@ -66,7 +66,7 @@ export default function OrderList() {
   };
 
   if (loading) {
-    return <FullScreenLoader message="Loading Orders..." />;
+    return <LoadingState type="page" message="Loading Orders..." variant="spinner" />;
   }
 
   return (

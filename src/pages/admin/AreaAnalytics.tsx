@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapPin, AlertTriangle, Ban, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 interface AreaStats {
   city: string;
@@ -237,7 +237,7 @@ export default function AreaAnalytics() {
   );
 
   if (loading) {
-    return <FullScreenLoader message="Loading Area Analytics..." />;
+    return <LoadingState type="page" message="Loading Area Analytics..." variant="spinner" />;
   }
 
   return (

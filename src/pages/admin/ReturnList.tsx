@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Package, Search, Eye, Check, X, RefreshCw, DollarSign } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Return } from '../../types';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 export default function ReturnList() {
   const [returns, setReturns] = useState<Return[]>([]);
@@ -120,7 +120,7 @@ export default function ReturnList() {
   });
 
   if (loading) {
-    return <FullScreenLoader message="Loading Returns..." />;
+    return <LoadingState type="page" message="Loading Returns..." variant="spinner" />;
   }
 
   return (

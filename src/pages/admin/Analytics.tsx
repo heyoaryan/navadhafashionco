@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MousePointerClick, Users, TrendingUp, Package } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import FullScreenLoader from '../../components/FullScreenLoader';
+import LoadingState from '../../components/LoadingState';
 
 interface AnalyticsStats {
   totalProductClicks: number;
@@ -194,7 +194,7 @@ export default function Analytics() {
   };
 
   if (loading) {
-    return <FullScreenLoader message="Loading Analytics..." />;
+    return <LoadingState type="page" message="Loading Analytics..." variant="spinner" />;
   }
 
   return (

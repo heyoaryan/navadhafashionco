@@ -72,9 +72,9 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        <div className="flex flex-col items-center justify-center">
+          <div className="h-14 w-14 border-4 border-rose-200 dark:border-rose-900 border-t-rose-500 dark:border-t-rose-400 rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 text-base font-medium animate-pulse">Loading...</p>
         </div>
       </div>
     );
@@ -167,10 +167,10 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <NetworkStatus />
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
+            <NetworkStatus />
             <AppContent />
           </ToastProvider>
         </AuthProvider>

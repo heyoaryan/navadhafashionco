@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Product, Category } from '../types';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
+import LoadingState from '../components/LoadingState';
 import { lockScroll, unlockScroll } from '../utils/scrollLock';
 
 export default function Shop() {
@@ -406,15 +407,7 @@ export default function Shop() {
 
         <div className="flex-1">
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg mb-2 sm:mb-3 md:mb-4"></div>
-                  <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-800 rounded mb-1.5 sm:mb-2"></div>
-                  <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
+            <LoadingState type="skeleton" skeletonType="product" skeletonCount={6} />
           ) : products.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
