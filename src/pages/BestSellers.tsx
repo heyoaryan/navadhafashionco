@@ -110,49 +110,80 @@ export default function BestSellers() {
         description="Shop our best-selling products. Discover what everyone is loving from Navadha Fashion Co."
       />
       
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Minimal Hero Section with Filters */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-rose-50/30 to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+        {/* Enhanced Hero Section with Filters */}
+        <div className="relative bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
+          {/* Subtle background pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-rose-400 to-pink-400 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-purple-400 to-pink-400 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
             <div className="text-center">
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+              {/* Badge with icon */}
+              <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 rounded-full border border-rose-200 dark:border-rose-800">
+                <Award className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                  Most Popular
+                </span>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
                 Best Sellers
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Our most popular products
+              
+              {/* Decorative line */}
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="h-px w-12 bg-gradient-to-r from-transparent to-rose-400"></div>
+                <div className="w-2 h-2 rounded-full bg-rose-400"></div>
+                <div className="h-px w-12 bg-gradient-to-l from-transparent to-rose-400"></div>
+              </div>
+
+              <p className="text-gray-600 dark:text-gray-400 mb-8 text-base sm:text-lg max-w-2xl mx-auto">
+                Discover our most loved products, handpicked by customers like you
               </p>
               
-              {/* Filters in Hero */}
-              <div className="flex justify-center gap-3">
+              {/* Enhanced Filters */}
+              <div className="flex justify-center gap-3 flex-wrap">
                 <button
                   onClick={() => setFilter('all')}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`group relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
                     filter === 'all'
-                      ? 'bg-pink-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/30'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
                   }`}
                 >
-                  All
-                </button>
-                <button
-                  onClick={() => setFilter('men')}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filter === 'men'
-                      ? 'bg-pink-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  Men
+                  <span className="relative z-10">All</span>
+                  {filter === 'all' && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-600 to-pink-600 rounded-lg blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                  )}
                 </button>
                 <button
                   onClick={() => setFilter('women')}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`group relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
                     filter === 'women'
-                      ? 'bg-pink-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/30'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
                   }`}
                 >
-                  Women
+                  <span className="relative z-10">Women</span>
+                  {filter === 'women' && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-600 to-pink-600 rounded-lg blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setFilter('men')}
+                  className={`group relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                    filter === 'men'
+                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/30'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                  }`}
+                >
+                  <span className="relative z-10">Men</span>
+                  {filter === 'men' && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-600 to-pink-600 rounded-lg blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                  )}
                 </button>
               </div>
             </div>
@@ -160,47 +191,91 @@ export default function BestSellers() {
         </div>
 
         {/* Products Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
           {products.length === 0 ? (
-            <div className="text-center py-20">
-              <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg">No best sellers available at the moment.</p>
+            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <Award className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">No best sellers available</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm">Check back soon for trending products!</p>
             </div>
           ) : (
             <>
+              {/* Product count with decorative elements */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-1 bg-gradient-to-b from-rose-500 to-pink-500 rounded-full"></div>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Showing <span className="font-bold text-rose-600 dark:text-rose-400">{products.length}</span> best-selling {products.length === 1 ? 'product' : 'products'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Products Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {products.map((product, index) => (
-                  <div key={product.id} className="relative">
+                  <div key={product.id} className="relative group">
+                    {/* Enhanced Top 3 Badge with gradient */}
                     {index < 3 && (
-                      <div className="absolute -top-2 -left-2 z-10 bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                        <Award className="w-3 h-3" />
-                        #{index + 1}
+                      <div 
+                        className="absolute -top-3 -left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transform transition-transform group-hover:scale-110"
+                        style={{
+                          background: index === 0 
+                            ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' 
+                            : index === 1 
+                            ? 'linear-gradient(135deg, #C0C0C0 0%, #808080 100%)'
+                            : 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)',
+                          color: 'white',
+                          boxShadow: index === 0 
+                            ? '0 4px 15px rgba(255, 215, 0, 0.4)' 
+                            : index === 1 
+                            ? '0 4px 15px rgba(192, 192, 192, 0.4)'
+                            : '0 4px 15px rgba(205, 127, 50, 0.4)'
+                        }}
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        <span>#{index + 1}</span>
                       </div>
                     )}
-                    <ProductCard product={product} />
+                    
+                    {/* Subtle hover effect container */}
+                    <div className="relative overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-xl">
+                      <ProductCard product={product} />
+                    </div>
                   </div>
                 ))}
               </div>
 
-              {/* Load More Button */}
+              {/* Enhanced Load More Button */}
               {hasMore && (
                 <div className="flex justify-center mt-12">
                   <button
                     onClick={loadMore}
                     disabled={loadingMore}
-                    className="px-8 py-4 text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white"
+                    className="group relative px-8 py-4 text-base font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden transform hover:scale-105 active:scale-95"
                   >
-                    {loadingMore ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Loading...
-                      </span>
-                    ) : (
-                      'Load More'
-                    )}
+                    {/* Gradient background */}
+                    <div className={`absolute inset-0 bg-gradient-to-r from-rose-500 to-pink-500 transition-opacity ${loadingMore ? 'opacity-50' : 'opacity-100'}`}></div>
+                    
+                    {/* Hover effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-rose-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    {/* Button content */}
+                    <span className="relative z-10 text-white flex items-center gap-2">
+                      {loadingMore ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More'
+                      )}
+                    </span>
+                    
+                    {/* Shadow effect */}
+                    <div className="absolute inset-0 shadow-lg shadow-rose-500/30 group-hover:shadow-rose-500/50 transition-shadow rounded-lg"></div>
                   </button>
                 </div>
               )}

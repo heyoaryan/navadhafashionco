@@ -2,6 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Grid Pulse Animation */
+@keyframes grid-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-grid-pulse {
+  animation: grid-pulse 4s ease-in-out infinite;
+}
+
+/* Scroll Down Animation */
+@keyframes scroll-down {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.animate-scroll-down {
+  animation: scroll-down 2s ease-in-out infinite;
+}
+
+/* Scroll Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-on-scroll {
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.animate-on-scroll.visible {
+  animation-duration: 0.6s;
+  animation-timing-function: ease-out;
+}
+
+.animate-fade-in-up.visible {
+  animation-name: fadeInUp;
+}
+
+.animate-fade-in-left.visible {
+  animation-name: fadeInLeft;
+}
+
+.animate-fade-in-right.visible {
+  animation-name: fadeInRight;
+}
+
+.animate-scale-in.visible {
+  animation-name: scaleIn;
+}
+
 /* Smooth Avatar Animations */
 @keyframes fadeIn {
   from {

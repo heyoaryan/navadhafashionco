@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Search, Menu, X, Moon, Sun, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, Moon, Sun, ChevronDown, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -184,17 +184,6 @@ export default function Header() {
 
   const categories = [
     { 
-      name: 'Men', 
-      path: '/shop?gender=men',
-      subcategories: [
-        { name: 'Casuals', path: '/men/casuals' },
-        { name: 'Workwear', path: '/men/workwear' },
-        { name: 'Ethnic', path: '/men/ethnic' },
-        { name: 'Gym Attire', path: '/men/gym-attire' },
-        { name: `${currentSeason} Collection`, path: `/men/${currentSeason.toLowerCase()}-collection` },
-      ]
-    },
-    { 
       name: 'Women', 
       path: '/shop?gender=women',
       subcategories: [
@@ -207,8 +196,24 @@ export default function Header() {
         { name: `${currentSeason} Collection`, path: `/women/${currentSeason.toLowerCase()}-collection` },
       ]
     },
+    { 
+      name: 'Men', 
+      path: '/shop?gender=men',
+      subcategories: [
+        { name: 'Casuals', path: '/men/casuals' },
+        { name: 'Workwear', path: '/men/workwear' },
+        { name: 'Ethnic', path: '/men/ethnic' },
+        { name: 'Gym Attire', path: '/men/gym-attire' },
+        { name: `${currentSeason} Collection`, path: `/men/${currentSeason.toLowerCase()}-collection` },
+      ]
+    },
     { name: 'Boutique', path: '/boutique' },
-    { name: 'Best Sellers', path: '/best-sellers' },
+    { 
+      name: 'Best Sellers', 
+      path: '/best-sellers',
+      icon: TrendingUp,
+      highlight: true
+    },
   ];
 
   return (
@@ -293,8 +298,11 @@ export default function Header() {
                   ) : (
                     <Link
                       to={category.path}
-                      className="relative text-sm font-semibold tracking-wide whitespace-nowrap group block py-2 pb-1"
+                      className={`relative text-sm font-semibold tracking-wide whitespace-nowrap group flex items-center gap-1.5 py-2 pb-1 ${
+                        category.highlight ? 'text-rose-600 dark:text-rose-400' : ''
+                      }`}
                     >
+                      {category.icon && <category.icon className="w-4 h-4" />}
                       {category.name}
                       <span className="absolute left-0 bottom-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full" style={{ backgroundColor: '#EE458F' }}></span>
                     </Link>
@@ -436,8 +444,11 @@ export default function Header() {
                   <Link
                     to={category.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block py-3 px-4 text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className={`flex items-center gap-2 py-3 px-4 text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors ${
+                      category.highlight ? 'text-rose-600 dark:text-rose-400' : ''
+                    }`}
                   >
+                    {category.icon && <category.icon className="w-5 h-5" />}
                     {category.name}
                   </Link>
                 )}

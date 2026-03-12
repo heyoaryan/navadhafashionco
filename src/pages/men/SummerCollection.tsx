@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sun, Wind, Droplets } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
+import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
 
 export default function MenSummerCollection() {
@@ -36,14 +37,7 @@ export default function MenSummerCollection() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState type="page" message="Loading Summer Collection..." variant="dots" />;
   }
 
   return (
