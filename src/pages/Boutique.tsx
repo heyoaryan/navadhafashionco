@@ -106,7 +106,7 @@ export default function Boutique() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-rose-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pb-24 sm:pb-28 md:pb-32 lg:pb-40">
         {/* Background with overlay */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-rose-50 to-pink-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900"></div>
@@ -127,33 +127,33 @@ export default function Boutique() {
         </div>
         
         <div 
-          className="relative z-10 text-center px-4 max-w-6xl mx-auto py-20 transition-all duration-300"
+          className="relative z-10 text-center px-4 sm:px-6 max-w-6xl mx-auto py-12 sm:py-16 md:py-20 transition-all duration-300"
           style={{
             opacity: heroOpacity,
             transform: `translateY(${heroTranslateY}px) scale(${heroScale})`,
           }}
         >
-          <h1 className="brand-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-6" style={{ color: '#EE458F' }}>
+          <h1 className="brand-title text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl mb-4 sm:mb-6 px-2 leading-tight" style={{ color: '#EE458F' }}>
             The Ultimate Expression of Self
           </h1>
           
-          <p className="text-lg sm:text-xl md:text-2xl font-light text-gray-700 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-light text-gray-700 dark:text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed px-2">
             Experience luxury fashion with our exclusive boutique collection. Choose from exquisite ready-made pieces or create your dream outfit with our bespoke customization service.
           </p>
         </div>
 
         {/* Scroll Down Indicator */}
         <div 
-          className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-20 cursor-pointer"
+          className="absolute bottom-16 sm:bottom-20 md:bottom-24 lg:bottom-32 left-1/2 transform -translate-x-1/2 z-20 cursor-pointer"
           style={{ opacity: heroOpacity }}
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
         >
           <div className="flex flex-col items-center gap-2 animate-bounce">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               Scroll Down
             </span>
-            <div className="w-6 h-10 border-2 border-gray-400 dark:border-gray-600 rounded-full flex items-start justify-center p-2">
-              <div className="w-1.5 h-3 bg-gray-600 dark:bg-gray-400 rounded-full animate-scroll-down"></div>
+            <div className="w-5 h-8 sm:w-6 sm:h-10 border-2 border-gray-400 dark:border-gray-600 rounded-full flex items-start justify-center p-1.5 sm:p-2">
+              <div className="w-1 h-2 sm:w-1.5 sm:h-3 bg-gray-600 dark:bg-gray-400 rounded-full animate-scroll-down"></div>
             </div>
           </div>
         </div>
