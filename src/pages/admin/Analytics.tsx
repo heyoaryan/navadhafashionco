@@ -82,24 +82,34 @@ export default function Analytics() {
         { count: totalSignups },
         { count: todaySignups },
         { count: totalOrders },
+        { count: rangeOrders },
+        { count: rangeClicks },
       ] = await Promise.all([
         supabase.from('product_clicks').select('*', { count: 'exact', head: true }),
         supabase.from('product_clicks').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
         supabase.from('signup_tracking').select('*', { count: 'exact', head: true }),
         supabase.from('signup_tracking').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
         supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
+        dateFilter
+          ? supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled').gte('created_at', dateFilter)
+          : supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
+        dateFilter
+          ? supabase.from('product_clicks').select('*', { count: 'exact', head: true }).gte('created_at', dateFilter)
+          : supabase.from('product_clicks').select('*', { count: 'exact', head: true }),
       ]);
 
-      const clicks = timeRange === 'today' ? (todayProductClicks || 0) : (totalProductClicks || 0);
-      const orders = totalOrders || 0;
-      const conversionRate = clicks > 0 ? ((orders / clicks) * 100).toFixed(2) : '0.00';
+      const clicks = rangeClicks || 0;
+      const orders = rangeOrders || 0;
+      // Conversion rate: orders placed out of unique sessions (clicks), capped at 100%
+      const rawRate = clicks > 0 ? (orders / clicks) * 100 : 0;
+      const conversionRate = Math.min(rawRate, 100).toFixed(2);
 
       setStats({
         totalProductClicks: totalProductClicks || 0,
         todayProductClicks: todayProductClicks || 0,
         totalSignups: totalSignups || 0,
         todaySignups: todaySignups || 0,
-        totalOrders: orders,
+        totalOrders: totalOrders || 0,
         conversionRate,
       });
 
