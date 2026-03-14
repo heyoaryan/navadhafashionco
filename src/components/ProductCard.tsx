@@ -232,15 +232,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         ) : null}
         
         {product.sizes && product.sizes.length > 0 && (
-          <div className="flex gap-1 mt-2">
-            {product.sizes.slice(0, 5).map((size) => (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {product.sizes.slice(0, 6).map((size) => (
               <span
                 key={size}
-                className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded"
+                className="text-xs px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded whitespace-nowrap"
               >
                 {size}
               </span>
             ))}
+            {product.sizes.length > 6 && (
+              <span className="text-xs px-1.5 py-0.5 text-gray-400">+{product.sizes.length - 6}</span>
+            )}
           </div>
         )}
       </div>

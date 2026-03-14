@@ -152,11 +152,6 @@ function AppContent() {
             <Route path="/careers" element={<Careers />} />
             <Route path="/careers/store" element={<StoreCareers />} />
             <Route path="/careers/remote" element={<RemoteCareers />} />
-            <Route path="/sustainability" element={<About />} />
-            <Route path="/contact" element={<About />} />
-            <Route path="/faq" element={<About />} />
-            <Route path="/shipping" element={<About />} />
-            <Route path="/returns" element={<About />} />
             <Route path="/size-guide" element={<SizeGuide />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfUse />} />

@@ -9,8 +9,12 @@ import { Product } from '../../types';
 export default function WomenWinterCollection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
+  const PRODUCTS_PER_PAGE = 12;
 
   const filteredProducts = searchQuery
     ? products.filter(p =>
@@ -20,30 +24,45 @@ export default function WomenWinterCollection() {
     : products;
 
   useEffect(() => {
-    fetchWinterProducts();
-  }, []);
+    setPage(1);
+    setProducts([]);
+    fetchWinterProducts(1);
+  }, [searchQuery]);
 
-  const fetchWinterProducts = async () => {
+  const fetchWinterProducts = async (pageNum: number) => {
     const startTime = Date.now();
+    if (pageNum === 1) setLoading(true); else setLoadingMore(true);
     try {
-      const { data, error } = await supabase
+      const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
+      const { data, error, count } = await supabase
         .from('products')
-        .select('*')
-        .eq('gender', 'women')
+        .select('*', { count: 'exact' })
+        .in('gender', ['women', 'unisex'])
         .eq('season', 'winter')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, from + PRODUCTS_PER_PAGE - 1);
 
       if (error) throw error;
-      setProducts(data || []);
+      if (pageNum === 1) setProducts(data || []);
+      else setProducts(prev => [...prev, ...(data || [])]);
+      setHasMore((count || 0) > pageNum * PRODUCTS_PER_PAGE);
     } catch (error) {
       console.error('Error fetching winter products:', error);
     } finally {
-      // Ensure minimum loading time of 800ms for smooth transition
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, 800 - elapsedTime);
-      setTimeout(() => setLoading(false), remainingTime);
+      if (pageNum === 1) {
+        const elapsedTime = Date.now() - startTime;
+        setTimeout(() => setLoading(false), Math.max(0, 800 - elapsedTime));
+      } else {
+        setLoadingMore(false);
+      }
     }
+  };
+
+  const loadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchWinterProducts(next);
   };
 
   if (loading) {
@@ -135,11 +154,20 @@ export default function WomenWinterCollection() {
             {searchQuery && filteredProducts.length === 0 ? (
               <p className="text-center text-gray-500 dark:text-gray-400 py-12">No products found for "{searchQuery}"</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                {hasMore && !searchQuery && (
+                  <div className="flex justify-center mt-10">
+                    <button onClick={loadMore} disabled={loadingMore} className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center gap-2">
+                      {loadingMore ? <><div className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin"></div>Loading...</> : 'Load More'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

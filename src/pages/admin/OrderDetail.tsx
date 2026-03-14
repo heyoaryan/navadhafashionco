@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, User, MapPin, CreditCard, Truck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '../../contexts/ToastContext';
 import LoadingState from '../../components/LoadingState';
 
 interface OrderItem {

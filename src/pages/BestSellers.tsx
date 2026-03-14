@@ -33,49 +33,46 @@ export default function BestSellers() {
     }
     
     try {
-      // Get products with their sales count from order_items
-      let query = supabase
+      // Step 1: Get all active products
+      let productQuery = supabase
         .from('products')
-        .select(`
-          *,
-          order_items!inner(quantity)
-        `)
+        .select('*')
         .eq('is_active', true);
 
-      // Apply gender filter if not 'all'
       if (filter !== 'all') {
-        query = query.eq('gender', filter);
+        productQuery = productQuery.eq('gender', filter);
       }
 
-      const { data, error } = await query;
+      const { data: allProducts, error: productError } = await productQuery;
+      if (productError) throw productError;
 
-      if (error) throw error;
+      // Step 2: Get sales counts from completed orders only (exclude cancelled/refunded)
+      const { data: salesData, error: salesError } = await supabase
+        .from('order_items')
+        .select(`
+          product_id,
+          quantity,
+          orders!inner(status)
+        `)
+        .in('orders.status', ['processing', 'shipped', 'delivered']);
 
-      // Calculate sales count for each product
-      const productsMap = new Map<string, ProductWithSales>();
-      
-      data?.forEach((item: any) => {
-        const productId = item.id;
-        
-        if (!productsMap.has(productId)) {
-          productsMap.set(productId, {
-            ...item,
-            sales_count: 0
-          });
-        }
-        
-        const product = productsMap.get(productId)!;
-        product.sales_count += item.order_items.quantity || 0;
+      if (salesError) throw salesError;
+
+      // Step 3: Aggregate sales per product
+      const salesMap = new Map<string, number>();
+      salesData?.forEach((item: any) => {
+        const pid = item.product_id;
+        salesMap.set(pid, (salesMap.get(pid) || 0) + (item.quantity || 0));
       });
 
-      // Convert map to array and sort by sales count
-      const allSortedProducts = Array.from(productsMap.values())
+      // Step 4: Merge and sort — products with most sales first, unsold products last
+      const allSortedProducts: ProductWithSales[] = (allProducts || [])
+        .map(p => ({ ...p, sales_count: salesMap.get(p.id) || 0 }))
         .sort((a, b) => b.sales_count - a.sales_count);
 
-      // Pagination
+      // Step 5: Paginate
       const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
-      const to = from + PRODUCTS_PER_PAGE;
-      const paginatedProducts = allSortedProducts.slice(from, to);
+      const paginatedProducts = allSortedProducts.slice(from, from + PRODUCTS_PER_PAGE);
 
       if (pageNum === 1) {
         setProducts(paginatedProducts);
@@ -212,32 +209,8 @@ export default function BestSellers() {
 
               {/* Products Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product, index) => (
+                {products.map((product) => (
                   <div key={product.id} className="relative group">
-                    {/* Enhanced Top 3 Badge with gradient */}
-                    {index < 3 && (
-                      <div 
-                        className="absolute -top-3 -left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transform transition-transform group-hover:scale-110"
-                        style={{
-                          background: index === 0 
-                            ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' 
-                            : index === 1 
-                            ? 'linear-gradient(135deg, #C0C0C0 0%, #808080 100%)'
-                            : 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)',
-                          color: 'white',
-                          boxShadow: index === 0 
-                            ? '0 4px 15px rgba(255, 215, 0, 0.4)' 
-                            : index === 1 
-                            ? '0 4px 15px rgba(192, 192, 192, 0.4)'
-                            : '0 4px 15px rgba(205, 127, 50, 0.4)'
-                        }}
-                      >
-                        <Award className="w-3.5 h-3.5" />
-                        <span>#{index + 1}</span>
-                      </div>
-                    )}
-                    
-                    {/* Subtle hover effect container */}
                     <div className="relative overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-xl">
                       <ProductCard product={product} />
                     </div>

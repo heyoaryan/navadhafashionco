@@ -203,7 +203,7 @@ export default function Home() {
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-wider mb-2">New Arrivals</h2>
+              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">New Arrivals</h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Fresh styles for the season</p>
             </div>
             <Link
@@ -227,7 +227,7 @@ export default function Home() {
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-wider mb-2">Women's Collection</h2>
+              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
             </div>
             <Link
@@ -251,7 +251,7 @@ export default function Home() {
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-wider mb-2">Men's Collection</h2>
+              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">Men's Collection</h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Contemporary fashion for modern men</p>
             </div>
             <Link
@@ -274,7 +274,7 @@ export default function Home() {
       {allProducts.length > 0 && (
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
           <div className="mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-wider mb-2">All Products</h2>
+            <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">

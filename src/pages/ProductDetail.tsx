@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product, ProductImage, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +41,13 @@ export default function ProductDetail() {
   const [checkingDelivery, setCheckingDelivery] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState<{ days: number; message: string; location: string } | null>(null);
   const [pincodeError, setPincodeError] = useState('');
+
+  // Bespoke customization state
+  const [bespokeDesignNotes, setBespokeDesignNotes] = useState('');
+  const [bespokeMeasurements, setBespokeMeasurements] = useState('');
+  const [bespokePhone, setBespokePhone] = useState('');
+  const [bespokeSubmitting, setBespokeSubmitting] = useState(false);
+  const [bespokeSubmitted, setBespokeSubmitted] = useState(false);
 
   const inWishlist = product ? isInWishlist(product.id) : false;
 
@@ -331,6 +338,36 @@ export default function ProductDetail() {
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
 
+  const isBespoke = product?.tags?.includes('customization') ?? false;
+  const isReadyMade = product?.tags?.includes('made') ?? false;
+
+  const handleBespokeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/auth', { state: { from: `/product/${slug}` } });
+      return;
+    }
+    if (!product || !bespokePhone.trim()) return;
+
+    setBespokeSubmitting(true);
+    try {
+      await supabase.from('reviews').insert({
+        product_id: product.id,
+        user_id: user.id,
+        rating: 5,
+        title: 'Bespoke Customization Request',
+        comment: `Phone: ${bespokePhone}\n\nDesign Notes: ${bespokeDesignNotes}\n\nMeasurements/Additional Info: ${bespokeMeasurements}`,
+        is_verified_purchase: false,
+        is_approved: false,
+      });
+      setBespokeSubmitted(true);
+    } catch (error) {
+      console.error('Bespoke request error:', error);
+    } finally {
+      setBespokeSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -451,7 +488,19 @@ export default function ProductDetail() {
         <div className="space-y-4 sm:space-y-6">
           <div>
             <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-wide">{product.name}</h1>
+              <div>
+                {isReadyMade && !isBespoke && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-2 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                    <span>✦</span> Navadha Special
+                  </div>
+                )}
+                {isBespoke && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-2 rounded-full text-xs font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white">
+                    <Scissors className="w-3 h-3" /> Bespoke Customization
+                  </div>
+                )}
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-wide">{product.name}</h1>
+              </div>
               <button
                 onClick={handleShare}
                 title="Share this product"
@@ -497,12 +546,12 @@ export default function ProductDetail() {
                   Size Guide
                 </Link>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size) => (
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
-                    className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base border rounded-lg transition-all ${
+                    className={`px-3 sm:px-4 py-2 text-sm border rounded-lg transition-all whitespace-nowrap ${
                       selectedSize === size
                         ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black'
                         : 'border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white'
@@ -596,7 +645,74 @@ export default function ProductDetail() {
           ) : null}
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            {product.stock_quantity > 0 ? (
+            {isBespoke ? (
+              // Bespoke: show customization request form instead of buy buttons
+              bespokeSubmitted ? (
+                <div className="w-full p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-center">
+                  <p className="text-green-700 dark:text-green-300 font-semibold text-lg mb-1">Request Sent!</p>
+                  <p className="text-sm text-green-600 dark:text-green-400">Our designer will contact you on <span className="font-medium">{bespokePhone}</span> shortly.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleBespokeSubmit} className="w-full space-y-3">
+                  <div className="p-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Palette className="w-4 h-4 text-rose-500" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Design Your Dream Outfit</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Design Notes</label>
+                        <textarea
+                          value={bespokeDesignNotes}
+                          onChange={(e) => setBespokeDesignNotes(e.target.value)}
+                          placeholder="Describe your design preferences — colors, embroidery, style changes, fabric choice..."
+                          rows={3}
+                          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                          <Ruler className="w-3 h-3" /> Measurements / Additional Info
+                        </label>
+                        <textarea
+                          value={bespokeMeasurements}
+                          onChange={(e) => setBespokeMeasurements(e.target.value)}
+                          placeholder="Bust, waist, hip, height... or any other requirements"
+                          rows={2}
+                          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                          <Phone className="w-3 h-3" /> Your Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          value={bespokePhone}
+                          onChange={(e) => setBespokePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          placeholder="Our designer will call you"
+                          required
+                          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={bespokeSubmitting || !bespokePhone}
+                    className="w-full py-3.5 px-6 text-sm font-semibold bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100 shadow-lg"
+                  >
+                    <Scissors className="w-4 h-4" />
+                    {bespokeSubmitting ? 'Sending Request...' : 'Request Custom Order'}
+                  </button>
+                  {!user && (
+                    <p className="text-xs text-center text-gray-500">
+                      <button onClick={() => navigate('/auth', { state: { from: `/product/${slug}` } })} className="text-rose-500 underline">Sign in</button> to submit your request
+                    </p>
+                  )}
+                </form>
+              )
+            ) : product.stock_quantity > 0 ? (
               <>
                 <button
                   onClick={() => { setBuyRipple(true); setTimeout(() => setBuyRipple(false), 600); handleBuyNow(); }}

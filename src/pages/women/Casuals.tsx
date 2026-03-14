@@ -6,9 +6,14 @@ import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
 
+const PRODUCTS_PER_PAGE = 12;
+
 export default function WomenCasuals() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
 
@@ -22,27 +27,40 @@ export default function WomenCasuals() {
   const heroImage = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1920&q=80';
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    setPage(1);
+    setProducts([]);
+    fetchProducts(1);
+  }, [searchQuery]);
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const fetchProducts = async (pageNum: number) => {
+    if (pageNum === 1) setLoading(true); else setLoadingMore(true);
     try {
-      const { data, error } = await supabase
+      const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
+      const { data, error, count } = await supabase
         .from('products')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('category', 'casuals')
-        .eq('gender', 'women')
+        .in('gender', ['women', 'unisex'])
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, from + PRODUCTS_PER_PAGE - 1);
 
       if (error) throw error;
-      setProducts(data || []);
+      if (pageNum === 1) setProducts(data || []);
+      else setProducts(prev => [...prev, ...(data || [])]);
+      setHasMore((count || 0) > pageNum * PRODUCTS_PER_PAGE);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const loadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchProducts(next);
   };
 
   return (
@@ -84,6 +102,13 @@ export default function WomenCasuals() {
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
+            {hasMore && !searchQuery && (
+              <div className="flex justify-center mt-10">
+                <button onClick={loadMore} disabled={loadingMore} className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center gap-2">
+                  {loadingMore ? <><div className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin"></div>Loading...</> : 'Load More'}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-16 sm:py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/10 dark:to-pink-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">

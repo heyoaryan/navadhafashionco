@@ -336,22 +336,8 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
-      // Reduce stock quantity for each product
-      for (const item of checkoutItems) {
-        const { data: product } = await supabase
-          .from('products')
-          .select('stock_quantity')
-          .eq('id', item.product_id)
-          .single();
-
-        if (product) {
-          const newStock = Math.max(0, product.stock_quantity - item.quantity);
-          await supabase
-            .from('products')
-            .update({ stock_quantity: newStock })
-            .eq('id', item.product_id);
-        }
-      }
+      // Stock is automatically decremented via database trigger (trg_decrement_stock)
+      // and restored on cancellation/refund via trg_restore_stock_on_cancel
 
       // Update coupon usage count
       if (appliedCoupon) {

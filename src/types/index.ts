@@ -79,7 +79,7 @@ export interface Product {
   cost_per_item: number | null;
   category: string | null;
   subcategory: string | null;
-  gender: 'men' | 'women' | null;
+  gender: 'men' | 'women' | 'unisex' | null;
   category_id: string | null;
   sku: string | null;
   barcode: string | null;

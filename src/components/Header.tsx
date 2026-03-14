@@ -320,9 +320,8 @@ export default function Header() {
                   ) : (
                     <Link
                       to={category.path}
-                      className={`relative text-sm font-semibold tracking-wide whitespace-nowrap group flex items-center gap-1.5 py-2 pb-1 ${
-                        category.highlight ? 'text-rose-600 dark:text-rose-400' : ''
-                      }`}
+                      className={`relative text-sm font-semibold tracking-wide whitespace-nowrap group flex items-center gap-1.5 py-2 pb-1`}
+                    style={category.highlight ? { color: '#EE458F' } : {}}
                     >
                       {category.icon && <category.icon className="w-4 h-4" />}
                       {category.name}
@@ -466,9 +465,8 @@ export default function Header() {
                   <Link
                     to={category.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 py-3 px-4 text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors ${
-                      category.highlight ? 'text-rose-600 dark:text-rose-400' : ''
-                    }`}
+                    className={`flex items-center gap-2 py-3 px-4 text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors`}
+                    style={category.highlight ? { color: '#EE458F' } : {}}
                   >
                     {category.icon && <category.icon className="w-5 h-5" />}
                     {category.name}

@@ -64,6 +64,54 @@ export default function Careers() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-light tracking-wider mb-1 text-gray-900 dark:text-gray-100">Careers</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage job openings and applicants</p>
+        </div>
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-5 animate-pulse">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="w-8 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+              </div>
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+              <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+          ))}
+        </div>
+        {/* Nav + pipeline skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-xl p-6 animate-pulse">
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl mb-4" />
+                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+                <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded" />
+              </div>
+            ))}
+            <div className="sm:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-5 animate-pulse space-y-3">
+              <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+              ))}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 animate-pulse space-y-3">
+            <div className="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded" />
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,7 +127,7 @@ export default function Careers() {
             <FileText className="w-5 h-5 text-rose-500" />
             <span className="text-xs text-gray-400">Total</span>
           </div>
-          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{loading ? '—' : stats.totalApplications}</p>
+          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{stats.totalApplications}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Applications</p>
         </div>
 
@@ -88,7 +136,7 @@ export default function Careers() {
             <Briefcase className="w-5 h-5 text-purple-500" />
             <span className="text-xs text-gray-400">Active</span>
           </div>
-          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{loading ? '—' : stats.activePositions}</p>
+          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{stats.activePositions}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Open Positions</p>
         </div>
 
@@ -97,7 +145,7 @@ export default function Careers() {
             <Clock className="w-5 h-5 text-yellow-500" />
             <span className="text-xs text-gray-400">Pending</span>
           </div>
-          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{loading ? '—' : stats.pendingReview}</p>
+          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{stats.pendingReview}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Pending Review</p>
         </div>
 
@@ -106,7 +154,7 @@ export default function Careers() {
             <TrendingUp className="w-5 h-5 text-green-500" />
             <span className="text-xs text-gray-400">Hired</span>
           </div>
-          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{loading ? '—' : stats.hired}</p>
+          <p className="text-2xl sm:text-3xl font-light text-gray-900 dark:text-gray-100">{stats.hired}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hired</p>
         </div>
       </div>
@@ -189,11 +237,7 @@ export default function Careers() {
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Recent Applications</h3>
             <Link to="/admin/careers/applications" className="text-xs text-rose-500 hover:text-rose-600">View all</Link>
           </div>
-          {loading ? (
-            <div className="space-y-3">
-              {[1,2,3].map(i => <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />)}
-            </div>
-          ) : recentApplications.length === 0 ? (
+          {recentApplications.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
               <p className="text-xs text-gray-400">No applications yet</p>

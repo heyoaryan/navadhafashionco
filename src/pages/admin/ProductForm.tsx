@@ -47,6 +47,8 @@ export default function ProductForm() {
     care_instructions: '',
     video_url: '',
   });
+  const [boutiqueReadyMade, setBoutiqueReadyMade] = useState(false);
+  const [boutiqueCustomization, setBoutiqueCustomization] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -194,6 +196,10 @@ export default function ProductForm() {
           care_instructions: data.care_instructions || '',
           video_url: data.video_url || '',
         });
+
+        // Set boutique flags from existing tags
+        setBoutiqueReadyMade(data.tags?.includes('made') || false);
+        setBoutiqueCustomization(data.tags?.includes('customization') || false);
 
         // Set images from product_images table
         const newImageUrls: string[] = [];
@@ -557,6 +563,13 @@ export default function ProductForm() {
         .map(t => t.trim())
         .filter(Boolean);
 
+      // Merge boutique tags - remove old ones first, then add based on checkboxes
+      const boutiqueTags = ['made', 'customization'];
+      const baseTags = tagsArray.filter(t => !boutiqueTags.includes(t));
+      if (boutiqueReadyMade) baseTags.push('made');
+      if (boutiqueCustomization) baseTags.push('customization');
+      const finalTags = baseTags;
+
       const validColors = colors.filter(c => c.name.trim() !== '');
 
       const productData = {
@@ -580,7 +593,7 @@ export default function ProductForm() {
         main_image_url: imageUrls[0] || null,
         is_featured: false,
         is_active: formData.is_active,
-        tags: tagsArray,
+        tags: finalTags,
         fabric_details: formData.fabric_details || null,
         care_instructions: formData.care_instructions || null,
         video_url: formData.video_url || null,
@@ -838,10 +851,49 @@ export default function ProductForm() {
               <option value="">Select Gender</option>
               <option value="men">Men</option>
               <option value="women">Women</option>
+              <option value="unisex">Unisex</option>
             </select>
           </div>
 
-          {formData.gender && (
+          {/* Boutique Listing */}
+          <div>
+            <label className="block text-sm font-medium mb-3 text-gray-900 dark:text-gray-100">Boutique Listing</label>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={boutiqueReadyMade}
+                  onChange={(e) => {
+                    setHasUserInput(true);
+                    setBoutiqueReadyMade(e.target.checked);
+                    // If only ready-made selected (bespoke not checked), clear category
+                    if (e.target.checked && !boutiqueCustomization) {
+                      setFormData(prev => ({ ...prev, category: '', subcategory: '', season: '' }));
+                    }
+                  }}
+                  className="mt-0.5 w-4 h-4 text-purple-600 rounded focus:ring-purple-400"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ready-Made Boutique</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Product will appear in Boutique → Ready-Made Collection</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={boutiqueCustomization}
+                  onChange={(e) => { setHasUserInput(true); setBoutiqueCustomization(e.target.checked); }}
+                  className="mt-0.5 w-4 h-4 text-rose-500 rounded focus:ring-rose-400"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Bespoke Customization</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Product will appear in Boutique → Customization (customers can request custom design, fit & fabric)</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {formData.gender && !boutiqueReadyMade && (
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Main Category *</label>
               <select
@@ -875,6 +927,16 @@ export default function ProductForm() {
                     <option value="casuals">Casuals</option>
                     <option value="workwear">Workwear</option>
                     <option value="gym-attire">Gym Attire</option>
+                  </>
+                )}
+                {formData.gender === 'unisex' && (
+                  <>
+                    <option value="casuals">Casuals</option>
+                    <option value="workwear">Workwear</option>
+                    <option value="ethnic">Ethnic</option>
+                    <option value="gym-attire">Gym Attire</option>
+                    <option value="western">Western</option>
+                    <option value="indo-western">Indo-Western</option>
                   </>
                 )}
               </select>
