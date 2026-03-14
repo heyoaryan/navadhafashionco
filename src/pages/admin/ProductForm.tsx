@@ -72,7 +72,7 @@ export default function ProductForm() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [formData, imageUrls, colors, id, hasUserInput]);
+  }, [formData, imageUrls, colors, boutiqueReadyMade, boutiqueCustomization, id, hasUserInput]);
 
   // Warn before leaving page with unsaved changes
   useEffect(() => {
@@ -104,6 +104,8 @@ export default function ProductForm() {
         formData,
         imageUrls,
         colors,
+        boutiqueReadyMade,
+        boutiqueCustomization,
         timestamp: Date.now(),
       };
       const draftKey = id ? `admin_product_form_draft_${id}` : 'admin_product_form_draft';
@@ -118,7 +120,7 @@ export default function ProductForm() {
       const draftKey = id ? `admin_product_form_draft_${id}` : 'admin_product_form_draft';
       const saved = localStorage.getItem(draftKey);
       if (saved) {
-        const { formData: savedFormData, imageUrls: savedImageUrls, colors: savedColors, timestamp } = JSON.parse(saved);
+        const { formData: savedFormData, imageUrls: savedImageUrls, colors: savedColors, boutiqueReadyMade: savedBRM, boutiqueCustomization: savedBC, timestamp } = JSON.parse(saved);
         
         // Only load if saved within last 7 days
         const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
@@ -126,8 +128,9 @@ export default function ProductForm() {
           setFormData(savedFormData);
           setImageUrls(savedImageUrls);
           setColors(savedColors);
+          if (savedBRM !== undefined) setBoutiqueReadyMade(savedBRM);
+          if (savedBC !== undefined) setBoutiqueCustomization(savedBC);
         } else {
-          // Clear old data
           localStorage.removeItem(draftKey);
         }
       }

@@ -7,7 +7,6 @@ import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/Layout';
 import ScrollToTop from './components/ScrollToTop';
 import NetworkStatus from './components/NetworkStatus';
-import { usePageTracking } from './hooks/usePageTracking';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
@@ -65,12 +64,10 @@ import Careers from './pages/Careers';
 import AuthCallback from './pages/AuthCallback';
 import StoreCareers from './pages/careers/Store';
 import RemoteCareers from './pages/careers/Remote';
+import CookieConsent from './components/CookieConsent';
 
 function AppContent() {
   const { loading } = useAuth();
-
-  // Track page views
-  usePageTracking();
 
   if (loading) {
     return (
@@ -171,6 +168,7 @@ function App() {
           <ToastProvider>
             <NetworkStatus />
             <AppContent />
+            <CookieConsent />
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>
