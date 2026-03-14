@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product, ProductImage, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -200,6 +200,32 @@ export default function ProductDetail() {
       console.error('Error toggling wishlist:', error);
     } finally {
       setIsTogglingWishlist(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const imageUrl = images[0]?.image_url || product?.main_image_url || '';
+    const shareData = {
+      title: product?.name || 'Check out this product',
+      text: `${product?.name} — ₹${product?.price.toLocaleString()} on NAVADHA Fashion Co.`,
+      url,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // user cancelled or error
+      }
+    } else {
+      // fallback: copy link
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+      } catch {
+        prompt('Copy this link:', url);
+      }
     }
   };
 
@@ -417,7 +443,16 @@ export default function ProductDetail() {
 
         <div className="space-y-4 sm:space-y-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-wide mb-3 sm:mb-4">{product.name}</h1>
+            <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-wide">{product.name}</h1>
+              <button
+                onClick={handleShare}
+                title="Share this product"
+                className="flex-shrink-0 p-2.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-rose-400 hover:text-rose-500 transition-all hover:scale-105 active:scale-95 mt-1"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+            </div>
             {reviews.length > 0 && (
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex">
