@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, Heart, Search, Menu, X, Moon, Sun, ChevronDown, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -23,6 +23,18 @@ export default function Header() {
   const { wishlistCount } = useWishlist();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Category pages that support in-page search
+  const categoryPagePaths = [
+    '/women/western', '/women/indo-western', '/women/ethnics', '/women/casuals',
+    '/women/workwear', '/women/gym-attire', '/women/summer-collection', '/women/winter-collection',
+    '/men/casuals', '/men/workwear', '/men/ethnic', '/men/gym-attire',
+    '/men/summer-collection', '/men/winter-collection',
+    '/best-sellers', '/boutique',
+  ];
+
+  const isOnCategoryPage = categoryPagePaths.includes(location.pathname);
 
   // Focus search input when opened
   useEffect(() => {
@@ -137,7 +149,11 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      if (isOnCategoryPage) {
+        navigate(`${location.pathname}?search=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      }
       setSearchOpen(false);
       setSearchQuery('');
       setMobileMenuOpen(false);
@@ -148,11 +164,17 @@ export default function Header() {
   const handleSearchInput = (value: string) => {
     setSearchQuery(value);
     if (value.trim()) {
-      // Navigate to shop with search query immediately
-      navigate(`/shop?search=${encodeURIComponent(value.trim())}`);
+      if (isOnCategoryPage) {
+        navigate(`${location.pathname}?search=${encodeURIComponent(value.trim())}`);
+      } else {
+        navigate(`/shop?search=${encodeURIComponent(value.trim())}`);
+      }
     } else {
-      // If empty, go to shop without search
-      navigate('/shop');
+      if (isOnCategoryPage) {
+        navigate(location.pathname);
+      } else {
+        navigate('/shop');
+      }
     }
   };
 

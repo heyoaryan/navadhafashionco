@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sun, Wind, Droplets } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
@@ -8,6 +9,15 @@ import { Product } from '../../types';
 export default function WomenSummerCollection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+
+  const filteredProducts = searchQuery
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : products;
 
   useEffect(() => {
     fetchSummerProducts();
@@ -120,10 +130,16 @@ export default function WomenSummerCollection() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
+            {searchQuery && filteredProducts.length === 0 && (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-12">No products found for "{searchQuery}"</p>
+            )}
+            {searchQuery && filteredProducts.length > 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{filteredProducts.length} result{filteredProducts.length === 1 ? '' : 's'} for "{searchQuery}"</p>
+            )}
           </>
         )}
       </div>

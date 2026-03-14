@@ -81,20 +81,10 @@ export default function Shop() {
         .select('*', { count: 'exact' })
         .eq('is_active', true);
 
-      // Handle search query - split into words and search each word
+      // Handle search query - exact phrase match
       if (searchQuery) {
-        const searchWords = searchQuery.trim().split(/\s+/); // Split by spaces
-        
-        if (searchWords.length === 1) {
-          // Single word search
-          query = query.or(`name.ilike.%${searchWords[0]}%,description.ilike.%${searchWords[0]}%`);
-        } else {
-          // Multiple words - search for any word match
-          const searchConditions = searchWords.map(word => 
-            `name.ilike.%${word}%,description.ilike.%${word}%`
-          ).join(',');
-          query = query.or(searchConditions);
-        }
+        const phrase = searchQuery.trim();
+        query = query.or(`name.ilike.%${phrase}%,description.ilike.%${phrase}%`);
       }
 
       // Handle filter type (new arrivals, featured, etc.)
@@ -408,7 +398,30 @@ export default function Shop() {
         <div className="flex-1">
           {loading ? (
             <LoadingState type="skeleton" skeletonType="product" skeletonCount={6} />
-          ) : products.length > 0 ? (
+          ) : products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-20 h-20 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">
+                {searchQuery ? `No results for "${searchQuery}"` : 'No products found'}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
+                {searchQuery ? 'Try a different search term or browse our collections.' : 'Try adjusting your filters.'}
+              </p>
+              {searchQuery && (
+                <button
+                  onClick={() => handleFilterChange('search', '')}
+                  className="mt-6 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
+                  style={{ backgroundColor: '#EE458F' }}
+                >
+                  Clear Search
+                </button>
+              )}
+            </div>
+          ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
                 {products.map((product) => (
@@ -455,7 +468,7 @@ export default function Shop() {
                 </div>
               )}
             </>
-          ) : null}
+          )}
         </div>
       </div>
       </div>

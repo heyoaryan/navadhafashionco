@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Briefcase, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
@@ -8,6 +8,15 @@ import { Product } from '../../types';
 export default function MenWorkwear() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+
+  const filteredProducts = searchQuery
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : products;
 
   const heroImage = 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=1920';
 
@@ -67,15 +76,15 @@ export default function MenWorkwear() {
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
             </div>
           </div>
-        ) : products.length > 0 ? (
+        ) : filteredProducts.length > 0 ? (
           <div>
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                Showing {products.length} {products.length === 1 ? 'product' : 'products'}
+                {searchQuery ? `${filteredProducts.length} result${filteredProducts.length === 1 ? '' : 's'} for "${searchQuery}"` : `Showing ${filteredProducts.length} ${filteredProducts.length === 1 ? 'product' : 'products'}`}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -83,7 +92,9 @@ export default function MenWorkwear() {
         ) : (
           <div className="text-center py-16 sm:py-20 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/10 dark:to-gray-900/10 rounded-2xl border border-slate-100 dark:border-slate-900/30">
             <Briefcase className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 dark:text-slate-700 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">No products found in this category</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">
+              {searchQuery ? `No products found for "${searchQuery}"` : 'No products found in this category'}
+            </p>
             <Link
               to="/shop"
               className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 font-medium text-sm sm:text-base"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Crown, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
@@ -8,6 +8,15 @@ import { Product } from '../../types';
 export default function MenEthnic() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+
+  const filteredProducts = searchQuery
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : products;
 
   const heroImage = 'https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg?auto=compress&cs=tinysrgb&w=1920';
 
@@ -67,15 +76,15 @@ export default function MenEthnic() {
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
             </div>
           </div>
-        ) : products.length > 0 ? (
+        ) : filteredProducts.length > 0 ? (
           <div>
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                Showing {products.length} {products.length === 1 ? 'product' : 'products'}
+                {searchQuery ? `${filteredProducts.length} result${filteredProducts.length === 1 ? '' : 's'} for "${searchQuery}"` : `Showing ${filteredProducts.length} ${filteredProducts.length === 1 ? 'product' : 'products'}`}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -83,7 +92,9 @@ export default function MenEthnic() {
         ) : (
           <div className="text-center py-16 sm:py-20 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/10 dark:to-rose-900/10 rounded-2xl border border-pink-100 dark:border-pink-900/30">
             <Crown className="w-12 h-12 sm:w-16 sm:h-16 text-pink-300 dark:text-pink-700 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">No products found in this category</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">
+              {searchQuery ? `No products found for "${searchQuery}"` : 'No products found in this category'}
+            </p>
             <Link
               to="/shop"
               className="inline-flex items-center gap-2 text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 font-medium text-sm sm:text-base"

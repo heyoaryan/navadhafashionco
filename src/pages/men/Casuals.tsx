@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Shirt, ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
+import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
 
 export default function MenCasuals() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+
+  const filteredProducts = searchQuery
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : products;
 
   const heroImage = 'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=1920';
 
@@ -63,21 +73,16 @@ export default function MenCasuals() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         {loading ? (
-          <div className="flex justify-center items-center py-16 sm:py-20">
-            <div className="text-center">
-              <div className="rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-200 border-t-blue-500 animate-[spin_1s_linear_infinite_reverse] mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading products...</p>
-            </div>
-          </div>
-        ) : products.length > 0 ? (
+          <LoadingState type="skeleton" skeletonType="product" skeletonCount={8} />
+        ) : filteredProducts.length > 0 ? (
           <div>
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                Showing {products.length} {products.length === 1 ? 'product' : 'products'}
+                {searchQuery ? `${filteredProducts.length} result${filteredProducts.length === 1 ? '' : 's'} for "${searchQuery}"` : `Showing ${filteredProducts.length} ${filteredProducts.length === 1 ? 'product' : 'products'}`}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -85,7 +90,9 @@ export default function MenCasuals() {
         ) : (
           <div className="text-center py-16 sm:py-20 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
             <Shirt className="w-12 h-12 sm:w-16 sm:h-16 text-blue-300 dark:text-blue-700 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">No products found in this category</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base px-4">
+              {searchQuery ? `No products found for "${searchQuery}"` : 'No products found in this category'}
+            </p>
             <Link
               to="/shop"
               className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm sm:text-base"

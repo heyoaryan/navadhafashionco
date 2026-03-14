@@ -406,11 +406,11 @@ export default function Auth() {
           {/* Hero text */}
           <div className="max-w-md">
             <h2 className="text-5xl font-bold leading-[1.15] mb-5">
-              {isLogin ? <>Welcome<br/>back.</> : <>Join the<br/>fashion<br/>movement.</>}
+              {isLogin ? <>Welcome Back</> : <>Join the<br/>fashion<br/>movement.</>}
             </h2>
             <p className="text-rose-200/90 text-lg leading-relaxed">
               {isLogin
-                ? 'Sign in to explore your curated wardrobe, track orders, and discover new arrivals.'
+                ? 'Your style, your story — pick up right where you left off.'
                 : 'Create your account and unlock exclusive collections, early access, and personalised style.'}
             </p>
           </div>
@@ -441,7 +441,7 @@ export default function Auth() {
 
           {/* Heading – always centered */}
           <div className="mb-8 text-center">
-            <p className="text-xs font-semibold text-rose-500 uppercase tracking-widest mb-1">
+            <p className="lg:hidden text-xs font-semibold text-rose-500 uppercase tracking-widest mb-1">
               {isLogin ? 'Welcome back' : 'Get started'}
             </p>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
