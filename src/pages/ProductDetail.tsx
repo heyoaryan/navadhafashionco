@@ -187,7 +187,7 @@ export default function ProductDetail() {
         directBuy: {
           productId: product.id,
           productName: product.name,
-          productImage: product.images?.[0]?.image_url,
+          productImage: images[0]?.image_url || product.main_image_url,
           price: product.sale_price ?? product.price,
           quantity,
           size: selectedSize,
@@ -613,12 +613,18 @@ export default function ProductDetail() {
                 </button>
                 <span className="px-5 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base font-medium min-w-[60px] text-center">{quantity}</span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="px-4 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base hover:bg-gray-100 dark:hover:bg-gray-800 transition-all min-w-[48px] min-h-[48px] flex items-center justify-center active:scale-95 rounded-r-lg font-medium"
+                  onClick={() => setQuantity(Math.min(product.stock_quantity ?? 99, quantity + 1))}
+                  disabled={quantity >= (product.stock_quantity ?? 99)}
+                  className="px-4 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base hover:bg-gray-100 dark:hover:bg-gray-800 transition-all min-w-[48px] min-h-[48px] flex items-center justify-center active:scale-95 rounded-r-lg font-medium disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                 >
                   +
                 </button>
               </div>
+              {product.stock_quantity != null && quantity >= product.stock_quantity && product.stock_quantity > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  Max {product.stock_quantity} available
+                </p>
+              )}
             </div>
           </div>
 

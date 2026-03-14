@@ -569,10 +569,18 @@ export default function Auth() {
 
           {/* Terms */}
           <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
-            By continuing you agree to our{' '}
-            <a href="/privacy" className="text-pink-500 hover:text-pink-600 transition-colors" style={{ textDecoration: 'none' }}>privacy policy</a>
-            {' '}and{' '}
-            <a href="/terms" className="text-pink-500 hover:text-pink-600 transition-colors" style={{ textDecoration: 'none' }}>terms of use</a>.
+            <span className="sm:hidden">
+              By continuing you agree to our{' '}
+              <a href="/privacy" className="text-pink-500 hover:text-pink-600 transition-colors" style={{ textDecoration: 'none' }}>privacy policy</a>
+              <br />and{' '}
+              <a href="/terms" className="text-pink-500 hover:text-pink-600 transition-colors" style={{ textDecoration: 'none' }}>terms of use</a>.
+            </span>
+            <span className="hidden sm:inline">
+              By continuing you agree to our{' '}
+              <a href="/privacy" className="text-pink-500 hover:text-pink-600 transition-colors" style={{ textDecoration: 'none' }}>privacy policy</a>
+              {' '}and{' '}
+              <a href="/terms" className="text-pink-500 hover:text-pink-600 transition-colors" style={{ textDecoration: 'none' }}>terms of use</a>.
+            </span>
           </p>
         </div>
       </div>

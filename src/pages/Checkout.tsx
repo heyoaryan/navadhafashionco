@@ -550,6 +550,10 @@ export default function Checkout() {
 
   const [fetchingLocation, setFetchingLocation] = useState(false);
 
+  const FALLBACK_IMG = 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=400';
+  const getProductImage = (item: any): string =>
+    item.product?.main_image_url || FALLBACK_IMG;
+
   const handleFetchLocation = () => {
     if (!navigator.geolocation) {
       showToast('Geolocation is not supported by your browser', 'error');
@@ -587,121 +591,160 @@ export default function Checkout() {
   // Order Confirmation Screen
   if (orderConfirmed && confirmedOrderDetails) {
     const { total: orderTotal, paymentMethod: orderPaymentMethod, deliveryMethod: orderDeliveryMethod } = confirmedOrderDetails;
-    
-    // Determine payment method display text
+
     const getPaymentMethodText = () => {
-      if (orderPaymentMethod === 'online') {
-        return 'Online Payment';
-      }
-      // For COD, check delivery method
-      if (orderDeliveryMethod === 'pickup') {
-        return 'Pay at Store';
-      }
+      if (orderPaymentMethod === 'online') return 'Online Payment';
+      if (orderDeliveryMethod === 'pickup') return 'Pay at Store';
       return 'Cash on Delivery';
     };
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl text-center">
-            {/* Success Animation */}
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-white to-rose-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center px-4 py-6 overflow-y-auto">
+        <div className="w-full max-w-sm sm:max-w-md">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+
+            {/* Top gradient bar */}
+            <div className="h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400" />
+
+            <div className="px-5 sm:px-8 py-6 sm:py-8 text-center">
+
+              {/* Animated checkmark */}
+              <div className="flex items-center justify-center mb-4 sm:mb-5">
+                <svg className="w-16 h-16 sm:w-20 sm:h-20" viewBox="0 0 80 80" fill="none">
+                  <style>{`
+                    @keyframes circleGrow {
+                      0%   { stroke-dashoffset: 251; opacity: 0; }
+                      20%  { opacity: 1; }
+                      100% { stroke-dashoffset: 0; opacity: 1; }
+                    }
+                    @keyframes checkDraw {
+                      0%   { stroke-dashoffset: 50; opacity: 0; }
+                      100% { stroke-dashoffset: 0; opacity: 1; }
+                    }
+                    @keyframes fillIn {
+                      0%   { opacity: 0; }
+                      100% { opacity: 1; }
+                    }
+                    .circle-anim {
+                      stroke-dasharray: 251;
+                      stroke-dashoffset: 251;
+                      animation: circleGrow 0.6s cubic-bezier(0.4,0,0.2,1) 0.1s forwards;
+                    }
+                    .fill-anim {
+                      opacity: 0;
+                      animation: fillIn 0.3s ease 0.65s forwards;
+                    }
+                    .check-anim {
+                      stroke-dasharray: 50;
+                      stroke-dashoffset: 50;
+                      opacity: 0;
+                      animation: checkDraw 0.4s cubic-bezier(0.4,0,0.2,1) 0.75s forwards;
+                    }
+                  `}</style>
+                  {/* Shadow/glow */}
+                  <circle cx="40" cy="40" r="38" fill="#bbf7d0" className="fill-anim" />
+                  {/* Animated circle border */}
+                  <circle
+                    className="circle-anim"
+                    cx="40" cy="40" r="36"
+                    stroke="url(#cg)" strokeWidth="4"
+                    strokeLinecap="round"
+                    transform="rotate(-90 40 40)"
+                  />
+                  {/* Gradient def */}
+                  <defs>
+                    <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#4ade80" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  {/* Animated checkmark */}
+                  <path
+                    className="check-anim"
+                    d="M22 41l12 12 24-24"
+                    stroke="#16a34a"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+
+              {/* Title */}
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
                 {orderPaymentMethod === 'cod' ? 'Order Confirmed!' : 'Payment Successful!'}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                {orderPaymentMethod === 'cod' 
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-5">
+                {orderPaymentMethod === 'cod'
                   ? 'Your order has been placed successfully'
                   : 'Your payment was processed successfully'}
               </p>
-            </div>
 
-            {/* Order Details */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Order Total</span>
-                <span className="text-2xl font-bold text-rose-500">₹{orderTotal.toLocaleString()}</span>
+              {/* Order details */}
+              <div className="bg-gray-50 dark:bg-gray-900/60 rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 text-left space-y-2 sm:space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Order Total</span>
+                  <span className="text-lg sm:text-xl font-bold text-rose-500">₹{orderTotal.toLocaleString()}</span>
+                </div>
+                <div className="h-px bg-gray-200 dark:bg-gray-700" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Payment</span>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">{getPaymentMethodText()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Delivery</span>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {orderDeliveryMethod === 'pickup' ? 'Store Pickup' : 'Home Delivery'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Payment Method</span>
-                <span className="text-sm font-semibold">
-                  {getPaymentMethodText()}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Delivery</span>
-                <span className="text-sm font-medium">
-                  {orderDeliveryMethod === 'pickup' ? 'Store Pickup' : 'Home Delivery'}
-                </span>
-              </div>
-            </div>
 
-            {/* Success Message based on payment method and delivery */}
-            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              {orderPaymentMethod === 'cod' ? (
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-green-800 dark:text-green-200 flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Order Confirmed
-                  </p>
-                  <p className="text-sm text-green-800 dark:text-green-200">
-                    {orderDeliveryMethod === 'pickup' 
-                      ? `Pay ₹${orderTotal.toLocaleString()} when you collect from store`
-                      : `Keep ₹${orderTotal.toLocaleString()} cash ready for delivery`
-                    }
-                  </p>
-                  <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+              {/* Info message */}
+              <div className="flex items-start gap-2.5 p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl mb-4 sm:mb-5 text-left">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-200 mb-0.5">
                     {orderDeliveryMethod === 'pickup'
-                      ? 'Your order will be ready for pickup in 2-3 hours'
-                      : "We'll contact you shortly to confirm delivery details"
-                    }
+                      ? 'Ready in 2-3 hours'
+                      : orderPaymentMethod === 'cod'
+                      ? `Keep ₹${orderTotal.toLocaleString()} ready`
+                      : 'Order is being processed'}
+                  </p>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                    {orderDeliveryMethod === 'pickup'
+                      ? 'Visit our store to collect your order. We will notify you when ready.'
+                      : orderPaymentMethod === 'cod'
+                      ? "We'll contact you shortly to confirm your delivery details."
+                      : 'You will receive updates on your order status via email.'}
                   </p>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-green-800 dark:text-green-200 flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Payment Completed
-                  </p>
-                  <p className="text-sm text-green-800 dark:text-green-200">
-                    Your order is being processed
-                  </p>
-                  <p className="text-xs text-green-700 dark:text-green-300 mt-2">
-                    {orderDeliveryMethod === 'pickup'
-                      ? 'Your order will be ready for pickup in 2-3 hours'
-                      : 'You will receive a confirmation email shortly'
-                    }
-                  </p>
-                </div>
-              )}
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => navigate('/account/orders')}
+                  className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all active:scale-95 shadow-md shadow-rose-200 dark:shadow-rose-900/30 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  View My Orders
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full py-2.5 sm:py-3 border border-gray-200 dark:border-gray-700 hover:border-rose-300 dark:hover:border-rose-700 text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-xl font-medium transition-all text-sm sm:text-base"
+                >
+                  Continue Shopping
+                </button>
+              </div>
+
             </div>
-
-            {/* Action Buttons */}
-            <button
-              onClick={() => navigate('/account/orders')}
-              className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              View Order Details
-            </button>
-
-            <button
-              onClick={() => navigate('/')}
-              className="w-full mt-3 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-            >
-              Continue Shopping
-            </button>
           </div>
         </div>
       </div>
@@ -815,7 +858,7 @@ export default function Checkout() {
       {/* Payment Status Modal */}
       {renderPaymentStatusModal()}
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-semibold mb-2">Secure Checkout</h1>
@@ -867,28 +910,28 @@ export default function Checkout() {
               Order Summary
             </h2>
             
-            <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+            <div className="space-y-3 mb-3 max-h-56 overflow-y-auto">
               {checkoutItems.map(item => (
-                <div key={item.id} className="flex gap-2 text-xs items-center">
-                  <div className="w-10 h-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700">
+                <div key={item.id} className="flex gap-3 items-center">
+                  <div className="w-14 h-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700">
                     <img
-                      src={item.product?.main_image_url || 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=200'}
+                      src={getProductImage(item)}
                       alt={item.product?.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-xs">{item.product?.name}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Qty: {item.quantity}</p>
+                    <p className="font-medium text-xs sm:text-sm leading-snug line-clamp-2">{item.product?.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Qty: {item.quantity}</p>
+                    <p className="font-semibold text-xs text-rose-500 mt-0.5">₹{((item.product?.price || 0) * item.quantity).toLocaleString()}</p>
                   </div>
-                  <p className="font-medium text-xs">₹{((item.product?.price || 0) * item.quantity).toLocaleString()}</p>
                   {!directBuy && item.id && (
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="ml-1 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors flex-shrink-0"
+                      className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors flex-shrink-0"
                       title="Remove item"
                     >
-                      <svg className="w-3 h-3 text-red-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 text-red-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -1221,7 +1264,7 @@ export default function Checkout() {
           <div className="flex justify-end pt-4">
             <button
               onClick={handleNextStep}
-              className="order-1 sm:order-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               <span className="text-sm sm:text-base">Continue to Payment</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1340,10 +1383,10 @@ export default function Checkout() {
           </div>
 
           {/* Navigation Buttons for Step 2 */}
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4">
             <button
               onClick={handlePrevStep}
-              className="order-2 sm:order-1 px-4 sm:px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg sm:border-0"
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1352,7 +1395,7 @@ export default function Checkout() {
             </button>
             <button
               onClick={handleNextStep}
-              className="order-1 sm:order-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               <span className="text-sm sm:text-base">Review Order</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1421,7 +1464,7 @@ export default function Checkout() {
                 <div key={item.id} className="flex gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                   <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700">
                     <img
-                      src={item.product?.main_image_url || 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=200'}
+                      src={getProductImage(item)}
                       alt={item.product?.name}
                       className="w-full h-full object-cover"
                     />
@@ -1452,12 +1495,12 @@ export default function Checkout() {
                     placeholder="Enter coupon code"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    className="flex-1 min-w-0 px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
                   />
                   <button
                     onClick={handleApplyCoupon}
                     disabled={loading}
-                    className="px-6 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="flex-shrink-0 px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
                   >
                     Apply
                   </button>
@@ -1509,10 +1552,10 @@ export default function Checkout() {
           </div>
 
           {/* Navigation Buttons for Step 3 */}
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4">
             <button
               onClick={handlePrevStep}
-              className="order-2 sm:order-1 px-4 sm:px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg sm:border-0"
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 rounded-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1522,7 +1565,7 @@ export default function Checkout() {
             <button
               onClick={handlePlaceOrder}
               disabled={loading || isProcessingOrder}
-              className="order-1 sm:order-2 w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
             >
               {loading || isProcessingOrder ? (
                 <>
@@ -1554,21 +1597,21 @@ export default function Checkout() {
               Order Summary
             </h2>
             
-            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+            <div className="space-y-3 mb-4 max-h-72 overflow-y-auto">
               {checkoutItems.map(item => (
-                <div key={item.id} className="flex gap-3 text-sm">
-                  <div className="w-12 h-12 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700">
+                <div key={item.id} className="flex gap-3">
+                  <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700">
                     <img
-                      src={item.product?.main_image_url || 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=200'}
+                      src={getProductImage(item)}
                       alt={item.product?.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{item.product?.name}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Qty: {item.quantity}</p>
+                    <p className="font-medium text-sm leading-snug line-clamp-2">{item.product?.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Qty: {item.quantity}</p>
+                    <p className="font-semibold text-xs text-rose-500 mt-0.5">₹{((item.product?.price || 0) * item.quantity).toLocaleString()}</p>
                   </div>
-                  <p className="font-medium">₹{((item.product?.price || 0) * item.quantity).toLocaleString()}</p>
                 </div>
               ))}
             </div>

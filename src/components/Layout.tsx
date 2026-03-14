@@ -13,7 +13,7 @@ export default function Layout({ children }: LayoutProps) {
                      location.pathname.startsWith('/account') || 
                      location.pathname === '/checkout' ||
                      location.pathname.startsWith('/careers');
-  const hideHeader = location.pathname.startsWith('/careers') || location.pathname === '/auth';
+  const hideHeader = location.pathname.startsWith('/careers') || location.pathname === '/auth' || location.pathname === '/checkout';
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   // Don't render layout for admin routes - they have their own layout

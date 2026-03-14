@@ -163,12 +163,18 @@ export default function Cart() {
                     </button>
                     <span className="px-3 text-sm font-medium min-w-[32px] text-center">{item.quantity}</span>
                     <button
-                      onClick={() => updateCartItem(item.id, item.quantity + 1)}
-                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center active:scale-95 rounded-r-md"
+                      onClick={() => updateCartItem(item.id, Math.min(item.product?.stock_quantity ?? 99, item.quantity + 1))}
+                      disabled={item.quantity >= (item.product?.stock_quantity ?? 99)}
+                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center active:scale-95 rounded-r-md disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
+                  {item.product?.stock_quantity != null && item.quantity >= item.product.stock_quantity && item.product.stock_quantity > 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
+                      Only {item.product.stock_quantity} available
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

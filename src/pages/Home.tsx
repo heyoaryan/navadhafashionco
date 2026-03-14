@@ -171,7 +171,7 @@ export default function Home() {
           </div>
           
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-light text-gray-700 dark:text-gray-300 mb-6 sm:mb-8 tracking-wide px-4">
-            Where Elegance Meets Contemporary Style
+            From a Mother's Devotion to a Daughter's Vision
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4 max-w-md sm:max-w-none mx-auto">
             <Link
@@ -273,9 +273,18 @@ export default function Home() {
       {/* All Products with Infinite Scroll */}
       {allProducts.length > 0 && (
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
-          <div className="mb-8 sm:mb-12">
-            <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
+          <div className="flex justify-between items-center mb-8 sm:mb-12">
+            <div>
+              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
+            </div>
+            <Link
+              to="/shop"
+              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2"
+            >
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {allProducts.map((product) => (

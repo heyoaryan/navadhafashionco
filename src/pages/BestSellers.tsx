@@ -97,13 +97,13 @@ export default function BestSellers() {
   };
 
   if (loading) {
-    return <LoadingState type="page" message="Finding Best Sellers..." variant="pulse" />;
+    return <LoadingState type="page" message="Finding Most Loved..." variant="pulse" />;
   }
 
   return (
     <>
       <SEO 
-        title="Best Sellers - Top Trending Fashion"
+        title="Most Loved - Top Trending Fashion"
         description="Shop our best-selling products. Discover what everyone is loving from Navadha Fashion Co."
       />
       
@@ -127,7 +127,7 @@ export default function BestSellers() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
-                Best Sellers
+                Most Loved
               </h1>
               
               {/* Decorative line */}
@@ -192,7 +192,7 @@ export default function BestSellers() {
           {products.length === 0 ? (
             <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
               <Award className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">No best sellers available</p>
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">No most loved products available</p>
               <p className="text-gray-500 dark:text-gray-500 text-sm">Check back soon for trending products!</p>
             </div>
           ) : (

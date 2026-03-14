@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Instagram, Facebook, Linkedin, Mail } from 'lucide-react';
+import { Instagram, Mail } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -110,22 +110,16 @@ export default function Footer() {
             <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
               <Instagram className="w-5 h-5" />
             </a>
-            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
-              <Facebook className="w-5 h-5" />
-            </a>
-            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
-              <Linkedin className="w-5 h-5" />
-            </a>
-            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
+            <a href="mailto:navadhafashionco@gmail.com" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
               <Mail className="w-5 h-5" />
             </a>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             <Link to="/privacy" className="hover:text-rose-400 transition-colors">
               Privacy Policy
             </Link>
-            <span className="hidden sm:inline">•</span>
+            <span>•</span>
             <Link to="/terms" className="hover:text-rose-400 transition-colors">
               Terms of Service
             </Link>

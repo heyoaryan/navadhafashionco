@@ -231,7 +231,7 @@ export default function Header() {
     },
     { name: 'Boutique', path: '/boutique' },
     { 
-      name: 'Best Sellers', 
+      name: 'Most Loved', 
       path: '/best-sellers',
       icon: TrendingUp,
       highlight: true

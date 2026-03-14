@@ -39,11 +39,17 @@ export default function Analytics() {
   const [popularProducts, setPopularProducts] = useState<PopularProduct[]>([]);
   const [topOrders, setTopOrders] = useState<TopOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('today');
+  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('today');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
   useEffect(() => {
-    fetchAnalytics();
+    if (timeRange !== 'custom') fetchAnalytics();
   }, [timeRange]);
+
+  useEffect(() => {
+    if (timeRange === 'custom' && customStart && customEnd) fetchAnalytics();
+  }, [customStart, customEnd]);
 
   const getDateFilter = () => {
     const now = new Date();
@@ -51,8 +57,18 @@ export default function Analytics() {
       case 'today': { const d = new Date(now); d.setHours(0,0,0,0); return d.toISOString(); }
       case 'week': { const d = new Date(now); d.setDate(d.getDate()-7); return d.toISOString(); }
       case 'month': { const d = new Date(now); d.setMonth(d.getMonth()-1); return d.toISOString(); }
+      case 'custom': return customStart ? new Date(customStart).toISOString() : null;
       default: return null;
     }
+  };
+
+  const getCustomEndFilter = () => {
+    if (timeRange === 'custom' && customEnd) {
+      const d = new Date(customEnd);
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    }
+    return null;
   };
 
   const fetchAnalytics = async () => {
@@ -90,6 +106,8 @@ export default function Analytics() {
       // Popular products
       let productQuery = supabase.from('product_clicks').select('product_id, products(name, main_image_url)');
       if (dateFilter) productQuery = productQuery.gte('created_at', dateFilter);
+      const endFilter = getCustomEndFilter();
+      if (endFilter) productQuery = productQuery.lte('created_at', endFilter);
       const { data: productClicksData } = await productQuery;
 
       if (productClicksData) {
@@ -105,6 +123,7 @@ export default function Analytics() {
       // Top orders by value
       let ordersQuery = supabase.from('orders').select('id, order_number, total, status, created_at').neq('status', 'cancelled').order('total', { ascending: false }).limit(8);
       if (dateFilter) ordersQuery = ordersQuery.gte('created_at', dateFilter);
+      if (endFilter) ordersQuery = ordersQuery.lte('created_at', endFilter);
       const { data: ordersData } = await ordersQuery;
       setTopOrders(ordersData || []);
 
@@ -115,7 +134,7 @@ export default function Analytics() {
     }
   };
 
-  const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : 'Total';
+  const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : timeRange === 'custom' ? 'Custom' : 'Total';
   const currentClicks = timeRange === 'today' ? stats.todayProductClicks : stats.totalProductClicks;
   const currentSignups = timeRange === 'today' ? stats.todaySignups : stats.totalSignups;
 
@@ -137,16 +156,36 @@ export default function Analytics() {
           <h1 className="text-2xl sm:text-3xl font-light tracking-wider mb-2 text-gray-900 dark:text-gray-100">Analytics</h1>
           <p className="text-gray-600 dark:text-gray-400">Track your site performance and user behavior</p>
         </div>
-        <select
-          value={timeRange}
-          onChange={(e) => setTimeRange(e.target.value as any)}
-          className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
-        >
-          <option value="today">Today</option>
-          <option value="week">Last 7 Days</option>
-          <option value="month">Last 30 Days</option>
-          <option value="all">All Time</option>
-        </select>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as any)}
+            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
+          >
+            <option value="today">Today</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+            <option value="all">All Time</option>
+            <option value="custom">Custom Range</option>
+          </select>
+          {timeRange === 'custom' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 text-sm"
+              />
+              <span className="text-gray-500 dark:text-gray-400 text-sm">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 text-sm"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats — 3 cards */}
