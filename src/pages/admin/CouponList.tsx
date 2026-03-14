@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, BarChart2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
 
@@ -290,6 +290,67 @@ export default function CouponList() {
         </div>
       )}
 
+      {/* Coupon Analytics Summary */}
+      {coupons.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
+            <p className="text-2xl font-light text-gray-900 dark:text-gray-100">{coupons.length}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Coupons</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
+            <p className="text-2xl font-light text-green-600 dark:text-green-400">
+              {coupons.filter(c => c.is_active && !isExpired(c.expires_at)).length}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
+            <p className="text-2xl font-light text-red-500 dark:text-red-400">
+              {coupons.filter(c => isExpired(c.expires_at)).length}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Expired</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
+            <p className="text-2xl font-light text-purple-600 dark:text-purple-400">
+              {coupons.reduce((sum, c) => sum + c.used_count, 0)}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Uses</p>
+          </div>
+        </div>
+      )}
+
+      {/* Expired Coupons Analytics */}
+      {coupons.filter(c => isExpired(c.expires_at)).length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6">
+          <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4">
+            <BarChart2 className="w-4 h-4 text-rose-500" />
+            Expired Coupon Usage
+          </h2>
+          <div className="space-y-3">
+            {coupons.filter(c => isExpired(c.expires_at)).map(c => {
+              const limit = c.usage_limit || 0;
+              const pct = limit > 0 ? Math.min((c.used_count / limit) * 100, 100) : 100;
+              return (
+                <div key={c.id}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-sm text-gray-800 dark:text-gray-200">{c.code}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {c.used_count} / {c.usage_limit ?? '∞'} uses
+                      {c.expires_at && <span className="ml-2 text-red-400">Expired {new Date(c.expires_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}</span>}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-rose-400 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Coupons List */}
       {coupons.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
@@ -327,7 +388,25 @@ export default function CouponList() {
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {coupon.used_count} / {coupon.usage_limit || '∞'}
+                      <div className="flex flex-col gap-1 min-w-[80px]">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {coupon.used_count} / {coupon.usage_limit ?? '∞'}
+                        </span>
+                        {coupon.usage_limit && (
+                          <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full transition-all duration-500 ${
+                                coupon.used_count >= coupon.usage_limit
+                                  ? 'bg-red-400'
+                                  : coupon.used_count / coupon.usage_limit > 0.7
+                                  ? 'bg-orange-400'
+                                  : 'bg-green-400'
+                              }`}
+                              style={{ width: `${Math.min((coupon.used_count / coupon.usage_limit) * 100, 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">
                       {coupon.expires_at

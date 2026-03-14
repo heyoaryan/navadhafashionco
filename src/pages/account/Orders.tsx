@@ -144,15 +144,32 @@ export default function Orders() {
     return orders.filter(o => o.status === status).length;
   };
 
-  const canReturnOrder = (order: Order) => {
-    if (order.status !== 'delivered') return false;
-    
-    // Check if delivered within last 5 days
+  // Returns the type of next action: 'exchange' (1st time), 'refund' (2nd time), or null
+  const getNextReturnAction = (order: Order): 'exchange' | 'refund' | null => {
+    if (order.status !== 'delivered') return null;
+
     const deliveredDate = new Date(order.updated_at || order.created_at);
     const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return daysSinceDelivery <= 5;
+    if (daysSinceDelivery > 5) return null;
+
+    const orderReturns = getOrderReturns(order.id);
+
+    // No returns yet → show Exchange
+    if (orderReturns.length === 0) return 'exchange';
+
+    // Has an exchange request that was approved/completed → show Return (refund)
+    const hasApprovedExchange = orderReturns.some(
+      r => (!r.return_type || r.return_type === 'exchange') && (r.status === 'approved' || r.status === 'completed')
+    );
+    // Already has a refund request pending/approved → nothing more
+    const hasRefundRequest = orderReturns.some(r => r.return_type === 'refund');
+
+    if (hasApprovedExchange && !hasRefundRequest) return 'refund';
+
+    return null;
   };
+
+  const canReturnOrder = (order: Order) => getNextReturnAction(order) !== null;
 
   const canCancelOrder = (order: Order) => {
     if (order.status !== 'processing') return false;
@@ -234,6 +251,9 @@ export default function Orders() {
       return;
     }
     
+    const returnType = getNextReturnAction(selectedOrder);
+    if (!returnType) return;
+
     setSubmittingReturn(true);
     try {
       // Get order items
@@ -244,9 +264,15 @@ export default function Orders() {
 
       if (itemsError) throw itemsError;
 
+      // Find previous exchange return id if this is a refund
+      const orderReturns = getOrderReturns(selectedOrder.id);
+      const previousReturn = returnType === 'refund'
+        ? orderReturns.find(r => r.return_type === 'exchange' && (r.status === 'approved' || r.status === 'completed'))
+        : null;
+
       // Create return for all items in the order
-      const returnPromises = (orderItems || []).map(item => 
-        supabase.from('returns').insert({
+      for (const item of (orderItems || [])) {
+        const { error: insertError } = await supabase.from('returns').insert({
           order_id: selectedOrder.id,
           order_item_id: item.id,
           user_id: user.id,
@@ -256,18 +282,27 @@ export default function Orders() {
           quantity: item.quantity,
           size: item.size,
           color: item.color,
+          price: item.price,
           reason: returnReason,
           reason_details: returnDetails,
           refund_amount: item.subtotal,
           images: returnImages,
-          return_type: 'refund',
+          return_type: returnType,
+          previous_return_id: previousReturn?.id || null,
           status: 'pending'
-        })
-      );
-
-      await Promise.all(returnPromises);
+        });
+        if (insertError) {
+          console.error('[RETURN INSERT ERROR]', insertError);
+          throw insertError;
+        }
+      }
       
-      showToast('Return request submitted successfully', 'success');
+      showToast(
+        returnType === 'exchange'
+          ? 'Exchange request submitted! Admin will review shortly.'
+          : 'Return & refund request submitted! Admin will review shortly.',
+        'success'
+      );
       setShowReturnModal(false);
       setSelectedOrder(null);
       setReturnReason('defective');
@@ -276,13 +311,29 @@ export default function Orders() {
       fetchOrders();
     } catch (error) {
       console.error('Error submitting return:', error);
-      showToast('Failed to submit return request', 'error');
+      showToast('Failed to submit request', 'error');
     } finally {
       setSubmittingReturn(false);
     }
   };
 
   const getStatusMessage = (order: Order) => {
+    const orderReturns = getOrderReturns(order.id);
+    if (orderReturns.length > 0) {
+      const latestReturn = orderReturns[0];
+      const isExchange = !latestReturn.return_type || latestReturn.return_type === 'exchange';
+      if (isExchange) {
+        if (latestReturn.status === 'pending') return 'Exchange request under admin review';
+        if (latestReturn.status === 'approved') return 'Exchange approved! Pickup will be scheduled';
+        if (latestReturn.status === 'completed') return 'Exchange completed! New item shipped';
+        if (latestReturn.status === 'rejected') return 'Exchange rejected. You may request a return';
+      } else {
+        if (latestReturn.status === 'pending') return 'Return & refund request under admin review';
+        if (latestReturn.status === 'approved') return 'Return approved! Refund will be processed';
+        if (latestReturn.status === 'refunded') return 'Refund completed! Amount credited';
+        if (latestReturn.status === 'rejected') return 'Return rejected. Contact support for help';
+      }
+    }
     switch (order.status) {
       case 'processing':
         return canCancelOrder(order) 
@@ -291,8 +342,8 @@ export default function Orders() {
       case 'shipped':
         return 'Order has been shipped and is on the way';
       case 'delivered':
-        return canReturnOrder(order)
-          ? 'Order delivered (Return/Exchange available for 5 days)'
+        return getNextReturnAction(order)
+          ? `Order delivered (${getNextReturnAction(order) === 'exchange' ? 'Exchange' : 'Return'} available for 5 days)`
           : 'Order delivered';
       case 'cancelled':
         return 'Order was cancelled';
@@ -403,18 +454,44 @@ export default function Orders() {
               {/* Order Header */}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h3 className="font-medium text-lg">Order #{order.order_number}</h3>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${getStatusColor(order.status)} ${
-                        order.status === 'delivered' ? 'animate-pulse-green' :
-                        order.status === 'shipped' ? 'animate-pulse-blue' :
-                        order.status === 'processing' ? 'animate-pulse-yellow' :
-                        ''
-                      }`}
-                    >
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
+                    {(() => {
+                      const orderReturns = getOrderReturns(order.id);
+                      const latestReturn = orderReturns[0];
+                      if (latestReturn) {
+                        // null/undefined return_type → treat as exchange (1st return)
+                        const isExchange = !latestReturn.return_type || latestReturn.return_type === 'exchange';
+                        const statusLabel = latestReturn.status === 'completed' ? 'Exchanged'
+                          : latestReturn.status === 'refunded' ? 'Refunded'
+                          : latestReturn.status === 'approved' ? (isExchange ? 'Exchange Approved' : 'Return Approved')
+                          : latestReturn.status === 'rejected' ? (isExchange ? 'Exchange Rejected' : 'Return Rejected')
+                          : isExchange ? '🔄 Exchange Initiated' : '↩ Return Initiated';
+                        const cls = isExchange
+                          ? latestReturn.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          : latestReturn.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          : latestReturn.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          : latestReturn.status === 'refunded' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${cls}`}>
+                            {statusLabel}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${getStatusColor(order.status)} ${
+                            order.status === 'delivered' ? 'animate-pulse-green' :
+                            order.status === 'shipped' ? 'animate-pulse-blue' :
+                            order.status === 'processing' ? 'animate-pulse-yellow' : ''
+                          }`}
+                        >
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                     Placed on {new Date(order.created_at).toLocaleDateString('en-IN', {
@@ -448,7 +525,7 @@ export default function Orders() {
                   {canReturnOrder(order) && (
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 border border-orange-200 dark:border-orange-800 rounded-lg text-xs font-medium">
                       <RotateCcw className="w-3 h-3" />
-                      Return/Exchange Available (5 days left)
+                      {getNextReturnAction(order) === 'exchange' ? 'Exchange Available (5 days)' : 'Return Available (5 days)'}
                     </span>
                   )}
                   {canCancelOrder(order) && (
@@ -478,10 +555,14 @@ export default function Orders() {
                       setSelectedOrder(order);
                       setShowReturnModal(true);
                     }}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium text-sm"
+                    className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg transition-colors font-medium text-sm ${
+                      getNextReturnAction(order) === 'exchange'
+                        ? 'bg-blue-500 hover:bg-blue-600'
+                        : 'bg-orange-500 hover:bg-orange-600'
+                    }`}
                   >
                     <RotateCcw className="w-4 h-4" />
-                    Return/Exchange
+                    {getNextReturnAction(order) === 'exchange' ? 'Request Exchange' : 'Request Return'}
                   </button>
                 )}
                 
@@ -665,7 +746,9 @@ export default function Orders() {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl sm:text-2xl font-medium">Request Return/Exchange</h2>
+                <h2 className="text-xl sm:text-2xl font-medium">
+                  {getNextReturnAction(selectedOrder) === 'exchange' ? '🔄 Request Exchange' : '↩ Request Return & Refund'}
+                </h2>
                 <button
                   onClick={() => {
                     setShowReturnModal(false);
@@ -680,20 +763,36 @@ export default function Orders() {
                 </button>
               </div>
 
-              {/* Return Info */}
-              <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <p className="text-sm font-medium mb-1">📦 Full Order Return</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  All items in this order will be returned. Admin will review and approve your request.
+              {/* Exchange vs Refund Info */}
+              {getNextReturnAction(selectedOrder) === 'exchange' ? (
+                <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">🔄 This is an Exchange Request (1st Return)</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    You will receive the same product or a different size/color. No money refund at this stage.
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    If exchange doesn't work out, you can request a full refund after exchange is completed.
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-1">💰 This is a Return & Refund Request (2nd Return)</p>
+                  <p className="text-xs text-orange-700 dark:text-orange-300">
+                    Your exchange was already processed. Amount will be refunded to your original payment method after admin approval.
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                  ⚠️ Admin approval required. You will be notified once reviewed.
                 </p>
               </div>
 
               {/* Order Info */}
               <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm font-medium mb-2">Order #{selectedOrder.order_number}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Total: ₹{selectedOrder.total.toLocaleString()}
-                </p>
+                <p className="text-sm font-medium mb-1">Order #{selectedOrder.order_number}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Total: ₹{selectedOrder.total.toLocaleString()}</p>
               </div>
 
               {/* Return Reason */}
@@ -806,7 +905,11 @@ export default function Orders() {
                 <button
                   onClick={handleSubmitReturn}
                   disabled={submittingReturn || !returnDetails.trim()}
-                  className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`flex-1 px-4 py-3 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    getNextReturnAction(selectedOrder) === 'exchange'
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : 'bg-orange-500 hover:bg-orange-600'
+                  }`}
                 >
                   {submittingReturn ? (
                     <>
@@ -816,7 +919,7 @@ export default function Orders() {
                   ) : (
                     <>
                       <RotateCcw className="w-4 h-4" />
-                      Submit Return Request
+                      {getNextReturnAction(selectedOrder) === 'exchange' ? 'Submit Exchange Request' : 'Submit Return Request'}
                     </>
                   )}
                 </button>

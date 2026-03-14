@@ -18,6 +18,8 @@ export default function CustomerList() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithStats | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showBlacklistModal, setShowBlacklistModal] = useState(false);
+  const [showRemoveBlacklistModal, setShowRemoveBlacklistModal] = useState(false);
+  const [removingBlacklistId, setRemovingBlacklistId] = useState<string | null>(null);
   const [blacklistReason, setBlacklistReason] = useState('');
   const [blacklistNotes, setBlacklistNotes] = useState('');
   const [customerReturns, setCustomerReturns] = useState<any[]>([]);
@@ -47,16 +49,23 @@ export default function CustomerList() {
 
       if (profilesError) throw profilesError;
 
+      // Fetch ALL active blacklist entries for customers in one query
+      const { data: blacklistData } = await supabase
+        .from('blacklist')
+        .select('entity_id')
+        .eq('entity_type', 'customer')
+        .eq('is_active', true);
+
+      const blacklistedIds = new Set((blacklistData || []).map((b: any) => b.entity_id));
+
       // For each customer, fetch their order stats
       const customersWithStats = await Promise.all(
         (profilesData || []).map(async (customer: any) => {
-          // Get order count
           const { count: orderCount } = await supabase
             .from('orders')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', customer.id);
 
-          // Get total spent
           const { data: ordersData } = await supabase
             .from('orders')
             .select('total')
@@ -64,10 +73,25 @@ export default function CustomerList() {
 
           const totalSpent = ordersData?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
 
+          const { data: returnsData } = await supabase
+            .from('returns')
+            .select('refund_amount, return_type')
+            .eq('user_id', customer.id);
+
+          const actualReturns = returnsData?.filter(r => r.return_type === 'refund') || [];
+          const returnCount = actualReturns.length;
+          const totalReturnsValue = actualReturns.reduce((sum, r) => sum + Number(r.refund_amount), 0);
+
+          // is_blacklisted = true if EITHER profiles field OR blacklist table says so
+          const isBlacklisted = customer.is_blacklisted === true || blacklistedIds.has(customer.id);
+
           return {
             ...customer,
+            is_blacklisted: isBlacklisted,
             order_count: orderCount || 0,
-            total_spent: totalSpent
+            total_spent: totalSpent,
+            return_count: returnCount,
+            total_returns_value: totalReturnsValue,
           };
         })
       );
@@ -87,6 +111,7 @@ export default function CustomerList() {
         .from('returns')
         .select('*')
         .eq('user_id', customerId)
+        .eq('return_type', 'refund')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -113,6 +138,7 @@ export default function CustomerList() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Insert into blacklist table — this is the source of truth
       const { error: blacklistError } = await supabase
         .from('blacklist')
         .insert({
@@ -126,29 +152,40 @@ export default function CustomerList() {
 
       if (blacklistError) throw blacklistError;
 
-      const { error: profileError } = await supabase
+      // Also update profiles.is_blacklisted — ignore error if RLS blocks it
+      await supabase
         .from('profiles')
         .update({ is_blacklisted: true })
         .eq('id', selectedCustomer.id);
 
-      if (profileError) throw profileError;
+      // Update local state immediately
+      const updated = { ...selectedCustomer, is_blacklisted: true };
+      setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? updated : c));
+      setSelectedCustomer(updated);
 
-      alert('Customer blacklisted successfully');
       setShowBlacklistModal(false);
       setShowDetailModal(false);
       setBlacklistReason('');
       setBlacklistNotes('');
-      fetchCustomers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error blacklisting customer:', error);
-      alert('Failed to blacklist customer');
+      alert(`Failed to blacklist customer: ${error?.message || error}`);
     }
   };
 
-  const removeBlacklist = async (customerId: string) => {
-    if (!confirm('Are you sure you want to remove this customer from blacklist?')) return;
+  const confirmRemoveBlacklist = (customerId: string) => {
+    setRemovingBlacklistId(customerId);
+    setShowRemoveBlacklistModal(true);
+  };
+
+  const removeBlacklist = async () => {
+    const customerId = removingBlacklistId;
+    if (!customerId) return;
+    setShowRemoveBlacklistModal(false);
+    setRemovingBlacklistId(null);
 
     try {
+      // Deactivate blacklist entry — source of truth
       const { error: blacklistError } = await supabase
         .from('blacklist')
         .update({ is_active: false })
@@ -157,19 +194,21 @@ export default function CustomerList() {
 
       if (blacklistError) throw blacklistError;
 
-      const { error: profileError } = await supabase
+      // Also update profiles.is_blacklisted — ignore error if RLS blocks it
+      await supabase
         .from('profiles')
         .update({ is_blacklisted: false })
         .eq('id', customerId);
 
-      if (profileError) throw profileError;
-
-      alert('Customer removed from blacklist');
-      fetchCustomers();
+      // Update local state immediately
+      setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, is_blacklisted: false } : c));
+      if (selectedCustomer?.id === customerId) {
+        setSelectedCustomer(prev => prev ? { ...prev, is_blacklisted: false } : null);
+      }
       setShowDetailModal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing blacklist:', error);
-      alert('Failed to remove blacklist');
+      alert(`Failed to remove blacklist: ${error?.message || error}`);
     }
   };
 
@@ -494,7 +533,7 @@ export default function CustomerList() {
               <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 {selectedCustomer.is_blacklisted ? (
                   <button
-                    onClick={() => removeBlacklist(selectedCustomer.id)}
+                    onClick={() => confirmRemoveBlacklist(selectedCustomer.id)}
                     className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
                   >
                     Remove from Blacklist
@@ -577,6 +616,37 @@ export default function CustomerList() {
                   setBlacklistNotes('');
                 }}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRemoveBlacklistModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                <Ban className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Remove from Blacklist
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to remove this customer from the blacklist? They will regain full access to the store.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={removeBlacklist}
+                className="flex-1 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium text-sm transition-colors"
+              >
+                Yes, Remove
+              </button>
+              <button
+                onClick={() => { setShowRemoveBlacklistModal(false); setRemovingBlacklistId(null); }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-sm transition-colors"
               >
                 Cancel
               </button>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
@@ -23,28 +23,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
+  // useRef so the flag is always current inside closures/event listeners
+  const blockingRef = useRef(false);
+
+  // Check blacklist table directly — profiles RLS blocks blacklisted users so we can't rely on that
+  const isUserBlacklisted = async (userId: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from('blacklist')
+      .select('id')
+      .eq('entity_id', userId)
+      .eq('entity_type', 'customer')
+      .eq('is_active', true)
+      .maybeSingle();
+    return !!data;
+  };
+
+  const forceSignOut = async (userId: string) => {
+    blockingRef.current = true;
+    localStorage.removeItem(`profile_${userId}`);
+    setProfile(null);
+    setUser(null);
+    setSession(null);
+    setLoading(false);
+    await supabase.auth.signOut();
+    // Reset after supabase signOut fires onAuthStateChange
+    setTimeout(() => { blockingRef.current = false; }, 1500);
+  };
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!error || error.code === 'PGRST116') {
+        if (data) {
+          setProfile(data);
+          localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
+        }
+      }
+    } catch {
+      // Silently handle
+    } finally {
       setLoading(false);
-    }, 5000);
+    }
+  };
+
+  useEffect(() => {
+    const loadingTimeout = setTimeout(() => setLoading(false), 5000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(loadingTimeout);
-      setSession(session);
-      setUser(session?.user ?? null);
       if (session?.user) {
-        // Load cached profile immediately for instant UI
-        const cachedProfile = localStorage.getItem(`profile_${session.user.id}`);
-        if (cachedProfile) {
-          try {
-            setProfile(JSON.parse(cachedProfile));
-          } catch (e) {
-            // Invalid cache, ignore
+        // Check blacklist before setting state on initial load
+        isUserBlacklisted(session.user.id).then(async (blacklisted) => {
+          if (blacklisted) {
+            await forceSignOut(session.user.id);
+            return;
           }
-        }
-        // Then fetch fresh data
-        fetchProfile(session.user.id);
+          setSession(session);
+          setUser(session.user);
+          const cached = localStorage.getItem(`profile_${session.user.id}`);
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              if (!parsed?.is_blacklisted) setProfile(parsed);
+            } catch { /* ignore */ }
+          }
+          fetchProfile(session.user.id);
+        });
       } else {
         setLoading(false);
       }
@@ -54,21 +103,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // If we triggered this event by force-signing out a blacklisted user, ignore it
+      if (blockingRef.current) return;
+
       (async () => {
-        setSession(session);
-        setUser(session?.user ?? null);
         if (session?.user) {
-          // Load cached profile immediately
-          const cachedProfile = localStorage.getItem(`profile_${session.user.id}`);
-          if (cachedProfile) {
+          // FIRST: check blacklist before setting any state
+          const blacklisted = await isUserBlacklisted(session.user.id);
+          if (blacklisted) {
+            await forceSignOut(session.user.id);
+            window.location.replace('/auth?blocked=1');
+            return;
+          }
+
+          // Also check profile's is_blacklisted field
+          const { data: pd } = await supabase
+            .from('profiles')
+            .select('is_blacklisted')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (pd?.is_blacklisted) {
+            await forceSignOut(session.user.id);
+            window.location.replace('/auth?blocked=1');
+            return;
+          }
+
+          // Only set user/session AFTER blacklist check passes
+          setSession(session);
+          setUser(session.user);
+
+          // Load cached profile
+          const cached = localStorage.getItem(`profile_${session.user.id}`);
+          if (cached) {
             try {
-              setProfile(JSON.parse(cachedProfile));
-            } catch (e) {
-              // Invalid cache, ignore
-            }
+              const parsed = JSON.parse(cached);
+              if (!parsed?.is_blacklisted) setProfile(parsed);
+            } catch { /* ignore */ }
           }
           await fetchProfile(session.user.id);
         } else {
+          setSession(null);
+          setUser(null);
           setProfile(null);
           setLoading(false);
         }
@@ -81,106 +156,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (!error || error.code === 'PGRST116') {
-        setProfile(data);
-        // Cache profile for instant load next time
-        if (data) {
-          localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
-        }
-      }
-    } catch (error) {
-      // Silently handle errors
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signUp = async (email: string, password: string, fullName: string): Promise<void> => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-        emailRedirectTo: undefined, // Disable email confirmation redirect
-      },
+      options: { data: { full_name: fullName }, emailRedirectTo: undefined },
     });
-
     if (error) throw error;
-    
-    // Return the signup data so we can check if user is confirmed
     return data as any;
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (error) {
-        console.error('Sign in error:', error);
-        throw error;
-      }
-    } catch (error: any) {
-      console.error('Sign in failed:', error);
-      // Re-throw with better error message
+    if (error) {
       if (error.message?.includes('fetch')) {
         throw new Error('Cannot connect to server. Please check your internet connection and try again.');
       }
       throw error;
     }
+
+    // Block blacklisted users on email/password login
+    if (data.user) {
+      const blacklisted = await isUserBlacklisted(data.user.id);
+      if (blacklisted) {
+        await forceSignOut(data.user.id);
+        throw new Error('BLACKLISTED');
+      }
+    }
   };
 
   const signOut = async () => {
-    try {
-      // Immediately clear UI state for instant feedback
-      const userId = user?.id;
-      setProfile(null);
-      setUser(null);
-      setSession(null);
-      
-      // Clear profile cache
-      if (userId) {
-        localStorage.removeItem(`profile_${userId}`);
-      }
-      
-      // Sign out from Supabase in background (don't wait)
-      supabase.auth.signOut().catch((error) => {
-        console.error('Background signout error:', error);
-      });
-    } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
-    }
+    const userId = user?.id;
+    setProfile(null);
+    setUser(null);
+    setSession(null);
+    if (userId) localStorage.removeItem(`profile_${userId}`);
+    supabase.auth.signOut().catch(console.error);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) throw new Error('No user logged in');
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
+    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
     if (error) throw error;
-
     await fetchProfile(user.id);
-    
-    // Update cache immediately
     if (profile) {
-      const updatedProfile = { ...profile, ...updates };
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify(updatedProfile));
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify({ ...profile, ...updates }));
     }
   };
 
@@ -190,19 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        session,
-        loading,
-        signUp,
-        signIn,
-        signOut,
-        updateProfile,
-        refreshProfile,
-      }}
-    >
+    <AuthContext.Provider value={{ user, profile, session, loading, signUp, signIn, signOut, updateProfile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -210,8 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

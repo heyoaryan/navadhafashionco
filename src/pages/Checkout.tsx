@@ -481,13 +481,33 @@ export default function Checkout() {
   const tax = Math.round((subtotal - discount) * 0.05);
   const total = subtotal - discount + shippingCost + tax;
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (currentStep === 1) {
       // Validate delivery method
       if (deliveryMethod === 'delivery' && !selectedAddress) {
         showToast('Please select a delivery address', 'error');
         return;
       }
+
+      // Check if selected address area is blacklisted
+      if (deliveryMethod === 'delivery' && selectedAddress) {
+        const addr = addresses.find(a => a.id === selectedAddress);
+        if (addr) {
+          const { data: blacklistData } = await supabase
+            .from('blacklist')
+            .select('id')
+            .eq('entity_type', 'area')
+            .eq('is_active', true)
+            .or(`area_pincode.eq.${addr.postal_code},and(area_city.eq.${addr.city},area_state.eq.${addr.state})`)
+            .maybeSingle();
+
+          if (blacklistData) {
+            showToast(`We're unable to deliver to ${addr.city}, ${addr.state} (${addr.postal_code}). This area is currently restricted.`, 'error');
+            return;
+          }
+        }
+      }
+
       setCurrentStep(2);
     } else if (currentStep === 2) {
       setCurrentStep(3);

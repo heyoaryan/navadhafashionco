@@ -62,6 +62,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfUse from './pages/TermsOfUse';
 import AdminCareers from './pages/admin/Careers';
 import Careers from './pages/Careers';
+import AuthCallback from './pages/AuthCallback';
 import StoreCareers from './pages/careers/Store';
 import RemoteCareers from './pages/careers/Remote';
 
@@ -116,6 +117,7 @@ function AppContent() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/account" element={<Account />} />
             <Route path="/account/profile" element={<Profile />} />
             <Route path="/account/addresses" element={<Addresses />} />

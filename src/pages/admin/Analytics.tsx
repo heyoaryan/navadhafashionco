@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MousePointerClick, Users, TrendingUp, Package } from 'lucide-react';
+import { MousePointerClick, Users, TrendingUp, Package, ShoppingCart } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
 
@@ -8,6 +8,8 @@ interface AnalyticsStats {
   todayProductClicks: number;
   totalSignups: number;
   todaySignups: number;
+  totalOrders: number;
+  conversionRate: string;
 }
 
 interface PopularProduct {
@@ -17,10 +19,12 @@ interface PopularProduct {
   product_image: string;
 }
 
-interface CategoryView {
-  category_name: string;
-  page_path: string;
-  view_count: number;
+interface TopOrder {
+  id: string;
+  order_number: string;
+  total: number;
+  status: string;
+  created_at: string;
 }
 
 export default function Analytics() {
@@ -29,9 +33,11 @@ export default function Analytics() {
     todayProductClicks: 0,
     totalSignups: 0,
     todaySignups: 0,
+    totalOrders: 0,
+    conversionRate: '0.00',
   });
   const [popularProducts, setPopularProducts] = useState<PopularProduct[]>([]);
-  const [categoryViews, setCategoryViews] = useState<CategoryView[]>([]);
+  const [topOrders, setTopOrders] = useState<TopOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('today');
 
@@ -42,150 +48,66 @@ export default function Analytics() {
   const getDateFilter = () => {
     const now = new Date();
     switch (timeRange) {
-      case 'today':
-        const today = new Date(now.setHours(0, 0, 0, 0));
-        return today.toISOString();
-      case 'week':
-        const weekAgo = new Date(now.setDate(now.getDate() - 7));
-        return weekAgo.toISOString();
-      case 'month':
-        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
-        return monthAgo.toISOString();
-      default:
-        return null;
+      case 'today': { const d = new Date(now); d.setHours(0,0,0,0); return d.toISOString(); }
+      case 'week': { const d = new Date(now); d.setDate(d.getDate()-7); return d.toISOString(); }
+      case 'month': { const d = new Date(now); d.setMonth(d.getMonth()-1); return d.toISOString(); }
+      default: return null;
     }
   };
 
   const fetchAnalytics = async () => {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setHours(0,0,0,0);
       const dateFilter = getDateFilter();
 
-      // Total and today's product clicks
-      const { count: totalProductClicks, error: pcError } = await supabase
-        .from('product_clicks')
-        .select('*', { count: 'exact', head: true });
+      const [
+        { count: totalProductClicks },
+        { count: todayProductClicks },
+        { count: totalSignups },
+        { count: todaySignups },
+        { count: totalOrders },
+      ] = await Promise.all([
+        supabase.from('product_clicks').select('*', { count: 'exact', head: true }),
+        supabase.from('product_clicks').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+        supabase.from('signup_tracking').select('*', { count: 'exact', head: true }),
+        supabase.from('signup_tracking').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+        supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
+      ]);
 
-      if (pcError) console.error('Product clicks error:', pcError);
-
-      const { count: todayProductClicks, error: todayPcError } = await supabase
-        .from('product_clicks')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today.toISOString());
-
-      if (todayPcError) console.error('Today product clicks error:', todayPcError);
-
-      // Total and today's signups
-      const { count: totalSignups, error: signupError } = await supabase
-        .from('signup_tracking')
-        .select('*', { count: 'exact', head: true });
-
-      if (signupError) console.error('Signup tracking error:', signupError);
-
-      const { count: todaySignups, error: todaySignupError } = await supabase
-        .from('signup_tracking')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today.toISOString());
-
-      if (todaySignupError) console.error('Today signup error:', todaySignupError);
+      const clicks = timeRange === 'today' ? (todayProductClicks || 0) : (totalProductClicks || 0);
+      const orders = totalOrders || 0;
+      const conversionRate = clicks > 0 ? ((orders / clicks) * 100).toFixed(2) : '0.00';
 
       setStats({
         totalProductClicks: totalProductClicks || 0,
         todayProductClicks: todayProductClicks || 0,
         totalSignups: totalSignups || 0,
         todaySignups: todaySignups || 0,
+        totalOrders: orders,
+        conversionRate,
       });
 
-      // Popular products (with time filter)
-      let productQuery = supabase
-        .from('product_clicks')
-        .select(`
-          product_id,
-          products (
-            name,
-            main_image_url
-          )
-        `);
-
-      if (dateFilter) {
-        productQuery = productQuery.gte('created_at', dateFilter);
-      }
-
+      // Popular products
+      let productQuery = supabase.from('product_clicks').select('product_id, products(name, main_image_url)');
+      if (dateFilter) productQuery = productQuery.gte('created_at', dateFilter);
       const { data: productClicksData } = await productQuery;
 
       if (productClicksData) {
-        const productCounts = productClicksData.reduce((acc: any, click: any) => {
-          const productId = click.product_id;
-          if (!acc[productId]) {
-            acc[productId] = {
-              product_id: productId,
-              product_name: click.products?.name || 'Unknown',
-              product_image: click.products?.main_image_url || '',
-              click_count: 0,
-            };
-          }
-          acc[productId].click_count++;
+        const counts = productClicksData.reduce((acc: any, click: any) => {
+          const id = click.product_id;
+          if (!acc[id]) acc[id] = { product_id: id, product_name: click.products?.name || 'Unknown', product_image: click.products?.main_image_url || '', click_count: 0 };
+          acc[id].click_count++;
           return acc;
         }, {});
-
-        const sortedProducts = Object.values(productCounts)
-          .sort((a: any, b: any) => b.click_count - a.click_count)
-          .slice(0, 10);
-
-        setPopularProducts(sortedProducts as PopularProduct[]);
+        setPopularProducts(Object.values(counts).sort((a: any, b: any) => b.click_count - a.click_count).slice(0, 10) as PopularProduct[]);
       }
 
-      // Category views from page_views table
-      let pageQuery = supabase
-        .from('page_views')
-        .select('page_path');
+      // Top orders by value
+      let ordersQuery = supabase.from('orders').select('id, order_number, total, status, created_at').neq('status', 'cancelled').order('total', { ascending: false }).limit(8);
+      if (dateFilter) ordersQuery = ordersQuery.gte('created_at', dateFilter);
+      const { data: ordersData } = await ordersQuery;
+      setTopOrders(ordersData || []);
 
-      if (dateFilter) {
-        pageQuery = pageQuery.gte('created_at', dateFilter);
-      }
-
-      const { data: pageViewsData } = await pageQuery;
-
-      if (pageViewsData) {
-        // Category mapping
-        const categoryMap: { [key: string]: string } = {
-          '/western-wear': 'Western Wear',
-          '/indo-western': 'Indo Western',
-          '/ethnic-wear': 'Ethnic Wear',
-          '/work-wear': 'Work Wear',
-          '/occasional-wear': 'Occasional Wear',
-          '/boutique': 'Boutique',
-          '/boutique/ready-made': 'Boutique - Ready Made',
-          '/boutique/customization': 'Boutique - Customization',
-          '/shop': 'Shop',
-          '/': 'Home',
-        };
-
-        // Count category views
-        const categoryCounts: { [key: string]: { category_name: string; page_path: string; view_count: number } } = {};
-        
-        pageViewsData.forEach((view: any) => {
-          const path = view.page_path;
-          const categoryName = categoryMap[path];
-          
-          if (categoryName) {
-            if (!categoryCounts[path]) {
-              categoryCounts[path] = {
-                category_name: categoryName,
-                page_path: path,
-                view_count: 0,
-              };
-            }
-            categoryCounts[path].view_count++;
-          }
-        });
-
-        const sortedCategories = Object.values(categoryCounts)
-          .sort((a, b) => b.view_count - a.view_count);
-
-        setCategoryViews(sortedCategories);
-      }
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {
@@ -193,9 +115,20 @@ export default function Analytics() {
     }
   };
 
-  if (loading) {
-    return <LoadingState type="page" message="Loading Analytics..." variant="spinner" />;
-  }
+  const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : 'Total';
+  const currentClicks = timeRange === 'today' ? stats.todayProductClicks : stats.totalProductClicks;
+  const currentSignups = timeRange === 'today' ? stats.todaySignups : stats.totalSignups;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'shipped': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'processing': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      default: return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  if (loading) return <LoadingState type="page" message="Loading Analytics..." variant="spinner" />;
 
   return (
     <div className="space-y-6">
@@ -216,86 +149,99 @@ export default function Analytics() {
         </select>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <MousePointerClick className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
-            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-              {timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : 'Total'}
-            </span>
+      {/* Stats — 3 cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <MousePointerClick className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">{rangeLabel}</span>
           </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">
-            {timeRange === 'today' ? stats.todayProductClicks : stats.totalProductClicks}
-          </p>
+          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{currentClicks}</p>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Product Clicks</p>
         </div>
 
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <Users className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
-            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-              {timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : 'Total'}
-            </span>
+        <div className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">{rangeLabel}</span>
           </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">
-            {timeRange === 'today' ? stats.todaySignups : stats.totalSignups}
-          </p>
+          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{currentSignups}</p>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">New Signups</p>
+        </div>
+
+        <div className="p-4 sm:p-6 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <ShoppingCart className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+            <span className="text-xs text-gray-500 dark:text-gray-400">All Time</span>
+          </div>
+          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{stats.conversionRate}%</p>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
         </div>
       </div>
 
-      {/* Popular Products */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Package className="w-5 h-5" />
-          Most Clicked Products
-        </h2>
-        {popularProducts.length > 0 ? (
-          <div className="space-y-3">
-            {popularProducts.map((product, index) => (
-              <div key={product.product_id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-lg font-bold text-gray-400 dark:text-gray-500 w-6">{index + 1}</span>
-                {product.product_image && (
-                  <img src={product.product_image} alt={product.product_name} className="w-12 h-12 object-cover rounded" />
-                )}
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{product.product_name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{product.click_count} clicks</p>
+      {/* Stacked sections */}
+      <div className="flex flex-col gap-6">
+        {/* Most Clicked Products */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Package className="w-5 h-5 text-purple-500" />
+            Most Clicked Products
+          </h2>
+          {popularProducts.length > 0 ? (
+            <div className="space-y-3">
+              {popularProducts.map((product, index) => (
+                <div key={product.product_id} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-400 dark:text-gray-500 w-5 shrink-0">{index + 1}</span>
+                  {product.product_image && (
+                    <img src={product.product_image} alt={product.product_name} className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.product_name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                        <div
+                          className="bg-purple-400 h-1.5 rounded-full"
+                          style={{ width: `${(product.click_count / (popularProducts[0]?.click_count || 1)) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{product.click_count}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">No product clicks yet</p>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No product clicks yet</p>
+          )}
+        </div>
 
-      {/* Category Views */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Category Page Views
-        </h2>
-        {categoryViews.length > 0 ? (
-          <div className="space-y-3">
-            {categoryViews.map((category, index) => (
-              <div key={category.page_path} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-lg font-bold text-gray-400 dark:text-gray-500 w-6">{index + 1}</span>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{category.category_name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">{category.page_path}</p>
+        {/* Top Orders by Value */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-rose-500" />
+            Top Orders by Value
+          </h2>
+          {topOrders.length > 0 ? (
+            <div className="space-y-2">
+              {topOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">#{order.order_number}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(order.status)}`}>{order.status}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">₹{Number(order.total).toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{category.view_count}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">views</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">No category views yet</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No orders yet</p>
+          )}
+        </div>
       </div>
     </div>
   );

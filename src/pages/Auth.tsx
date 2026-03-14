@@ -19,8 +19,17 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [isBlacklisted, setIsBlacklisted] = useState(
+    () => new URLSearchParams(window.location.search).get('blocked') === '1'
+  );
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('blocked') === '1') {
+      setIsBlacklisted(true);
+    }
+  }, [location.search]);
   const { user, profile, signUp: authSignUp, signIn: authSignIn } = useAuth();
   const { addToCart } = useCart();
 
@@ -40,6 +49,28 @@ export default function Auth() {
   useEffect(() => {
     const handlePostLoginRedirect = async () => {
       if (user && profile) {
+        // Check blacklist first — both fields
+        if (profile.is_blacklisted) {
+          setIsBlacklisted(true);
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // Also check blacklist table
+        const { data: bl } = await supabase
+          .from('blacklist')
+          .select('id')
+          .eq('entity_id', user.id)
+          .eq('entity_type', 'customer')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (bl) {
+          setIsBlacklisted(true);
+          await supabase.auth.signOut();
+          return;
+        }
+
         const pendingCartItemStr = localStorage.getItem('pendingCartItem');
         if (pendingCartItemStr) {
           try {
@@ -131,6 +162,8 @@ export default function Auth() {
     } catch (err: any) {
       if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
         setError('Cannot connect to server. Please check your internet connection.');
+      } else if (err.message === 'BLACKLISTED') {
+        setIsBlacklisted(true);
       } else if (err.message?.includes('Invalid login credentials')) {
         setError('Wrong email or password. Please try again.');
       } else if (err.message?.includes('Email not confirmed')) {
@@ -146,12 +179,19 @@ export default function Auth() {
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
     setError(''); setLoading(true);
     try {
+      // Save pending redirect so callback page knows where to go
+      if (from) {
+        if (action === 'buyNow') localStorage.setItem('pendingRedirect', '/checkout');
+        else if (action === 'addToCart') localStorage.setItem('pendingRedirect', '/cart');
+        else localStorage.setItem('pendingRedirect', from);
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: `${window.location.origin}/auth/callback`, queryParams: { access_type: 'offline', prompt: 'consent' } },
       });
       if (error) throw error;
     } catch (err: any) {
+      localStorage.removeItem('pendingRedirect');
       setError(`Failed to sign in with ${provider}. Please try again.`);
       setLoading(false);
     }
@@ -195,6 +235,86 @@ export default function Auth() {
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
     </svg>
   );
+
+  // ── Blacklisted Screen ────────────────────────────────────────────────────
+  if (isBlacklisted) {
+    return (
+      <div className="min-h-screen flex lg:flex-row flex-col">
+        {/* Left panel */}
+        <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
+          {slides.map((src, i) => (
+            <div
+              key={src}
+              className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+              style={{ backgroundImage: `url('${src}')`, opacity: i === slideIndex ? 1 : 0 }}
+            />
+          ))}
+          <div className="absolute inset-0 bg-black/60"/>
+          <div className="absolute inset-0 bg-gradient-to-t from-rose-950/70 via-transparent to-transparent"/>
+          <div className="relative z-10 flex flex-col items-center justify-center p-14 text-white w-full text-center">
+            <div className="mb-10">
+              <h1 className="brand-logo text-5xl leading-tight tracking-widest bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">NAVADHA</h1>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <div className="h-px w-14 bg-rose-400/70"/>
+                <span className="text-[0.5rem] font-light tracking-[0.4em] text-rose-300">FASHION CO</span>
+                <div className="h-px w-14 bg-rose-400/70"/>
+              </div>
+            </div>
+            <div className="max-w-sm">
+              <h2 className="text-4xl font-bold leading-tight mb-4">Access<br/>Denied</h2>
+              <p className="text-rose-200/80 text-base leading-relaxed">
+                This account has been restricted from accessing our platform.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-950 px-6 py-12">
+          <div className="w-full max-w-sm text-center">
+
+            {/* Mobile brand */}
+            <div className="lg:hidden mb-10">
+              <BrandLogo />
+            </div>
+
+            {/* Icon */}
+            <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Restricted</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-8">
+              Your account has been suspended due to a violation of our platform policies. If you believe this is a mistake, please reach out to our support team.
+            </p>
+
+            <a
+              href="mailto:support@navadhafashion.com"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl text-sm font-semibold hover:from-rose-600 hover:to-pink-700 transition-all shadow-lg shadow-rose-200 dark:shadow-none"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              Contact Support
+            </a>
+
+            <p className="mt-3 text-xs text-gray-400 dark:text-gray-600">
+              support@navadhafashion.com
+            </p>
+
+            <button
+              onClick={() => setIsBlacklisted(false)}
+              className="mt-8 text-xs text-gray-400 hover:text-rose-500 transition-colors"
+            >
+              ← Back to sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Forgot Password View ───────────────────────────────────────────────────
   if (showForgotPassword) {

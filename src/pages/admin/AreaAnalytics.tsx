@@ -46,10 +46,11 @@ export default function AreaAnalytics() {
 
       if (ordersError) throw ordersError;
 
-      // Get all returns with order details
+      // Get all returns — only actual returns (return_type = 'refund'), not exchanges
       const { data: returns, error: returnsError } = await supabase
         .from('returns')
-        .select('order_id, user_id');
+        .select('order_id, user_id, return_type')
+        .eq('return_type', 'refund');
 
       if (returnsError) throw returnsError;
 
