@@ -86,7 +86,7 @@ export default function OrderList() {
           placeholder="Search by order number..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
+          className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
         />
       </div>
 
@@ -161,59 +161,47 @@ export default function OrderList() {
       {/* Orders Table - Desktop */}
       {filteredOrders.length > 0 ? (
         <>
-          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-900">
+                <thead className="bg-gray-50 dark:bg-gray-900/60">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Order Number
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Total
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Payment
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Actions
-                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</th>
+                    <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
                   {filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono font-medium text-gray-900 dark:text-gray-100">#{order.order_number}</span>
+                    <tr key={order.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-100">#{order.order_number}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {new Date(order.created_at).toLocaleDateString()}
+                      <td className="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-300">
+                        {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
+                      <td className="px-5 py-3.5 font-semibold text-sm text-gray-900 dark:text-gray-100">
                         ₹{order.total.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${getStatusColor(order.status)}`}>
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.payment_status)}`}>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${getStatusColor(order.payment_status)}`}>
                           {order.payment_status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <td className="px-5 py-3.5 text-right">
                         <Link
                           to={`/admin/orders/${order.id}`}
-                          className="inline-flex items-center gap-1 p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" /> View
                         </Link>
                       </td>
                     </tr>
@@ -229,32 +217,28 @@ export default function OrderList() {
               <Link
                 key={order.id}
                 to={`/admin/orders/${order.id}`}
-                className="block bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="block bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-mono font-medium text-sm text-gray-900 dark:text-gray-100">#{order.order_number}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {new Date(order.created_at).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  <Eye className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                  <span className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-100">#{order.order_number}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
                 </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total</p>
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">₹{order.total.toLocaleString('en-IN')}</p>
+                <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Total</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">₹{order.total.toLocaleString('en-IN')}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Status</p>
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.payment_status)}`}>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Payment</p>
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${getStatusColor(order.payment_status)}`}>
                       {order.payment_status}
                     </span>
                   </div>

@@ -289,139 +289,141 @@ export default function ProductList() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="overflow-x-auto">
-              <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Gender</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Season</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {product.main_image_url && (
-                          <img src={product.main_image_url} alt={product.name} className="w-12 h-12 object-cover rounded" />
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{product.name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{product.slug}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{product.sku || '-'}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 capitalize">
-                        {product.gender || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 capitalize">
-                        {product.category || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full capitalize ${
-                        product.season === 'summer' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                        product.season === 'winter' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                      }`}>
-                        {product.season?.replace('-', ' ') || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
-                      {product.compare_at_price && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        product.stock_quantity > 10 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        product.stock_quantity > 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      }`}>
-                        {product.stock_quantity} units
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        product.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                      }`}>
-                        {product.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => openQuickEdit(product)}
-                          className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg"
-                          title="Quick Edit"
-                        >
-                          <Zap className="w-4 h-4" />
-                        </button>
-                        <Link 
-                          to={`/admin/products/${product.id}`} 
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                          title="Full Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                        <button 
-                          onClick={() => handleDelete(product.id)} 
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+              <table className="w-full min-w-[800px]">
+                <thead className="bg-gray-50 dark:bg-gray-900/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[35%]">Product</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">SKU</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {product.main_image_url ? (
+                            <img src={product.main_image_url} alt={product.name} className="w-11 h-11 object-cover rounded-lg flex-shrink-0 border border-gray-100 dark:border-gray-700" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                              <Package className="w-5 h-5 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">{product.name}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{product.slug}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-300 font-mono">{product.sku || <span className="text-gray-400">—</span>}</td>
+                      <td className="px-3 py-3">
+                        {product.gender ? (
+                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 capitalize">
+                            {product.gender}
+                          </span>
+                        ) : <span className="text-gray-400 text-xs">—</span>}
+                      </td>
+                      <td className="px-3 py-3">
+                        {product.category ? (
+                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 capitalize">
+                            {product.category}
+                          </span>
+                        ) : <span className="text-gray-400 text-xs">—</span>}
+                      </td>
+                      <td className="px-3 py-3">
+                        <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
+                        {product.compare_at_price && (
+                          <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                          product.stock_quantity > 10 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                          product.stock_quantity > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                          'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                        }`}>
+                          {product.stock_quantity} units
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                          product.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                          'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                          {product.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openQuickEdit(product)}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                            title="Quick Edit"
+                          >
+                            <Zap className="w-4 h-4" />
+                          </button>
+                          <Link
+                            to={`/admin/products/${product.id}`}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            title="Full Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
             {filteredProducts.map((product) => (
-              <div key={product.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3">
-                <div className="flex gap-3">
-                  {product.main_image_url && (
-                    <img src={product.main_image_url} alt={product.name} className="w-16 h-16 object-cover rounded flex-shrink-0" />
+              <div key={product.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+                <div className="flex gap-3 p-3">
+                  {product.main_image_url ? (
+                    <img src={product.main_image_url} alt={product.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      <Package className="w-7 h-7 text-gray-400" />
+                    </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">{product.name}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{product.slug}</p>
-                    {product.sku && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">SKU: {product.sku}</p>}
-                    <div className="flex gap-2 mt-2 flex-wrap">
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">{product.name}</h3>
+                    {product.sku && <p className="text-xs text-gray-400 font-mono mt-0.5">{product.sku}</p>}
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
                       {product.gender && (
-                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 capitalize">
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 capitalize">
                           {product.gender}
                         </span>
                       )}
                       {product.category && (
-                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 capitalize">
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 capitalize">
                           {product.category}
                         </span>
                       )}
                       {product.season && (
                         <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
-                          product.season === 'summer' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                          product.season === 'winter' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          product.season === 'summer' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
+                          product.season === 'winter' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
+                          'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
                         }`}>
                           {product.season.replace('-', ' ')}
                         </span>
@@ -429,57 +431,56 @@ export default function ProductList() {
                     </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Price</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
+
+                <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                  <div className="px-3 py-2">
+                    <p className="text-xs text-gray-400 mb-0.5">Price</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
                     {product.compare_at_price && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>
+                      <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>
                     )}
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Stock</p>
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      product.stock_quantity > 10 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                      product.stock_quantity > 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                  <div className="px-3 py-2">
+                    <p className="text-xs text-gray-400 mb-0.5">Stock</p>
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      product.stock_quantity > 10 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                      product.stock_quantity > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                      'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                     }`}>
-                      {product.stock_quantity}
+                      {product.stock_quantity} units
+                    </span>
+                  </div>
+                  <div className="px-3 py-2">
+                    <p className="text-xs text-gray-400 mb-0.5">Status</p>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                      product.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                      'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                      {product.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                    product.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                  }`}>
-                    {product.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => openQuickEdit(product)}
-                      className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg"
-                      title="Quick Edit"
-                    >
-                      <Zap className="w-4 h-4" />
-                    </button>
-                    <Link 
-                      to={`/admin/products/${product.id}`} 
-                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                      title="Full Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Link>
-                    <button 
-                      onClick={() => handleDelete(product.id)} 
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+                  <button
+                    onClick={() => openQuickEdit(product)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                  >
+                    <Zap className="w-3.5 h-3.5" /> Quick Edit
+                  </button>
+                  <Link
+                    to={`/admin/products/${product.id}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                  >
+                    <Edit className="w-3.5 h-3.5" /> Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(product.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
                 </div>
               </div>
             ))}

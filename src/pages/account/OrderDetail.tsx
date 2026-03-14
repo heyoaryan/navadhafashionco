@@ -459,6 +459,66 @@ export default function OrderDetail() {
               </div>
             </div>
 
+            {/* Return Status in Timeline */}
+            {returns.length > 0 && (
+              <div className="mb-6 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Return / Exchange Status
+                </h3>
+                {returns.map((ret) => {
+                  const statusConfig: Record<string, { bg: string; text: string; icon: string; msg: string }> = {
+                    pending: {
+                      bg: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
+                      text: 'text-yellow-800 dark:text-yellow-200',
+                      icon: '🕐',
+                      msg: 'Return request submitted — under review by admin',
+                    },
+                    approved: {
+                      bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+                      text: 'text-blue-800 dark:text-blue-200',
+                      icon: '✅',
+                      msg: 'Return approved! Pickup will be scheduled within 2 days',
+                    },
+                    rejected: {
+                      bg: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+                      text: 'text-red-800 dark:text-red-200',
+                      icon: '❌',
+                      msg: `Return rejected${ret.admin_notes ? ': ' + ret.admin_notes : ' — contact support for details'}`,
+                    },
+                    refunded: {
+                      bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+                      text: 'text-green-800 dark:text-green-200',
+                      icon: '💰',
+                      msg: 'Refund processed! Amount credited to your original payment method',
+                    },
+                    completed: {
+                      bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+                      text: 'text-green-800 dark:text-green-200',
+                      icon: '🔄',
+                      msg: 'Exchange completed! New item has been shipped',
+                    },
+                  };
+                  const cfg = statusConfig[ret.status] || statusConfig['pending'];
+                  return (
+                    <div key={ret.id} className={`rounded-lg border p-3 ${cfg.bg}`}>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className={`text-xs font-semibold ${cfg.text}`}>
+                          {cfg.icon} {ret.return_type === 'exchange' ? 'Exchange' : 'Return'} Request
+                          <span className="ml-2 capitalize font-normal opacity-80">({ret.status})</span>
+                        </p>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                          {new Date(ret.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+                      <p className={`text-xs ${cfg.text} opacity-90`}>{cfg.msg}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{ret.product_name}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Detailed Tracking History */}
             {tracking.length > 0 && (
               <div className="space-y-3 sm:space-y-4">
