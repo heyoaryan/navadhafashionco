@@ -58,6 +58,8 @@ import ReturnList from './pages/admin/ReturnList';
 import AreaAnalytics from './pages/admin/AreaAnalytics';
 import JobApplications from './pages/admin/JobApplications';
 import JobPositions from './pages/admin/JobPositions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
 import AdminCareers from './pages/admin/Careers';
 import Careers from './pages/Careers';
 import StoreCareers from './pages/careers/Store';
@@ -154,8 +156,8 @@ function AppContent() {
             <Route path="/shipping" element={<About />} />
             <Route path="/returns" element={<About />} />
             <Route path="/size-guide" element={<SizeGuide />} />
-            <Route path="/privacy" element={<About />} />
-            <Route path="/terms" element={<About />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
           </Routes>
         </Layout>
       </WishlistProvider>
