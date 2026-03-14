@@ -6,7 +6,7 @@ export default function Shipping() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Shipping Information</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-4">Shipping Information</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
             Fast & Reliable Delivery Across India
           </p>

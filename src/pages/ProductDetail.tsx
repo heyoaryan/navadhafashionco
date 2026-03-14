@@ -26,6 +26,8 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
+  const [cartSuccess, setCartSuccess] = useState(false);
+  const [buyRipple, setBuyRipple] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -37,7 +39,7 @@ export default function ProductDetail() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [pincode, setPincode] = useState('');
   const [checkingDelivery, setCheckingDelivery] = useState(false);
-  const [deliveryInfo, setDeliveryInfo] = useState<{ days: number; message: string } | null>(null);
+  const [deliveryInfo, setDeliveryInfo] = useState<{ days: number; message: string; location: string } | null>(null);
   const [pincodeError, setPincodeError] = useState('');
 
   const inWishlist = product ? isInWishlist(product.id) : false;
@@ -155,6 +157,8 @@ export default function ProductDetail() {
       await addToCart(product.id, quantity, selectedSize, selectedColor);
       // Track add to cart action
       trackProductAction(product.id, 'add_to_cart');
+      setCartSuccess(true);
+      setTimeout(() => setCartSuccess(false), 2000);
     } catch (error) {
       console.error('Error adding to cart:', error);
     } finally {
@@ -162,23 +166,28 @@ export default function ProductDetail() {
     }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!user) {
       navigate('/auth', { state: { from: `/product/${slug}`, action: 'buyNow' } });
       return;
     }
-    
+
     if (!product) return;
 
-    setBuyingNow(true);
-    try {
-      await addToCart(product.id, quantity, selectedSize, selectedColor);
-      navigate('/checkout');
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setBuyingNow(false);
-    }
+    // Go directly to checkout with product info, no cart involved
+    navigate('/checkout', {
+      state: {
+        directBuy: {
+          productId: product.id,
+          productName: product.name,
+          productImage: product.images?.[0]?.image_url,
+          price: product.sale_price ?? product.price,
+          quantity,
+          size: selectedSize,
+          color: selectedColor,
+        }
+      }
+    });
   };
 
   const handleToggleWishlist = async () => {
@@ -273,44 +282,42 @@ export default function ProductDetail() {
 
     setPincodeError('');
     setCheckingDelivery(true);
-    
+
     try {
-      // Simulate API call - In production, integrate with actual courier API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get first digit of pincode to determine region
-      const firstDigit = parseInt(pincode[0]);
-      
-      // Gujarat pincodes start with 3 or 4
-      // Calculate delivery days based on region
-      let deliveryDays = 5; // Default
-      let region = '';
-      
-      if (firstDigit === 3 || firstDigit === 4) {
-        // Gujarat - faster delivery
-        deliveryDays = 3;
-        region = 'Gujarat';
-      } else if (firstDigit === 1 || firstDigit === 2) {
-        // North India
-        deliveryDays = 5;
-        region = 'North India';
-      } else if (firstDigit === 5 || firstDigit === 6) {
-        // South India
-        deliveryDays = 6;
-        region = 'South India';
-      } else if (firstDigit === 7 || firstDigit === 8) {
-        // East & Northeast India
-        deliveryDays = 7;
-        region = 'East India';
-      } else {
-        // Other regions
-        deliveryDays = 5;
-        region = 'your area';
+      // Fetch real location from India Post Pincode API
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await res.json();
+
+      if (!data || data[0]?.Status !== 'Success' || !data[0]?.PostOffice?.length) {
+        setPincodeError('Invalid pincode. Please enter a valid Indian pincode.');
+        return;
       }
-      
+
+      const postOffice = data[0].PostOffice[0];
+      const area = postOffice.Name;       // e.g. "Navrangpura"
+      const city = postOffice.District;   // e.g. "Ahmedabad"
+      const state = postOffice.State;     // e.g. "Gujarat"
+
+      const locationLabel = `${area}, ${city}, ${state}`;
+
+      // Delivery days based on state
+      const gujaratStates = ['Gujarat'];
+      const nearbyStates = ['Rajasthan', 'Maharashtra', 'Madhya Pradesh', 'Daman and Diu', 'Dadra and Nagar Haveli'];
+      const farStates = ['West Bengal', 'Assam', 'Meghalaya', 'Manipur', 'Mizoram', 'Nagaland', 'Tripura', 'Arunachal Pradesh', 'Sikkim'];
+
+      let deliveryDays = 5;
+      if (gujaratStates.includes(state)) {
+        deliveryDays = 3;
+      } else if (nearbyStates.includes(state)) {
+        deliveryDays = 4;
+      } else if (farStates.includes(state)) {
+        deliveryDays = 7;
+      }
+
       setDeliveryInfo({
         days: deliveryDays,
-        message: `Delivery to ${region} (${pincode})`
+        location: locationLabel,
+        message: `Delivery available to ${locationLabel}`
       });
     } catch (error) {
       console.error('Error checking delivery:', error);
@@ -592,22 +599,26 @@ export default function ProductDetail() {
             {product.stock_quantity > 0 ? (
               <>
                 <button
-                  onClick={handleBuyNow}
-                  disabled={buyingNow || addingToCart}
-                  className="flex-1 py-3.5 sm:py-4 md:py-4.5 px-4 sm:px-6 text-sm sm:text-base bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none font-medium min-h-[52px] shadow-lg hover:shadow-xl"
+                  onClick={() => { setBuyRipple(true); setTimeout(() => setBuyRipple(false), 600); handleBuyNow(); }}
+                  disabled={buyingNow}
+                  className="relative overflow-hidden flex-1 py-3.5 sm:py-4 md:py-4.5 px-4 sm:px-6 text-sm sm:text-base bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-medium min-h-[52px] shadow-lg hover:shadow-rose-300 hover:shadow-xl disabled:opacity-50 disabled:scale-100"
                 >
+                  {buyRipple && (
+                    <span className="absolute inset-0 pointer-events-none">
+                      <span className="animate-pulse absolute inline-flex h-full w-full rounded-lg bg-white opacity-20" />
+                    </span>
+                  )}
                   <Zap className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  <span className="hidden xs:inline">{buyingNow ? 'Processing...' : 'Buy Now'}</span>
-                  <span className="xs:hidden">{buyingNow ? '...' : 'Buy'}</span>
+                  <span className="hidden xs:inline">Buy Now</span>
+                  <span className="xs:hidden">Buy</span>
                 </button>
                 <button
                   onClick={handleAddToCart}
-                  disabled={addingToCart || buyingNow}
-                  className="flex-1 py-3.5 sm:py-4 md:py-4.5 px-4 sm:px-6 text-sm sm:text-base bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none font-medium min-h-[52px] shadow-lg hover:shadow-xl"
+                  disabled={addingToCart}
+                  className="flex-1 py-3.5 sm:py-4 md:py-4.5 px-4 sm:px-6 text-sm sm:text-base rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-medium min-h-[52px] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:scale-100 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
                 >
                   <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  <span className="hidden xs:inline">{addingToCart ? 'Adding...' : 'Add to Cart'}</span>
-                  <span className="xs:hidden">{addingToCart ? '...' : 'Add'}</span>
+                  <span>{cartSuccess ? 'Added!' : addingToCart ? 'Adding...' : 'Add to Cart'}</span>
                 </button>
                 <button 
                   onClick={handleToggleWishlist}
@@ -711,7 +722,7 @@ export default function ProductDetail() {
                     <Truck className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                        {deliveryInfo.message}
+                        {deliveryInfo.location}
                       </p>
                       <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                         Expected delivery in {deliveryInfo.days} days

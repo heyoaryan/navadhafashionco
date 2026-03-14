@@ -245,7 +245,7 @@ export default function AreaAnalytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-light tracking-wider mb-2 text-gray-900 dark:text-gray-100">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-light tracking-wider mb-2 text-gray-900 dark:text-gray-100">
             Area-wise Return Analytics
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
@@ -268,7 +268,7 @@ export default function AreaAnalytics() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-2">
             <MapPin className="w-5 h-5 text-blue-500" />
@@ -315,25 +315,25 @@ export default function AreaAnalytics() {
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Location
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Orders
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Returns
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Return Rate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Actions
                   </th>
                 </tr>
@@ -344,26 +344,26 @@ export default function AreaAnalytics() {
                   
                   return (
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
                               {area.city}, {area.state}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               PIN: {area.pincode}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         {area.total_orders}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         {area.total_returns}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-medium ${
                             isHighRisk 
@@ -377,7 +377,7 @@ export default function AreaAnalytics() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         {area.is_blacklisted ? (
                           <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                             <Ban className="w-3 h-3" />
@@ -394,13 +394,13 @@ export default function AreaAnalytics() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 sm:px-6 py-4 text-right">
                         {area.is_blacklisted ? (
                           <button
                             onClick={() => removeBlacklist(area)}
-                            className="px-3 py-1.5 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                            className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
                           >
-                            Remove Blacklist
+                            Remove
                           </button>
                         ) : (
                           <button
@@ -408,9 +408,9 @@ export default function AreaAnalytics() {
                               setSelectedArea(area);
                               setShowBlacklistModal(true);
                             }}
-                            className="px-3 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1 ml-auto"
+                            className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1 ml-auto whitespace-nowrap"
                           >
-                            <Ban className="w-4 h-4" />
+                            <Ban className="w-3 h-3 sm:w-4 sm:h-4" />
                             Blacklist
                           </button>
                         )}

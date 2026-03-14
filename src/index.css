@@ -297,10 +297,12 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
     @apply antialiased;
+    overflow-x: hidden;
   }
 
   /* Hide scrollbar for all browsers and screen sizes */

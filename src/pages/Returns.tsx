@@ -7,7 +7,7 @@ export default function Returns() {
         {/* Header */}
         <div className="text-center mb-12">
           <RotateCcw className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold mb-4">Returns & Exchanges</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-4">Returns & Exchanges</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
             5-Day Hassle-Free Returns
           </p>

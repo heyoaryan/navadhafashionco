@@ -30,7 +30,7 @@ export default function Layout({ children }: LayoutProps) {
       {!hideFooter && <Footer />}
       
       {/* Test Mode Indicator */}
-      <div className="fixed bottom-4 right-4 bg-yellow-500 text-black px-4 py-2 rounded-lg shadow-lg font-semibold text-sm z-50">
+      <div className="fixed bottom-4 right-4 bg-yellow-500 text-black px-2 py-1 sm:px-4 sm:py-2 rounded-lg shadow-lg font-semibold text-xs sm:text-sm z-50 opacity-80">
         TEST MODE
       </div>
     </div>
