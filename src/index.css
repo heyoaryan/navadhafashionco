@@ -298,11 +298,26 @@
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     @apply antialiased;
     overflow-x: hidden;
+    min-width: 320px;
+  }
+
+  /* Prevent text overflow globally */
+  h1, h2, h3, h4, h5, h6, p, span, a, li {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Ensure images never overflow */
+  img, video {
+    max-width: 100%;
+    height: auto;
   }
 
   /* Hide scrollbar for all browsers and screen sizes */

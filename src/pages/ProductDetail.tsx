@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus, Camera, X, Play, CheckCircle, Lock } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { Product, ProductImage, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +10,7 @@ import { useWishlist } from '../contexts/WishlistContext';
 import ProductCard from '../components/ProductCard';
 import ImageLightbox from '../components/ImageLightbox';
 import { trackProductAction } from '../utils/analytics';
+import SEO from '../components/SEO';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -296,9 +298,9 @@ export default function ProductDetail() {
       const { error } = await supabase.from('reviews').insert({
         product_id: product.id,
         user_id: user.id,
-        rating: reviewRating,
-        title: reviewTitle || null,
-        comment: reviewComment,
+        rating: Math.min(5, Math.max(1, Math.round(reviewRating))),
+        title: reviewTitle ? reviewTitle.trim().slice(0, 200) : null,
+        comment: reviewComment.trim().slice(0, 2000),
         is_verified_purchase: hasPurchased,
         is_approved: true,
         media_urls: uploadedUrls,
@@ -358,7 +360,7 @@ export default function ProductDetail() {
       return;
     }
 
-    if (!pincode || pincode.length !== 6) {
+    if (!pincode || !/^\d{6}$/.test(pincode)) {
       setPincodeError('Please enter a valid 6-digit pincode');
       return;
     }
@@ -425,6 +427,10 @@ export default function ProductDetail() {
     }
     if (!product || !bespokePhone.trim()) return;
 
+    // Validate phone
+    const cleanPhone = bespokePhone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) return;
+
     setBespokeSubmitting(true);
     try {
       await supabase.from('reviews').insert({
@@ -432,7 +438,7 @@ export default function ProductDetail() {
         user_id: user.id,
         rating: 5,
         title: 'Bespoke Customization Request',
-        comment: `Phone: ${bespokePhone}\n\nDesign Notes: ${bespokeDesignNotes}\n\nMeasurements/Additional Info: ${bespokeMeasurements}`,
+        comment: `Phone: ${cleanPhone}\n\nDesign Notes: ${bespokeDesignNotes.trim().slice(0, 1000)}\n\nMeasurements/Additional Info: ${bespokeMeasurements.trim().slice(0, 1000)}`,
         is_verified_purchase: false,
         is_approved: false,
       });
@@ -493,9 +499,22 @@ export default function ProductDetail() {
     setSelectedImage((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
   };
 
+  const productImage = images[0]?.image_url || product.main_image_url || '';
+  const productUrl = `https://navadha.com/product/${product.slug}`;
+  const productDescription = product.description
+    ? product.description.replace(/<[^>]*>/g, '').slice(0, 160)
+    : `Shop ${product.name} at NAVADHA Fashion Co. ₹${product.price.toLocaleString()} — Premium quality fashion.`;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+      <SEO
+        title={`${product.name} | NAVADHA Fashion Co`}
+        description={productDescription}
+        image={productImage}
+        url={productUrl}
+        type="product"
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 mb-12 sm:mb-16">
         <div className="space-y-4">
           <div 
             className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 cursor-pointer group relative"
@@ -524,7 +543,7 @@ export default function ProductDetail() {
             )}
           </div>
           {galleryItems.length > 1 && (
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3">
               {galleryItems.map((item, index) => (
                 <button
                   key={index}
@@ -642,35 +661,33 @@ export default function ProductDetail() {
 
           {product.colors && product.colors.length > 0 && (
             <div>
-              <span className="text-sm font-medium block mb-3">Color</span>
+              <span className="text-sm font-medium block mb-3">Color: <span className="font-normal text-gray-600 dark:text-gray-400">{selectedColor}</span></span>
               <div className="flex gap-2 flex-wrap">
                 {product.colors.map((color: { name: string; hex: string }) => (
                   <button
                     key={color.name}
                     onClick={() => setSelectedColor(color.name)}
+                    title={color.name}
                     className={`group relative`}
                   >
                     {color.hex === '#multicolor' || color.name.toLowerCase() === 'multicolor' ? (
                       <div
                         className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 ${
                           selectedColor === color.name
-                            ? 'border-black dark:border-white'
-                            : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                            ? 'border-black dark:border-white scale-110'
+                            : 'border-gray-300 dark:border-gray-600 hover:scale-105'
+                        } transition-transform`}
                       />
                     ) : (
                       <div
-                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 ${
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-transform ${
                           selectedColor === color.name
-                            ? 'border-black dark:border-white'
-                            : 'border-gray-300 dark:border-gray-600'
+                            ? 'border-black dark:border-white scale-110'
+                            : 'border-gray-300 dark:border-gray-600 hover:scale-105'
                         }`}
                         style={{ backgroundColor: color.hex }}
                       />
                     )}
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {color.name}
-                    </span>
                   </button>
                 ))}
               </div>
@@ -708,10 +725,10 @@ export default function ProductDetail() {
           {product.stock_quantity === 0 ? (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
               <p className="text-red-600 dark:text-red-400 font-semibold text-center">
-                Out of Stock
+                Sold Out — But Worth the Wait ✨
               </p>
               <p className="text-sm text-red-500 dark:text-red-300 text-center mt-1">
-                This product is currently unavailable
+                This piece has found its people. Add to wishlist and be the first to know when it's back.
               </p>
             </div>
           ) : product.stock_quantity <= 3 ? (
@@ -847,10 +864,20 @@ export default function ProductDetail() {
               </>
             ) : (
               <button
-                disabled
-                className="flex-1 py-3.5 sm:py-4 md:py-4.5 px-4 sm:px-6 text-sm sm:text-base bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed font-medium min-h-[52px] flex items-center justify-center"
+                onClick={handleToggleWishlist}
+                disabled={isTogglingWishlist}
+                className="flex-1 py-3.5 sm:py-4 px-4 sm:px-6 text-sm sm:text-base rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-medium min-h-[52px] shadow-md disabled:opacity-50 border-2"
+                style={{
+                  borderColor: inWishlist ? '#E91E63' : '#d1d5db',
+                  backgroundColor: inWishlist ? '#E91E6310' : 'transparent',
+                  color: inWishlist ? '#E91E63' : undefined,
+                }}
               >
-                Out of Stock
+                <Heart
+                  className={`w-5 h-5 flex-shrink-0 transition-all ${inWishlist ? 'fill-current' : ''}`}
+                  style={inWishlist ? { color: '#E91E63' } : {}}
+                />
+                <span>{inWishlist ? 'Saved to Wishlist' : 'Add to Wishlist'}</span>
               </button>
             )}
           </div>
@@ -897,7 +924,7 @@ export default function ProductDetail() {
                 />
                 <button
                   onClick={checkDeliveryAvailability}
-                  disabled={checkingDelivery || !user || pincode.length !== 6}
+                  disabled={checkingDelivery || !user || !/^\d{6}$/.test(pincode)}
                   className="px-6 py-2.5 text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {checkingDelivery ? 'Checking...' : 'Check'}
@@ -944,7 +971,7 @@ export default function ProductDetail() {
               {openAccordion === 'fabric' && (
                 <div
                   className="pb-4 text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: product.fabric_details }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.fabric_details) }}
                 />
               )}
             </div>
@@ -962,7 +989,7 @@ export default function ProductDetail() {
               {openAccordion === 'care' && (
                 <div
                   className="pb-4 text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: product.care_instructions }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.care_instructions) }}
                 />
               )}
             </div>
@@ -981,7 +1008,7 @@ export default function ProductDetail() {
                 <div className="pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                   <div
                     className={`prose prose-sm dark:prose-invert max-w-none ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}
-                    dangerouslySetInnerHTML={{ __html: product.description }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }}
                   />
                   {product.description.length > 200 && (
                     <button

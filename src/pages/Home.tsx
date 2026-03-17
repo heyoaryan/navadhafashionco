@@ -302,7 +302,7 @@ export default function Home() {
             </div>
             <Link
               to="/shop?filter=new"
-              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2"
+              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
             >
               View All
               <ArrowRight className="w-4 h-4" />
@@ -318,24 +318,26 @@ export default function Home() {
 
       {/* Women's Products Section */}
       {womenProducts.length > 0 && (
-        <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10">
-          <div className="flex justify-between items-center mb-8 sm:mb-12">
-            <div>
-              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
+        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-8 sm:mb-12">
+              <div>
+                <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
+              </div>
+              <Link
+                to="/shop?gender=women"
+                className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
+              >
+                View All
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <Link
-              to="/shop?gender=women"
-              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2"
-            >
-              View All
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {womenProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+              {womenProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -350,7 +352,7 @@ export default function Home() {
             </div>
             <Link
               to="/shop?gender=men"
-              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2"
+              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
             >
               View All
               <ArrowRight className="w-4 h-4" />
@@ -366,37 +368,39 @@ export default function Home() {
 
       {/* All Products with Infinite Scroll */}
       {allProducts.length > 0 && (
-        <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
-          <div className="flex justify-between items-center mb-8 sm:mb-12">
-            <div>
-              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
+        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-8 sm:mb-12">
+              <div>
+                <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
+              </div>
+              <Link
+                to="/shop"
+                className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
+              >
+                View All
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <Link
-              to="/shop"
-              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2"
-            >
-              View All
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {allProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+              {allProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
 
-          {/* Infinite scroll trigger */}
-          {hasMore && (
-            <div ref={observerTarget} className="flex justify-center mt-8">
-              {loadingMore && (
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <div className="rounded-full h-6 w-6 border-4 border-rose-200 border-t-rose-400 animate-spin"></div>
-                  <span className="text-sm sm:text-base">Loading more...</span>
-                </div>
-              )}
-            </div>
-          )}
+            {/* Infinite scroll trigger */}
+            {hasMore && (
+              <div ref={observerTarget} className="flex justify-center mt-8">
+                {loadingMore && (
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <div className="rounded-full h-6 w-6 border-4 border-rose-200 border-t-rose-400 animate-spin"></div>
+                    <span className="text-sm sm:text-base">Loading more...</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       )}
 

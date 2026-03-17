@@ -24,18 +24,15 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const inWishlist = isInWishlist(product.id);
+  const isOutOfStock = product.stock_quantity === 0;
+
+  useEffect(() => { fetchProductImages(); }, [product.id]);
 
   useEffect(() => {
-    fetchProductImages();
-  }, [product.id]);
-
-  useEffect(() => {
-    // Auto-rotate images every 5 seconds if multiple images exist
     if (images.length > 1) {
       const interval = setInterval(() => {
         setCurrentImageIndex((prev) => (prev + 1) % images.length);
       }, 5000);
-
       return () => clearInterval(interval);
     }
   }, [images.length]);
@@ -47,7 +44,6 @@ export default function ProductCard({ product }: ProductCardProps) {
         .select('image_url')
         .eq('product_id', product.id)
         .order('display_order', { ascending: true });
-
       if (data && data.length > 0) {
         setImages(data.map(img => img.image_url));
       } else if (product.main_image_url) {
@@ -63,55 +59,24 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
-    // Check if user is logged in
     if (!user) {
-      // Store pending cart item in localStorage
-      const pendingCartItem = {
-        productId: product.id,
-        quantity: 1,
-        size: undefined,
-        color: undefined,
-        timestamp: Date.now()
-      };
-      localStorage.setItem('pendingCartItem', JSON.stringify(pendingCartItem));
-      
-      // Redirect to auth with action flag
-      navigate('/auth', { 
-        state: { 
-          from: `/product/${product.slug}`,
-          action: 'addToCart'
-        } 
-      });
+      localStorage.setItem('pendingCartItem', JSON.stringify({ productId: product.id, quantity: 1, size: undefined, color: undefined, timestamp: Date.now() }));
+      navigate('/auth', { state: { from: `/product/${product.slug}`, action: 'addToCart' } });
       return;
     }
-
     setIsAdding(true);
-    try {
-      await addToCart(product.id, 1);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-    } finally {
-      setIsAdding(false);
-    }
+    try { await addToCart(product.id, 1); }
+    catch (error) { console.error('Error adding to cart:', error); }
+    finally { setIsAdding(false); }
   };
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      navigate('/auth', { state: { from: `/product/${product.slug}` } });
-      return;
-    }
-
+    if (!user) { navigate('/auth', { state: { from: `/product/${product.slug}` } }); return; }
     setIsTogglingWishlist(true);
-    try {
-      await toggleWishlist(product.id);
-    } catch (error) {
-      console.error('Error toggling wishlist:', error);
-    } finally {
-      setIsTogglingWishlist(false);
-    }
+    try { await toggleWishlist(product.id); }
+    catch (error) { console.error('Error toggling wishlist:', error); }
+    finally { setIsTogglingWishlist(false); }
   };
 
   const discountPercentage = product.compare_at_price
@@ -124,115 +89,101 @@ export default function ProductCard({ product }: ProductCardProps) {
       onClick={() => trackProductAction(product.id, 'click')}
       className="group block relative overflow-hidden rounded-lg"
     >
-      <div className="aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
-        {/* Image Slideshow with Optimization */}
+      {/* Image container */}
+      <div className="aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800 relative rounded-lg">
         {images.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`absolute inset-0 transition-opacity duration-500 ${index === currentImageIndex ? 'opacity-100' : 'opacity-0'}`}
           >
             <OptimizedImage
               src={image}
               alt={`${product.name} - View ${index + 1}`}
-              className="group-hover:scale-110 transition-transform duration-500"
+              className={`transition-transform duration-500 ${!isOutOfStock ? 'group-hover:scale-110' : ''}`}
               aspectRatio="3/4"
-              priority={index === 0} // Load first image with priority
+              priority={index === 0}
             />
           </div>
         ))}
-        
-        {/* Image Indicators */}
+
+        {/* Image indicators */}
         {images.length > 1 && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
             {images.map((_, index) => (
               <button
                 key={index}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCurrentImageIndex(index);
-                }}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  index === currentImageIndex 
-                    ? 'bg-white w-4' 
-                    : 'bg-white/50 hover:bg-white/75'
-                }`}
+                onClick={(e) => { e.preventDefault(); setCurrentImageIndex(index); }}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/75'}`}
               />
             ))}
           </div>
         )}
 
+        {/* Discount badge */}
         {discountPercentage > 0 && (
-          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium z-10">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium z-10">
             {discountPercentage}% OFF
           </div>
         )}
-        {product.stock_quantity === 0 && (
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-gray-800 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium z-10">
-            Out of Stock
+
+        {/* Out of Stock — full image overlay, always visible */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/45 flex items-center justify-center z-20 rounded-lg pointer-events-none">
+            <span className="bg-white text-gray-800 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full shadow-md">
+              Out of Stock
+            </span>
+          </div>
+        )}
+
+        {/* Add to cart hover overlay — only for in-stock */}
+        {!isOutOfStock && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+            <div className="absolute bottom-3 left-3 right-3 flex gap-2">
+              <button
+                onClick={handleAddToCart}
+                disabled={isAdding}
+                className="flex-1 bg-white text-black py-2 sm:py-2.5 rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 font-medium text-xs sm:text-sm min-h-[40px] shadow-lg"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span>{isAdding ? '...' : 'Add to Cart'}</span>
+              </button>
+              <button
+                onClick={handleToggleWishlist}
+                disabled={isTogglingWishlist}
+                className="bg-white text-black p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-all min-w-[40px] min-h-[40px] flex items-center justify-center shadow-lg disabled:opacity-50"
+              >
+                <Heart
+                  className={`w-4 h-4 transition-colors ${inWishlist ? 'fill-current' : ''}`}
+                  style={inWishlist ? { color: '#EE458F' } : {}}
+                />
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-          {product.stock_quantity > 0 && (
-            <button
-              onClick={handleAddToCart}
-              disabled={isAdding}
-              className="flex-1 bg-white text-black py-2.5 sm:py-3 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none font-medium text-sm sm:text-base min-h-[44px] shadow-lg"
-            >
-              <ShoppingBag className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">{isAdding ? 'Adding...' : 'Add to Cart'}</span>
-              <span className="sm:hidden">{isAdding ? '...' : 'Add'}</span>
-            </button>
-          )}
-          <button
-            onClick={handleToggleWishlist}
-            disabled={isTogglingWishlist}
-            className="bg-white text-black p-2.5 sm:p-3 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-110 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-lg disabled:opacity-50"
-          >
-            <Heart 
-              className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
-                inWishlist ? 'fill-current' : ''
-              }`}
-              style={inWishlist ? { color: '#EE458F' } : {}}
-            />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-4">
+      {/* Card info */}
+      <div className="mt-3">
         <h3 className="text-sm font-medium mb-1 line-clamp-1">{product.name}</h3>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-medium">₹{product.price.toLocaleString()}</span>
+          <span className="text-base sm:text-lg font-medium">₹{product.price.toLocaleString()}</span>
           {product.compare_at_price && (
-            <span className="text-sm text-gray-500 line-through">
-              ₹{product.compare_at_price.toLocaleString()}
-            </span>
+            <span className="text-xs sm:text-sm text-gray-500 line-through">₹{product.compare_at_price.toLocaleString()}</span>
           )}
         </div>
-        
-        {/* Stock Status Messages */}
-        {product.stock_quantity === 0 ? (
-          <div className="mt-2 text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">
-            Out of Stock
-          </div>
-        ) : product.stock_quantity <= product.low_stock_threshold && product.stock_quantity > 0 ? (
-          <div className="mt-2 text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1">
-            <span className="animate-pulse">⚡</span>
-            Low Stock — Hurry!
+
+        {isOutOfStock ? (
+          <div className="mt-1.5 text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">Out of Stock</div>
+        ) : product.stock_quantity <= product.low_stock_threshold ? (
+          <div className="mt-1.5 text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1">
+            <span className="animate-pulse">⚡</span> Low Stock — Hurry!
           </div>
         ) : null}
-        
+
         {product.sizes && product.sizes.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {product.sizes.slice(0, 6).map((size) => (
-              <span
-                key={size}
-                className="text-xs px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded whitespace-nowrap"
-              >
+              <span key={size} className="text-xs px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded whitespace-nowrap">
                 {size}
               </span>
             ))}

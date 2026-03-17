@@ -48,9 +48,6 @@ export const openRazorpayCheckout = async (
   try {
     await ensureRazorpayLoaded();
 
-    console.log('[Razorpay] Key ID:', RAZORPAY_KEY_ID);
-    console.log('[Razorpay] Amount (paise):', Math.round(data.amount * 100));
-
     // Track what happened so ondismiss doesn't override payment.failed
     let outcome: 'none' | 'success' | 'failed' | 'cancelled' = 'none';
     let failureError: { type: string; message: string } | null = null;

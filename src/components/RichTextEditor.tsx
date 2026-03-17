@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { Bold, Italic, List, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 interface RichTextEditorProps {
   value: string;
@@ -15,7 +16,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     if (editorRef.current) {
       // On initial mount or when value changes externally
       if (isInitialMount.current || editorRef.current.innerHTML !== value) {
-        editorRef.current.innerHTML = value || '';
+        editorRef.current.innerHTML = DOMPurify.sanitize(value || '');
         isInitialMount.current = false;
       }
     }
@@ -23,7 +24,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      onChange(DOMPurify.sanitize(editorRef.current.innerHTML));
     }
   };
 

@@ -230,7 +230,7 @@ export default function Shop() {
         <aside
           className={`${
             showFilters ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 fixed lg:static top-0 left-0 h-full lg:h-auto w-80 lg:w-64 bg-white dark:bg-gray-900 lg:bg-transparent z-50 lg:z-auto transition-transform duration-300 ease-in-out flex-shrink-0 overflow-y-auto lg:overflow-visible shadow-xl lg:shadow-none`}
+          } lg:translate-x-0 fixed lg:static top-0 left-0 h-full lg:h-auto w-[85vw] sm:w-80 lg:w-64 bg-white dark:bg-gray-900 lg:bg-transparent z-50 lg:z-auto transition-transform duration-300 ease-in-out flex-shrink-0 overflow-y-auto lg:overflow-visible shadow-xl lg:shadow-none`}
         >
           <div className="p-6 lg:p-0 space-y-6 lg:space-y-8">
             {/* Mobile Header */}

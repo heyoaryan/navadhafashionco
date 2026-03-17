@@ -116,10 +116,10 @@ export default function FAQ() {
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <HelpCircle className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Frequently Asked Questions</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
+        <div className="text-center mb-8 sm:mb-12">
+          <HelpCircle className="w-12 h-12 sm:w-16 sm:h-16 text-pink-500 mx-auto mb-4" />
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Frequently Asked Questions</h1>
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400">
             Find answers to common questions about shopping with Navadha
           </p>
         </div>
@@ -168,9 +168,9 @@ export default function FAQ() {
         </div>
 
         {/* Contact CTA */}
-        <div className="mt-12 text-center bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl p-8">
-          <h3 className="text-2xl font-bold mb-3">Still Have Questions?</h3>
-          <p className="text-lg mb-4">
+        <div className="mt-10 sm:mt-12 text-center bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-2xl p-6 sm:p-8">
+          <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3">Still Have Questions?</h3>
+          <p className="text-sm sm:text-base mb-4">
             Our customer support team is here to help you
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

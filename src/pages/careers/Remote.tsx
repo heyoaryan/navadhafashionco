@@ -97,7 +97,7 @@ export default function RemoteCareers() {
                 <Wifi className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 leading-tight px-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight px-4">
                 Remote Positions
               </h1>
               

@@ -151,7 +151,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-20 lg:pt-8 px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
+      <main className="lg:ml-64 pt-16 lg:pt-0 px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
         <Outlet />
       </main>
     </div>

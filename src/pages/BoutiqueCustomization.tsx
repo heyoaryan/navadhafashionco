@@ -52,7 +52,7 @@ export default function BoutiqueCustomization() {
             </div>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-wider mb-6 text-gray-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light tracking-wider mb-6 text-gray-900 dark:text-white">
             Customization Collection
           </h1>
           

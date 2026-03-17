@@ -185,13 +185,13 @@ export default function About() {
 
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <AnimatedSection animation="animate-fade-in-left" className="space-y-4 sm:space-y-5">
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                 My childhood was surrounded by fabrics, sketches, and the constant rhythm of a sewing machine. For every festival and special occasion, my mother designed my outfits herself. Each garment carried imagination, care, and creativity.
               </p>
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                 Through her work, I learned that clothing is more than something we wear — it is a reflection of identity and confidence. Yet I also witnessed something deeper: a woman working tirelessly to support her family in a world where women are often expected to do more while being seen less.
               </p>
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                 Watching her shaped my vision. I wanted the world to see what I saw every day — a woman whose artistry deserved recognition. NAVADHA was created to transform that belief into reality.
               </p>
               <div className="pt-2">
@@ -324,16 +324,16 @@ export default function About() {
             </AnimatedSection>
 
             <AnimatedSection animation="animate-fade-in-right" className="space-y-4 sm:space-y-5 mt-6 lg:mt-0">
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                 NAVADHA is, at its heart, a story about women. It began with a woman whose talent transformed fabric into garments that made others feel beautiful — working quietly from home, creating pieces with patience and devotion while balancing the many responsibilities placed upon her.
               </p>
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                 Her story is not unique. Across homes, communities, and generations, countless women carry extraordinary talent that often remains unseen or underestimated. They create, nurture, build, and persevere — even when recognition is scarce.
               </p>
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
                 NAVADHA exists to honor that spirit. Every garment represents the creativity, resilience, and strength that women bring into the world every day.
               </p>
-              <blockquote className="border-l-4 pl-4 sm:pl-5 italic text-sm sm:text-base text-gray-600" style={{ borderColor: '#EE458F' }}>
+              <blockquote className="border-l-4 pl-4 sm:pl-5 italic text-sm sm:text-base text-gray-600 dark:text-gray-400" style={{ borderColor: '#EE458F' }}>
                 "When women create, they do more than make garments. They create stories, possibilities, and change."
               </blockquote>
             </AnimatedSection>

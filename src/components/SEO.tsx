@@ -13,7 +13,7 @@ export default function SEO({
   title = 'NAVADHA Fashion Co - Where Elegance Meets Contemporary Style',
   description = 'Discover premium quality fashion at NAVADHA. Shop our curated collection of elegant clothing, boutique pieces, and new arrivals. Free shipping on orders above ₹2,999.',
   keywords = 'fashion, clothing, women fashion, boutique, designer wear, ethnic wear, contemporary fashion, NAVADHA, online shopping',
-  image = 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  image = '/Logo/Logo.png',
   url = 'https://navadha.com',
   type = 'website'
 }: SEOProps) {
@@ -31,6 +31,9 @@ export default function SEO({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:site_name" content="NAVADHA Fashion Co" />
 
       {/* Twitter */}
       <meta property="twitter:card" content="summary_large_image" />

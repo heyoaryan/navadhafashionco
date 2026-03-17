@@ -177,6 +177,13 @@ export default function Checkout() {
       return;
     }
 
+    // Sanitize coupon code — only alphanumeric + dash allowed
+    const sanitizedCode = couponCode.trim().toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+    if (!sanitizedCode) {
+      setCouponError('Invalid coupon code format');
+      return;
+    }
+
     setCouponError('');
     setLoading(true);
 
@@ -184,7 +191,7 @@ export default function Checkout() {
       const { data, error } = await supabase
         .from('coupons')
         .select('*')
-        .eq('code', couponCode.toUpperCase())
+        .eq('code', sanitizedCode)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -1140,7 +1147,8 @@ export default function Checkout() {
                     type="text"
                     placeholder="Full Name *"
                     value={newAddress.full_name}
-                    onChange={e => setNewAddress({ ...newAddress, full_name: e.target.value })}
+                    maxLength={100}
+                    onChange={e => setNewAddress({ ...newAddress, full_name: e.target.value.slice(0, 100) })}
                     className="px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                   />
                   <input
@@ -1161,14 +1169,16 @@ export default function Checkout() {
                   type="text"
                   placeholder="Address Line 1 *"
                   value={newAddress.address_line1}
-                  onChange={e => setNewAddress({ ...newAddress, address_line1: e.target.value })}
+                  maxLength={200}
+                  onChange={e => setNewAddress({ ...newAddress, address_line1: e.target.value.slice(0, 200) })}
                   className="w-full px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                 />
                 <input
                   type="text"
                   placeholder="Address Line 2 (Optional)"
                   value={newAddress.address_line2}
-                  onChange={e => setNewAddress({ ...newAddress, address_line2: e.target.value })}
+                  maxLength={200}
+                  onChange={e => setNewAddress({ ...newAddress, address_line2: e.target.value.slice(0, 200) })}
                   className="w-full px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1176,21 +1186,24 @@ export default function Checkout() {
                     type="text"
                     placeholder="City *"
                     value={newAddress.city}
-                    onChange={e => setNewAddress({ ...newAddress, city: e.target.value })}
+                    maxLength={100}
+                    onChange={e => setNewAddress({ ...newAddress, city: e.target.value.slice(0, 100) })}
                     className="px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                   />
                   <input
                     type="text"
                     placeholder="State *"
                     value={newAddress.state}
-                    onChange={e => setNewAddress({ ...newAddress, state: e.target.value })}
+                    maxLength={100}
+                    onChange={e => setNewAddress({ ...newAddress, state: e.target.value.slice(0, 100) })}
                     className="px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                   />
                   <input
                     type="text"
                     placeholder="Postal Code *"
                     value={newAddress.postal_code}
-                    onChange={e => setNewAddress({ ...newAddress, postal_code: e.target.value })}
+                    maxLength={10}
+                    onChange={e => setNewAddress({ ...newAddress, postal_code: e.target.value.replace(/[^0-9]/g, '').slice(0, 10) })}
                     className="px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                   />
                 </div>

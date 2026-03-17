@@ -37,14 +37,14 @@ export default function Contact() {
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Get in Touch</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Get in Touch</h1>
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400">
             We'd love to hear from you. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Contact Information */}
           <div>
             <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
@@ -78,7 +78,8 @@ export default function Contact() {
                   <h3 className="font-semibold mb-1">Store Address</h3>
                   <p className="text-gray-600 dark:text-gray-400">
                     Navadha Fashion Co.<br />
-                    Shop No. 12, Fashion Plaza<br />
+                    Shop No. 110, Apex Lake View,<br />
+                    Opp. Akramaruti Lake, Umbergaon - 396171<br />
                     Umargam, Gujarat 396170<br />
                     India
                   </p>
@@ -97,9 +98,18 @@ export default function Contact() {
               </div>
             </div>
 
-            {/* Map Placeholder */}
-            <div className="bg-gray-200 dark:bg-gray-800 rounded-xl h-64 flex items-center justify-center">
-              <p className="text-gray-500 dark:text-gray-400">Store Location Map</p>
+            {/* Google Maps Embed */}
+            <div className="rounded-xl overflow-hidden h-64 shadow-md">
+              <iframe
+                title="Navadha Fashion Co. Location"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3745.012376446052!2d72.78397687506921!3d20.175210181269094!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be72b8c6f20f54b%3A0x3f4a36ab30d4ce2c!2sNavadha%20Fashion%20Co!5e0!3m2!1sen!2sin!4v1773769339425!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           </div>
 

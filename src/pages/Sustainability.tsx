@@ -5,10 +5,10 @@ export default function Sustainability() {
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <Leaf className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold mb-4">Sustainability</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+        <div className="text-center mb-10 sm:mb-12">
+          <Leaf className="w-12 h-12 sm:w-16 sm:h-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Sustainability</h1>
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400">
             Fashion with a Conscience
           </p>
         </div>

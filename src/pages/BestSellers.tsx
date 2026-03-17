@@ -126,7 +126,7 @@ export default function BestSellers() {
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
                 Most Loved
               </h1>
               

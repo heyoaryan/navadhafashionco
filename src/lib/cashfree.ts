@@ -6,9 +6,9 @@ declare global {
   }
 }
 
-// Cashfree Configuration - commented out as not currently used
-// const CASHFREE_APP_ID = import.meta.env.VITE_CASHFREE_APP_ID || 'TEST11001660d542604c8bfb958f6d4d06610011';
-// const CASHFREE_MODE = import.meta.env.VITE_CASHFREE_MODE || 'sandbox'; // 'sandbox' or 'production'
+// Cashfree Configuration
+// const CASHFREE_APP_ID = import.meta.env.VITE_CASHFREE_APP_ID || '';
+// const CASHFREE_MODE = import.meta.env.VITE_CASHFREE_MODE || 'sandbox';
 
 export interface PaymentSessionData {
   orderId: string;
