@@ -539,6 +539,37 @@ export default function ProductForm() {
       }
     }
 
+    // Validate pricing logic
+    const price = parseFloat(formData.price);
+    if (formData.compare_at_price) {
+      const compareAt = parseFloat(formData.compare_at_price);
+      if (compareAt < price) {
+        showToast(`Compare at Price (₹${compareAt}) cannot be lower than Price (₹${price})`, 'error');
+        const el = document.querySelector('[name="compare_at_price"]') as HTMLElement;
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+          (el as HTMLInputElement).focus();
+          setTimeout(() => el.classList.remove('border-red-500', 'ring-2', 'ring-red-500'), 3000);
+        }
+        return;
+      }
+    }
+    if (formData.cost_per_item) {
+      const cost = parseFloat(formData.cost_per_item);
+      if (cost > price) {
+        showToast(`Cost per Item (₹${cost}) cannot be higher than Price (₹${price})`, 'error');
+        const el = document.querySelector('[name="cost_per_item"]') as HTMLElement;
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+          (el as HTMLInputElement).focus();
+          setTimeout(() => el.classList.remove('border-red-500', 'ring-2', 'ring-red-500'), 3000);
+        }
+        return;
+      }
+    }
+
     // Check if at least one image is provided
     if (!imageUrls[0] || imageUrls[0] === '') {
       showToast('Please upload at least one product image', 'error');
@@ -1140,6 +1171,9 @@ export default function ProductForm() {
                 min="0"
                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
+              {formData.compare_at_price && formData.price && parseFloat(formData.compare_at_price) < parseFloat(formData.price) && (
+                <p className="mt-1 text-xs text-red-500">Must be ≥ Price (₹{formData.price})</p>
+              )}
             </div>
 
             <div>
@@ -1153,6 +1187,9 @@ export default function ProductForm() {
                 min="0"
                 className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
               />
+              {formData.cost_per_item && formData.price && parseFloat(formData.cost_per_item) > parseFloat(formData.price) && (
+                <p className="mt-1 text-xs text-red-500">Must be ≤ Price (₹{formData.price})</p>
+              )}
             </div>
           </div>
         </div>
