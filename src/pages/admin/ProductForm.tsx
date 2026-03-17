@@ -505,12 +505,15 @@ export default function ProductForm() {
     e.preventDefault();
     
     // Validate required fields
+    // category is only required when the field is visible (gender selected AND boutiqueReadyMade is false)
+    const isCategoryRequired = !!formData.gender && !boutiqueReadyMade;
+
     const requiredFields = [
       { name: 'name', label: 'Product Name', ref: 'name' },
       { name: 'slug', label: 'Slug', ref: 'slug' },
       { name: 'price', label: 'Price', ref: 'price' },
       { name: 'gender', label: 'Gender', ref: 'gender' },
-      { name: 'category', label: 'Main Category', ref: 'category' },
+      ...(isCategoryRequired ? [{ name: 'category', label: 'Main Category', ref: 'category' }] : []),
       { name: 'season', label: 'Season', ref: 'season' },
       { name: 'stock_quantity', label: 'Stock Quantity', ref: 'stock_quantity' },
     ];

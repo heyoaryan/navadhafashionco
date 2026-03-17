@@ -56,8 +56,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Email</h3>
-                  <p className="text-gray-600 dark:text-gray-400">support@navadha.com</p>
-                  <p className="text-gray-600 dark:text-gray-400">orders@navadha.com</p>
+                  <p className="text-gray-600 dark:text-gray-400">navadhafashionco@gmail.com</p>
                 </div>
               </div>
 
@@ -67,8 +66,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Phone</h3>
-                  <p className="text-gray-600 dark:text-gray-400">+91 1800 123 4567 (Toll Free)</p>
-                  <p className="text-gray-600 dark:text-gray-400">+91 98765 43210</p>
+                  <p className="text-gray-600 dark:text-gray-400">+91 6351129401</p>
                 </div>
               </div>
 
@@ -197,8 +195,8 @@ export default function Contact() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Questions about your order?
             </p>
-            <a href="mailto:orders@navadha.com" className="text-pink-600 dark:text-pink-400 font-semibold hover:underline">
-              orders@navadha.com
+            <a href="mailto:navadhafashionco@gmail.com" className="text-pink-600 dark:text-pink-400 font-semibold hover:underline">
+              navadhafashionco@gmail.com
             </a>
           </div>
 
@@ -207,8 +205,8 @@ export default function Contact() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Need to return an item?
             </p>
-            <a href="mailto:returns@navadha.com" className="text-pink-600 dark:text-pink-400 font-semibold hover:underline">
-              returns@navadha.com
+            <a href="mailto:navadhafashionco@gmail.com" className="text-pink-600 dark:text-pink-400 font-semibold hover:underline">
+              navadhafashionco@gmail.com
             </a>
           </div>
 
@@ -217,8 +215,8 @@ export default function Contact() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Want to join our team?
             </p>
-            <a href="mailto:careers@navadha.com" className="text-pink-600 dark:text-pink-400 font-semibold hover:underline">
-              careers@navadha.com
+            <a href="mailto:navadhafashionco@gmail.com" className="text-pink-600 dark:text-pink-400 font-semibold hover:underline">
+              navadhafashionco@gmail.com
             </a>
           </div>
         </div>

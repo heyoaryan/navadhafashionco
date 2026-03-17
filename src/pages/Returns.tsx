@@ -87,7 +87,7 @@ export default function Returns() {
             <li>• Exchanges subject to availability</li>
           </ul>
           <p className="mt-4 text-sm font-semibold">
-            Need help? Email: returns@navadha.com
+            Need help? Email: navadhafashionco@gmail.com
           </p>
         </div>
       </div>

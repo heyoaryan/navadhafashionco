@@ -16,7 +16,7 @@ export default function Footer() {
               </p>
             </div>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed text-center">
-              Where elegance meets contemporary style. Crafting timeless pieces for the modern woman.
+              From a Mother's Devotion to a Daughter's Vision
             </p>
           </div>
 

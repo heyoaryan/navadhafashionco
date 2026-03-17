@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product, ProductImage, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,6 +29,7 @@ export default function ProductDetail() {
   const [cartSuccess, setCartSuccess] = useState(false);
   const [buyRipple, setBuyRipple] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewTitle, setReviewTitle] = useState('');
@@ -857,53 +858,73 @@ export default function ProductDetail() {
           </div>
 
           {product.fabric_details && (
-            <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
-              <h3 className="text-sm font-medium mb-2">Fabric Details</h3>
-              <div 
-                className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: product.fabric_details }}
-              />
+            <div className="border-t border-gray-200 dark:border-gray-800">
+              <button
+                className="w-full flex items-center justify-between py-4 text-sm font-medium text-left"
+                onClick={() => setOpenAccordion(openAccordion === 'fabric' ? null : 'fabric')}
+              >
+                <span>Fabric Details</span>
+                {openAccordion === 'fabric' ? <Minus className="w-4 h-4 flex-shrink-0" /> : <Plus className="w-4 h-4 flex-shrink-0" />}
+              </button>
+              {openAccordion === 'fabric' && (
+                <div
+                  className="pb-4 text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.fabric_details }}
+                />
+              )}
             </div>
           )}
 
           {product.care_instructions && (
-            <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
-              <h3 className="text-sm font-medium mb-2">Care Instructions</h3>
-              <div 
-                className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: product.care_instructions }}
-              />
+            <div className="border-t border-gray-200 dark:border-gray-800">
+              <button
+                className="w-full flex items-center justify-between py-4 text-sm font-medium text-left"
+                onClick={() => setOpenAccordion(openAccordion === 'care' ? null : 'care')}
+              >
+                <span>Care Instructions</span>
+                {openAccordion === 'care' ? <Minus className="w-4 h-4 flex-shrink-0" /> : <Plus className="w-4 h-4 flex-shrink-0" />}
+              </button>
+              {openAccordion === 'care' && (
+                <div
+                  className="pb-4 text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.care_instructions }}
+                />
+              )}
             </div>
           )}
 
           {product.description && (
-            <div className="pt-6 border-t border-gray-200 dark:border-gray-800">
-              <h3 className="text-sm font-medium mb-2">Description</h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                <div 
-                  className={`prose prose-sm dark:prose-invert max-w-none ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}
-                  dangerouslySetInnerHTML={{ __html: product.description }}
-                />
-                {product.description.length > 200 && (
-                  <button
-                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                    className="mt-2 text-sm font-medium flex items-center gap-1 transition-colors"
-                    style={{ color: '#E91E63' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#D63D7F'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#E91E63'}
-                  >
-                    {isDescriptionExpanded ? (
-                      <>
-                        Read less <ChevronUp className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        Read more <ChevronDown className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
+            <div className="border-t border-gray-200 dark:border-gray-800">
+              <button
+                className="w-full flex items-center justify-between py-4 text-sm font-medium text-left"
+                onClick={() => setOpenAccordion(openAccordion === 'description' ? null : 'description')}
+              >
+                <span>Description</span>
+                {openAccordion === 'description' ? <Minus className="w-4 h-4 flex-shrink-0" /> : <Plus className="w-4 h-4 flex-shrink-0" />}
+              </button>
+              {openAccordion === 'description' && (
+                <div className="pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  <div
+                    className={`prose prose-sm dark:prose-invert max-w-none ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}
+                    dangerouslySetInnerHTML={{ __html: product.description }}
+                  />
+                  {product.description.length > 200 && (
+                    <button
+                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      className="mt-2 text-sm font-medium flex items-center gap-1 transition-colors"
+                      style={{ color: '#E91E63' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#D63D7F'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#E91E63'}
+                    >
+                      {isDescriptionExpanded ? (
+                        <>Read less <ChevronUp className="w-4 h-4" /></>
+                      ) : (
+                        <>Read more <ChevronDown className="w-4 h-4" /></>
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

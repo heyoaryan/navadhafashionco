@@ -119,7 +119,7 @@ export default function TermsOfUse() {
             <p>For any questions regarding these Terms of Use, please contact us:</p>
             <div className="mt-3 space-y-1">
               <p>NAVADHA Fashion Co</p>
-              <p>Email: <a href="mailto:legal@navadha.com" className="text-pink-500 hover:text-pink-600 transition-colors">legal@navadha.com</a></p>
+              <p>Email: <a href="mailto:navadhafashionco@gmail.com" className="text-pink-500 hover:text-pink-600 transition-colors">navadhafashionco@gmail.com</a></p>
               <p>Website: <a href="/contact" className="text-pink-500 hover:text-pink-600 transition-colors">Contact Us</a></p>
             </div>
           </section>

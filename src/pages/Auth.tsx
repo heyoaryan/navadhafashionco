@@ -291,7 +291,7 @@ export default function Auth() {
             </p>
 
             <a
-              href="mailto:support@navadhafashion.com"
+              href="mailto:navadhafashionco@gmail.com"
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl text-sm font-semibold hover:from-rose-600 hover:to-pink-700 transition-all shadow-lg shadow-rose-200 dark:shadow-none"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@ export default function Auth() {
             </a>
 
             <p className="mt-3 text-xs text-gray-400 dark:text-gray-600">
-              support@navadhafashion.com
+              navadhafashionco@gmail.com
             </p>
 
             <button

@@ -94,7 +94,7 @@ export default function PrivacyPolicy() {
               <li>Opt out of marketing communications at any time</li>
               <li>Request a copy of your data in a portable format</li>
             </ul>
-            <p className="mt-3">To exercise any of these rights, please contact us at <a href="mailto:privacy@navadha.com" className="text-pink-500 hover:text-pink-600 transition-colors">privacy@navadha.com</a>.</p>
+            <p className="mt-3">To exercise any of these rights, please contact us at <a href="mailto:navadhafashionco@gmail.com" className="text-pink-500 hover:text-pink-600 transition-colors">navadhafashionco@gmail.com</a>.</p>
           </section>
 
           <section>
@@ -120,7 +120,7 @@ export default function PrivacyPolicy() {
             <p>If you have any questions about this Privacy Policy, please reach out to us:</p>
             <div className="mt-3 space-y-1">
               <p>NAVADHA Fashion Co</p>
-              <p>Email: <a href="mailto:privacy@navadha.com" className="text-pink-500 hover:text-pink-600 transition-colors">privacy@navadha.com</a></p>
+              <p>Email: <a href="mailto:navadhafashionco@gmail.com" className="text-pink-500 hover:text-pink-600 transition-colors">navadhafashionco@gmail.com</a></p>
               <p>Website: <a href="/contact" className="text-pink-500 hover:text-pink-600 transition-colors">Contact Us</a></p>
             </div>
           </section>
