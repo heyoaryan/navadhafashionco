@@ -874,7 +874,7 @@ export default function ProductForm() {
                     setBoutiqueReadyMade(e.target.checked);
                     // If only ready-made selected (bespoke not checked), clear category
                     if (e.target.checked && !boutiqueCustomization) {
-                      setFormData(prev => ({ ...prev, category: '', subcategory: '', season: '' }));
+                      setFormData(prev => ({ ...prev, category: '', subcategory: '' }));
                     }
                   }}
                   className="mt-0.5 w-4 h-4 text-purple-600 rounded focus:ring-purple-400"
@@ -949,23 +949,21 @@ export default function ProductForm() {
             </div>
           )}
 
-          {formData.category && (
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Season *</label>
-              <select
-                name="season"
-                value={formData.season}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
-              >
-                <option value="">Select Season</option>
-                <option value="all-season">All Season</option>
-                <option value="summer">Summer</option>
-                <option value="winter">Winter</option>
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Season *</label>
+            <select
+              name="season"
+              value={formData.season}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100"
+            >
+              <option value="">Select Season</option>
+              <option value="all-season">All Season</option>
+              <option value="summer">Summer</option>
+              <option value="winter">Winter</option>
+            </select>
+          </div>
         </div>
 
         {/* Images */}

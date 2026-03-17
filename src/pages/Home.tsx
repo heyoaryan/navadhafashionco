@@ -6,6 +6,147 @@ import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
 
+// ── HERO INTRO COMPONENT ──────────────────────────────────────────────
+const NAVADHA_LETTERS = ['N', 'A', 'V', 'A', 'D', 'H', 'A'];
+
+function HeroIntro() {
+  const [visibleLetters, setVisibleLetters] = useState(0);
+  const [showFashionCo, setShowFashionCo] = useState(false);
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
+
+  useEffect(() => {
+    // Stagger each letter 120ms apart
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    NAVADHA_LETTERS.forEach((_, i) => {
+      timers.push(setTimeout(() => setVisibleLetters(i + 1), 200 + i * 120));
+    });
+    const total = 200 + NAVADHA_LETTERS.length * 120;
+    timers.push(setTimeout(() => setShowFashionCo(true), total + 100));
+    timers.push(setTimeout(() => setShowSubtitle(true),  total + 400));
+    timers.push(setTimeout(() => setShowButtons(true),   total + 750));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+
+      {/* Faded background image — slow pan */}
+      <div
+        className="absolute inset-0 bg-cover bg-center animate-hero-pan"
+        style={{
+          backgroundImage: `url('https://images.pexels.com/photos/2220316/pexels-photo-2220316.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+          opacity: 0.10,
+        }}
+      />
+      {/* Extra overlay to blend with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-rose-50/80 via-pink-50/70 to-purple-50/80 dark:from-gray-900/85 dark:via-gray-800/80 dark:to-gray-900/85 pointer-events-none" />
+
+      {/* Soft background blobs */}
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-20 pointer-events-none" style={{ background: '#EE458F' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-10 pointer-events-none" style={{ background: '#a855f7' }} />
+
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
+
+        {/* NAVADHA — letter by letter */}
+        <div className="relative inline-block mb-3 sm:mb-5">
+          <div className="absolute inset-0 blur-3xl pointer-events-none" style={{ backgroundColor: '#EE458F22' }} />
+          <h1
+            className="brand-title text-6xl sm:text-8xl md:text-9xl relative drop-shadow-xl flex justify-center"
+            style={{ color: '#EE458F' }}
+          >
+            {NAVADHA_LETTERS.map((letter, i) => (
+              <span
+                key={i}
+                style={{
+                  display: 'inline-block',
+                  opacity: i < visibleLetters ? 1 : 0,
+                  transform: i < visibleLetters ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.8)',
+                  transition: 'opacity 0.45s cubic-bezier(0.34,1.56,0.64,1), transform 0.45s cubic-bezier(0.34,1.56,0.64,1)',
+                }}
+              >
+                {letter}
+              </span>
+            ))}
+          </h1>
+
+          {/* FASHION CO */}
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <div
+              className="h-px w-12 sm:w-20"
+              style={{
+                background: 'linear-gradient(to right, transparent, #EE458F)',
+                opacity: showFashionCo ? 1 : 0,
+                transition: 'opacity 0.5s ease',
+              }}
+            />
+            <span
+              className="text-xs sm:text-sm font-light whitespace-nowrap"
+              style={{
+                color: '#EE458F',
+                letterSpacing: '0.35em',
+                opacity: showFashionCo ? 1 : 0,
+                transform: showFashionCo ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+              }}
+            >
+              FASHION CO
+            </span>
+            <div
+              className="h-px w-12 sm:w-20"
+              style={{
+                background: 'linear-gradient(to left, transparent, #EE458F)',
+                opacity: showFashionCo ? 1 : 0,
+                transition: 'opacity 0.5s ease',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Subtitle */}
+        <p
+          className="text-base sm:text-lg md:text-xl lg:text-2xl font-light text-gray-600 dark:text-gray-300 mb-8 sm:mb-10 tracking-wide px-4 italic"
+          style={{
+            opacity: showSubtitle ? 1 : 0,
+            transform: showSubtitle ? 'translateY(0)' : 'translateY(16px)',
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
+          }}
+        >
+          From a Mother's Devotion to a Daughter's Vision
+        </p>
+
+        {/* Buttons */}
+        <div
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4"
+          style={{
+            opacity: showButtons ? 1 : 0,
+            transform: showButtons ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
+          }}
+        >
+          <Link
+            to="/shop?filter=new"
+            className="group flex-shrink-0 px-8 sm:px-10 py-3.5 sm:py-4 text-white rounded-full transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-sm sm:text-base font-semibold whitespace-nowrap min-h-[50px] shadow-lg hover:shadow-2xl relative overflow-hidden"
+            style={{ backgroundColor: '#EE458F' }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#D63D7F')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#EE458F')}
+          >
+            <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full" />
+            <span className="relative z-10">New Arrivals</span>
+            <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <Link
+            to="/shop"
+            className="flex-shrink-0 px-8 sm:px-10 py-3.5 sm:py-4 bg-transparent border-2 border-gray-800 dark:border-white hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-black rounded-full transition-all transform hover:scale-105 active:scale-95 text-sm sm:text-base font-medium whitespace-nowrap min-h-[50px]"
+          >
+            Explore Collections
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [womenProducts, setWomenProducts] = useState<Product[]>([]);
@@ -149,54 +290,7 @@ export default function Home() {
   return (
     <div>
       <SEO />
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-20">
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center opacity-10"></div>
-        <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
-          <div className="inline-block mb-6 sm:mb-8 relative">
-            {/* Glow effect behind text */}
-            <div className="absolute inset-0 blur-3xl" style={{ backgroundColor: '#EE458F33' }}></div>
-            
-            <h1 className="brand-title text-4xl sm:text-5xl md:text-6xl lg:text-8xl mb-4 sm:mb-6 animate-fade-in relative drop-shadow-2xl" style={{ color: '#EE458F' }}>
-              NAVADHA
-            </h1>
-            
-            {/* Fashion Co with decorative lines matching NAVADHA width */}
-            <div className="flex items-center justify-center gap-2 sm:gap-3 relative">
-              <div className="h-[1px] w-12 sm:w-16 md:w-20 lg:w-32" style={{ background: 'linear-gradient(to right, transparent, #EE458F80, #EE458F)' }}></div>
-              <span className="text-xs sm:text-sm md:text-base font-light tracking-[0.3em] whitespace-nowrap animate-fade-in" style={{ color: '#EE458F' }}>
-                FASHION CO
-              </span>
-              <div className="h-[1px] w-12 sm:w-16 md:w-20 lg:w-32" style={{ background: 'linear-gradient(to left, transparent, #EE458F80, #EE458F)' }}></div>
-            </div>
-          </div>
-          
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-light text-gray-700 dark:text-gray-300 mb-6 sm:mb-8 tracking-wide px-4">
-            From a Mother's Devotion to a Daughter's Vision
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4 max-w-md sm:max-w-none mx-auto">
-            <Link
-              to="/shop?filter=new"
-              className="group flex-shrink-0 px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-4.5 text-white rounded-full transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-sm sm:text-base md:text-lg font-semibold whitespace-nowrap min-h-[48px] sm:min-h-[52px] shadow-lg hover:shadow-2xl relative overflow-hidden"
-              style={{ backgroundColor: '#EE458F' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D63D7F'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EE458F'}
-            >
-              <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              <span className="relative z-10">New Arrivals</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              to="/shop"
-              className="flex-shrink-0 px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-4.5 bg-transparent border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black rounded-full transition-all transform hover:scale-105 active:scale-95 text-sm sm:text-base md:text-lg font-medium whitespace-nowrap min-h-[48px] sm:min-h-[52px]"
-            >
-              Explore Collections
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HeroIntro />
 
       {/* New Arrivals Section */}
       {newArrivals.length > 0 && (

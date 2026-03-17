@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, ChevronRight, RotateCcw, X, AlertCircle, CheckCircle, Clock, Upload } from 'lucide-react';
+import { Package, ChevronRight, RotateCcw, X, Upload } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Order, Return } from '../../types';
@@ -50,7 +50,35 @@ export default function Orders() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+
+      const allOrders: Order[] = data || [];
+
+      // Auto-cancel stuck pending orders (payment not completed)
+      const pendingOrders = allOrders.filter(o => o.status === 'pending');
+      if (pendingOrders.length > 0) {
+        await Promise.all(
+          pendingOrders.map(o =>
+            supabase
+              .from('orders')
+              .update({
+                status: 'cancelled',
+                notes: o.payment_method === 'online'
+                  ? 'Order cancelled due to incomplete payment. If amount was debited, it will be refunded within 5-7 business days.'
+                  : 'Order cancelled due to incomplete checkout.',
+              })
+              .eq('id', o.id)
+          )
+        );
+        // Re-fetch after update
+        const { data: refreshed } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        setOrders(refreshed || []);
+      } else {
+        setOrders(allOrders);
+      }
 
       // Fetch returns for all orders
       const { data: returnsData, error: returnsError } = await supabase
@@ -83,52 +111,6 @@ export default function Orders() {
     }
   };
 
-  const getReturnStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
-
-  const getReturnStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'rejected':
-        return <X className="w-4 h-4" />;
-      case 'pending':
-        return <Clock className="w-4 h-4" />;
-      case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
-    }
-  };
-
-  const getReturnStatusMessage = (returnItem: Return) => {
-    switch (returnItem.status) {
-      case 'pending':
-        return 'Your return request is under review by admin';
-      case 'approved':
-        return 'Return approved! Pickup will be scheduled within 2 days';
-      case 'rejected':
-        return `Return rejected: ${returnItem.admin_notes || 'Please contact support for details'}`;
-      case 'completed':
-        return returnItem.return_type === 'exchange' 
-          ? 'Exchange completed! New item has been shipped'
-          : 'Refund completed! Amount credited to your account';
-      default:
-        return 'Return status unknown';
-    }
-  };
 
   const getOrderReturns = (orderId: string) => {
     return returns.filter(r => r.order_id === orderId);
@@ -345,10 +327,16 @@ export default function Orders() {
         return getNextReturnAction(order)
           ? `Order delivered (${getNextReturnAction(order) === 'exchange' ? 'Exchange' : 'Return'} available for 5 days)`
           : 'Order delivered';
+      case 'pending':
+        return 'Order placed, awaiting confirmation';
       case 'cancelled':
-        return 'Order was cancelled';
+        return order.notes?.includes('debited')
+          ? 'Order cancelled. If amount was debited, refund in 5-7 business days.'
+          : order.notes?.includes('incomplete payment')
+          ? 'Order cancelled due to incomplete payment.'
+          : 'Order was cancelled';
       default:
-        return 'Order status unknown';
+        return 'Order placed successfully';
     }
   };
 
@@ -502,6 +490,15 @@ export default function Orders() {
                       minute: '2-digit'
                     })}
                   </p>
+                  {order.status === 'delivered' && (
+                    <p className="text-sm text-green-600 dark:text-green-400 mb-1 font-medium">
+                      ✓ Delivered on {new Date(order.updated_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {getStatusMessage(order)}
                   </p>
@@ -582,62 +579,35 @@ export default function Orders() {
                 )}
               </div>
 
-              {/* Return/Exchange Tracking */}
+              {/* Return/Exchange compact badges */}
               {getOrderReturns(order.id).length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <RotateCcw className="w-4 h-4" />
-                    Return/Exchange Requests
-                  </h4>
-                  <div className="space-y-3">
-                    {getOrderReturns(order.id).map((returnItem) => (
-                      <div
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {getOrderReturns(order.id).map((returnItem) => {
+                    const isExch = !returnItem.return_type || returnItem.return_type === 'exchange';
+                    const typeIcon = isExch ? '🔄' : '↩';
+                    const typeLabel = isExch ? 'Exchange' : 'Return';
+                    const statusLabel =
+                      returnItem.status === 'completed' ? 'Completed' :
+                      returnItem.status === 'refunded' ? 'Refunded' :
+                      returnItem.status === 'approved' ? 'Approved' :
+                      returnItem.status === 'rejected' ? 'Rejected' : 'Pending';
+                    const cls =
+                      returnItem.status === 'completed' || returnItem.status === 'refunded'
+                        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                        : returnItem.status === 'approved'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
+                        : returnItem.status === 'rejected'
+                        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                        : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+                    return (
+                      <span
                         key={returnItem.id}
-                        className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cls}`}
                       >
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getReturnStatusColor(returnItem.status)}`}>
-                                {getReturnStatusIcon(returnItem.status)}
-                                {returnItem.status.charAt(0).toUpperCase() + returnItem.status.slice(1)}
-                              </span>
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
-                                {returnItem.return_type === 'exchange' ? '🔄 Exchange' : '💰 Refund'}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
-                              {returnItem.product_name}
-                            </p>
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            {new Date(returnItem.created_at).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short'
-                            })}
-                          </p>
-                        </div>
-                        
-                        <div className={`text-xs p-2 rounded ${
-                          returnItem.status === 'approved' 
-                            ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300'
-                            : returnItem.status === 'rejected'
-                            ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-                            : returnItem.status === 'completed'
-                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                            : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
-                        }`}>
-                          {getReturnStatusMessage(returnItem)}
-                        </div>
-
-                        {returnItem.admin_notes && returnItem.status === 'rejected' && (
-                          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 rounded">
-                            <span className="font-medium">Admin Note:</span> {returnItem.admin_notes}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        {typeIcon} {typeLabel} · {statusLabel}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>

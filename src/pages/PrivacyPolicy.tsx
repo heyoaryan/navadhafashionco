@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
             <p>We collect information you provide directly to us, including:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Name, email address, phone number, and billing/shipping address when you create an account or place an order</li>
-              <li>Payment information (processed securely via Cashfree — we do not store card details)</li>
+              <li>Payment information (processed securely via Razorpay — we do not store card details)</li>
               <li>Profile preferences, saved addresses, and order history</li>
               <li>Communications you send us via contact forms or email</li>
               <li>Job application details if you apply for a position at NAVADHA</li>
@@ -58,7 +58,7 @@ export default function PrivacyPolicy() {
             <p>We do not sell your personal information. We may share your data with:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Shipping and logistics partners to deliver your orders</li>
-              <li>Payment processors (Cashfree) to handle transactions securely</li>
+              <li>Payment processors (Razorpay) to handle transactions securely</li>
               <li>Cloud service providers (Supabase) for data storage and authentication</li>
               <li>Analytics providers to help us understand website usage</li>
               <li>Law enforcement or government authorities when required by law</li>

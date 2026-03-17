@@ -654,3 +654,58 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* About Hero Animations */
+@keyframes heroLineGrow {
+  from { width: 0; opacity: 0; }
+  to { width: 100%; opacity: 1; }
+}
+
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroLetterSpacing {
+  from { opacity: 0; letter-spacing: 0.6em; }
+  to { opacity: 1; letter-spacing: 0.1em; }
+}
+
+@keyframes heroPulseRing {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 0.15; }
+}
+
+@keyframes scrollDot {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(10px); opacity: 0; }
+}
+
+.hero-fade-up {
+  opacity: 0;
+  animation: heroFadeUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-letter-spacing {
+  opacity: 0;
+  animation: heroLetterSpacing 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-pulse-ring {
+  animation: heroPulseRing 4s ease-in-out infinite;
+}
+
+.scroll-dot {
+  animation: scrollDot 1.4s ease-in-out infinite;
+}
+
+/* Hero Background Pan Animation */
+@keyframes hero-pan {
+  0%   { background-position: 30% 40%; background-size: 115%; }
+  50%  { background-position: 60% 55%; background-size: 120%; }
+  100% { background-position: 30% 40%; background-size: 115%; }
+}
+
+.animate-hero-pan {
+  animation: hero-pan 22s ease-in-out infinite;
+}

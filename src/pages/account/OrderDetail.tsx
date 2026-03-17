@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Package, MapPin, CreditCard, Truck, ArrowLeft } from 'lucide-react';
+import { Package, MapPin, CreditCard, Truck, ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Order, OrderItem, Return } from '../../types';
@@ -12,6 +12,12 @@ interface OrderTracking {
   notes: string | null;
   created_at: string;
 }
+
+const fmt = (d: string) =>
+  new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+const fmtFull = (d: string) =>
+  new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 export default function OrderDetail() {
   const { orderId } = useParams();
@@ -46,12 +52,12 @@ export default function OrderDetail() {
 
       const { data: trackingData } = await supabase
         .from('order_tracking').select('*').eq('order_id', orderId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
       setTracking(trackingData || []);
 
       const { data: returnsData } = await supabase
         .from('returns').select('*').eq('order_id', orderId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
       setReturns(returnsData || []);
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -81,21 +87,15 @@ export default function OrderDetail() {
     let cls = '';
     if (r.status === 'pending') {
       label = `${typeLabel} Pending`;
-      cls = isExch
-        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-        : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      cls = isExch ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
     } else if (r.status === 'approved') {
-      label = `${typeLabel} Approved`;
-      cls = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      label = `${typeLabel} Approved`; cls = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
     } else if (r.status === 'completed') {
-      label = 'Exchanged';
-      cls = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      label = 'Exchanged'; cls = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     } else if (r.status === 'refunded') {
-      label = 'Refunded';
-      cls = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      label = 'Refunded'; cls = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     } else if (r.status === 'rejected') {
-      label = `${typeLabel} Rejected`;
-      cls = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      label = `${typeLabel} Rejected`; cls = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
     }
     return <span className={`text-xs px-2 py-1 rounded font-medium ${cls}`}>{label}</span>;
   };
@@ -103,7 +103,7 @@ export default function OrderDetail() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-400 rounded-full animate-spin" />
       </div>
     );
   }
@@ -116,8 +116,8 @@ export default function OrderDetail() {
     );
   }
 
-  // Header badge logic
-  const latestReturn = returns[0];
+  // Header return badge
+  const latestReturn = [...returns].reverse()[0];
   const headerReturnBadge = (() => {
     if (!latestReturn) return null;
     const isExchange = !latestReturn.return_type || latestReturn.return_type === 'exchange';
@@ -137,109 +137,127 @@ export default function OrderDetail() {
     return <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${cls}`}>{label}</span>;
   })();
 
-  // Timeline steps
-  const buildTimelineSteps = () => {
-    const baseSteps = ['pending', 'processing', 'shipped', 'delivered'];
+  // Get date for a base status from tracking history
+  const getTrackingDate = (status: string): string | null => {
+    const t = tracking.find(t => t.status === status);
+    return t ? t.created_at : null;
+  };
+
+  // Delivery date: from tracking or order.updated_at when delivered
+  const deliveryDate = order.status === 'delivered'
+    ? (getTrackingDate('delivered') || order.updated_at)
+    : null;
+
+  // Build vertical timeline steps
+  interface TimelineStep {
+    key: string;
+    label: string;
+    sublabel?: string;
+    date?: string | null;
+    state: 'done' | 'active' | 'pending' | 'error' | 'info';
+    icon?: React.ReactNode;
+  }
+
+  const buildTimeline = (): TimelineStep[] => {
     const statusOrder = ['pending', 'processing', 'shipped', 'delivered'];
-    const currentStatusIndex = statusOrder.indexOf(order.status);
-    const returnSteps: { label: string; status: string }[] = [];
+    const currentIdx = statusOrder.indexOf(order.status);
 
-    if (returns.length > 0) {
-      const exchangeReturn = returns.find(r => !r.return_type || r.return_type === 'exchange');
-      const refundReturn = returns.find(r => r.return_type === 'refund');
-      const fallback = returns[0];
+    if (order.status === 'cancelled') {
+      return [
+        { key: 'placed', label: 'Order Placed', date: order.created_at, state: 'done' },
+        { key: 'cancelled', label: 'Order Cancelled', date: order.updated_at, state: 'error' },
+      ];
+    }
 
-      if (exchangeReturn) {
-        returnSteps.push({ label: 'Exchange Initiated', status: 'exchange_initiated' });
-        if (exchangeReturn.status === 'pending') {
-          returnSteps.push({ label: 'Under Review', status: 'return_processing' });
-        } else if (exchangeReturn.status === 'approved' || exchangeReturn.status === 'completed') {
-          returnSteps.push({ label: 'Exchange Approved', status: 'exchange_approved' });
-          returnSteps.push({ label: 'Exchanged', status: 'exchange_completed' });
-        } else if (exchangeReturn.status === 'rejected') {
-          returnSteps.push({ label: 'Exchange Rejected', status: 'return_rejected' });
+    const baseSteps: TimelineStep[] = [
+      {
+        key: 'pending',
+        label: 'Order Placed',
+        sublabel: 'We received your order',
+        date: order.created_at,
+        state: currentIdx >= 0 ? 'done' : 'pending',
+      },
+      {
+        key: 'processing',
+        label: 'Processing',
+        sublabel: 'Your order is being prepared',
+        date: getTrackingDate('processing'),
+        state: currentIdx > 1 ? 'done' : currentIdx === 1 ? 'active' : 'pending',
+      },
+      {
+        key: 'shipped',
+        label: 'Shipped',
+        sublabel: order.tracking_number ? `Tracking: ${order.tracking_number}` : 'On the way to you',
+        date: getTrackingDate('shipped'),
+        state: currentIdx > 2 ? 'done' : currentIdx === 2 ? 'active' : 'pending',
+      },
+      {
+        key: 'delivered',
+        label: 'Delivered',
+        sublabel: deliveryDate ? `Delivered on ${fmt(deliveryDate)}` : 'Delivered to your address',
+        date: deliveryDate,
+        state: currentIdx === 3 ? 'done' : 'pending',
+      },
+    ];
+
+    // Return/exchange steps
+    const returnSteps: TimelineStep[] = [];
+    const exchangeReturn = returns.find(r => !r.return_type || r.return_type === 'exchange');
+    const refundReturn = returns.find(r => r.return_type === 'refund');
+
+    if (exchangeReturn) {
+      returnSteps.push({
+        key: 'exchange_initiated',
+        label: 'Exchange Requested',
+        sublabel: `Reason: ${exchangeReturn.reason.replace(/_/g, ' ')}`,
+        date: exchangeReturn.created_at,
+        state: 'info',
+        icon: <RefreshCw className="w-4 h-4" />,
+      });
+      if (exchangeReturn.status === 'pending') {
+        returnSteps.push({ key: 'exchange_review', label: 'Under Review', sublabel: 'Admin is reviewing your request', state: 'active', icon: <Clock className="w-4 h-4" /> });
+      } else if (exchangeReturn.status === 'approved' || exchangeReturn.status === 'completed') {
+        returnSteps.push({ key: 'exchange_approved', label: 'Exchange Approved', date: exchangeReturn.updated_at, state: 'info', icon: <CheckCircle className="w-4 h-4" /> });
+        if (exchangeReturn.status === 'completed') {
+          returnSteps.push({ key: 'exchange_done', label: 'Exchange Completed', sublabel: 'New item has been shipped', date: exchangeReturn.updated_at, state: 'done', icon: <CheckCircle className="w-4 h-4" /> });
         }
-      }
-
-      if (refundReturn) {
-        returnSteps.push({ label: 'Return Initiated', status: 'return_initiated' });
-        if (refundReturn.status === 'pending') {
-          returnSteps.push({ label: 'Under Review', status: 'return_processing' });
-        } else if (refundReturn.status === 'approved' || refundReturn.status === 'refunded') {
-          returnSteps.push({ label: 'Return Approved', status: 'return_approved' });
-          returnSteps.push({ label: 'Refunded', status: 'return_completed' });
-        } else if (refundReturn.status === 'rejected') {
-          returnSteps.push({ label: 'Return Rejected', status: 'return_rejected' });
-        }
-      }
-
-      if (!exchangeReturn && !refundReturn && fallback) {
-        returnSteps.push({ label: 'Return Initiated', status: 'return_initiated' });
-        if (fallback.status === 'pending') {
-          returnSteps.push({ label: 'Under Review', status: 'return_processing' });
-        } else if (['approved', 'completed', 'refunded'].includes(fallback.status)) {
-          returnSteps.push({ label: 'Approved', status: 'return_approved' });
-          returnSteps.push({ label: 'Completed', status: 'return_completed' });
-        } else if (fallback.status === 'rejected') {
-          returnSteps.push({ label: 'Rejected', status: 'return_rejected' });
-        }
+      } else if (exchangeReturn.status === 'rejected') {
+        returnSteps.push({ key: 'exchange_rejected', label: 'Exchange Rejected', sublabel: exchangeReturn.admin_notes || undefined, date: exchangeReturn.updated_at, state: 'error', icon: <XCircle className="w-4 h-4" /> });
       }
     }
 
-    const allSteps = [
-      ...baseSteps.map(s => ({ label: s.charAt(0).toUpperCase() + s.slice(1), status: s })),
-      ...returnSteps,
-    ];
-
-    return allSteps.map((step, idx) => {
-      const isBase = idx < baseSteps.length;
-      const isBaseCompleted = isBase && statusOrder.indexOf(step.status) < currentStatusIndex;
-      const isBaseCurrent = isBase && order.status === step.status;
-
-      let circleClass = 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400';
-      let labelClass = 'text-gray-500 dark:text-gray-400';
-      let lineClass = 'bg-gray-300 dark:bg-gray-600';
-      let icon = String(idx + 1);
-
-      if (isBaseCompleted) {
-        circleClass = 'bg-green-500 text-white shadow-lg shadow-green-500/50';
-        labelClass = 'text-black dark:text-white'; lineClass = 'bg-green-500'; icon = '✓';
-      } else if (isBaseCurrent) {
-        labelClass = 'text-black dark:text-white';
-        if (step.status === 'delivered') { circleClass = 'bg-green-500 text-white shadow-lg shadow-green-500/50 animate-pulse-green'; lineClass = 'bg-green-500'; icon = '✓'; }
-        else if (step.status === 'shipped') { circleClass = 'bg-blue-500 text-white shadow-lg shadow-blue-500/50 animate-pulse-blue'; }
-        else if (step.status === 'processing') { circleClass = 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/50 animate-pulse-yellow'; }
-        else { circleClass = 'bg-purple-500 text-white shadow-lg shadow-purple-500/50'; }
-      } else if (step.status === 'exchange_initiated') {
-        circleClass = 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'; labelClass = 'text-blue-600 dark:text-blue-400'; lineClass = 'bg-blue-400'; icon = '🔄';
-      } else if (step.status === 'return_initiated') {
-        circleClass = 'bg-orange-500 text-white shadow-lg shadow-orange-500/50'; labelClass = 'text-orange-600 dark:text-orange-400'; lineClass = 'bg-orange-400'; icon = '↩';
-      } else if (step.status === 'return_processing') {
-        circleClass = 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/50 animate-pulse-yellow'; labelClass = 'text-yellow-600 dark:text-yellow-400'; lineClass = 'bg-gray-300 dark:bg-gray-600'; icon = '⏳';
-      } else if (step.status === 'exchange_approved' || step.status === 'return_approved') {
-        circleClass = 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'; labelClass = 'text-blue-600 dark:text-blue-400'; lineClass = 'bg-blue-400'; icon = '✓';
-      } else if (step.status === 'return_rejected') {
-        circleClass = 'bg-red-500 text-white shadow-lg shadow-red-500/50'; labelClass = 'text-red-600 dark:text-red-400'; lineClass = 'bg-red-400'; icon = '✕';
-      } else if (step.status === 'exchange_completed') {
-        circleClass = 'bg-blue-600 text-white shadow-lg shadow-blue-600/50'; labelClass = 'text-blue-700 dark:text-blue-300'; lineClass = 'bg-blue-500'; icon = '✓';
-      } else if (step.status === 'return_completed') {
-        circleClass = 'bg-green-500 text-white shadow-lg shadow-green-500/50'; labelClass = 'text-green-600 dark:text-green-400'; lineClass = 'bg-green-500'; icon = '✓';
+    if (refundReturn) {
+      returnSteps.push({
+        key: 'return_initiated',
+        label: 'Return Requested',
+        sublabel: `Reason: ${refundReturn.reason.replace(/_/g, ' ')}`,
+        date: refundReturn.created_at,
+        state: 'info',
+        icon: <RotateCcw className="w-4 h-4" />,
+      });
+      if (refundReturn.status === 'pending') {
+        returnSteps.push({ key: 'return_review', label: 'Under Review', sublabel: 'Admin is reviewing your request', state: 'active', icon: <Clock className="w-4 h-4" /> });
+      } else if (refundReturn.status === 'approved' || refundReturn.status === 'refunded') {
+        returnSteps.push({ key: 'return_approved', label: 'Return Approved', date: refundReturn.updated_at, state: 'info', icon: <CheckCircle className="w-4 h-4" /> });
+        if (refundReturn.status === 'refunded') {
+          returnSteps.push({ key: 'refunded', label: 'Refund Completed', sublabel: 'Amount credited to your account', date: refundReturn.updated_at, state: 'done', icon: <CheckCircle className="w-4 h-4" /> });
+        }
+      } else if (refundReturn.status === 'rejected') {
+        returnSteps.push({ key: 'return_rejected', label: 'Return Rejected', sublabel: refundReturn.admin_notes || undefined, date: refundReturn.updated_at, state: 'error', icon: <XCircle className="w-4 h-4" /> });
       }
+    }
 
-      return (
-        <div key={`${step.status}-${idx}`} className="flex items-start">
-          <div className="flex flex-col items-center w-16 sm:w-20">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm transition-all duration-300 ${circleClass}`}>
-              {icon}
-            </div>
-            <p className={`text-xs mt-2 text-center font-medium leading-tight ${labelClass}`}>{step.label}</p>
-          </div>
-          {idx < allSteps.length - 1 && (
-            <div className={`h-1 w-8 sm:w-12 mt-4 sm:mt-5 transition-all duration-300 ${lineClass}`} />
-          )}
-        </div>
-      );
-    });
+    return [...baseSteps, ...returnSteps];
+  };
+
+  const timelineSteps = buildTimeline();
+
+  const stepColors: Record<TimelineStep['state'], { dot: string; line: string; label: string; date: string }> = {
+    done:    { dot: 'bg-green-500 text-white shadow-green-500/40 shadow-md', line: 'bg-green-400', label: 'text-gray-900 dark:text-white font-medium', date: 'text-gray-500 dark:text-gray-400' },
+    active:  { dot: 'bg-blue-500 text-white shadow-blue-500/40 shadow-md ring-4 ring-blue-100 dark:ring-blue-900', line: 'bg-gray-200 dark:bg-gray-700', label: 'text-blue-600 dark:text-blue-400 font-semibold', date: 'text-blue-500 dark:text-blue-400' },
+    pending: { dot: 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500', line: 'bg-gray-200 dark:bg-gray-700', label: 'text-gray-400 dark:text-gray-500', date: 'text-gray-400 dark:text-gray-500' },
+    error:   { dot: 'bg-red-500 text-white shadow-red-500/40 shadow-md', line: 'bg-red-300 dark:bg-red-800', label: 'text-red-600 dark:text-red-400 font-medium', date: 'text-gray-500 dark:text-gray-400' },
+    info:    { dot: 'bg-blue-500 text-white shadow-blue-500/40 shadow-md', line: 'bg-blue-300 dark:bg-blue-800', label: 'text-blue-700 dark:text-blue-300 font-medium', date: 'text-gray-500 dark:text-gray-400' },
   };
 
   return (
@@ -251,7 +269,7 @@ export default function OrderDetail() {
 
       {/* Order Header */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-light">Order #{order.order_number}</h1>
@@ -264,9 +282,14 @@ export default function OrderDetail() {
               </span>
               {headerReturnBadge}
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Placed on {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Placed on {fmtFull(order.created_at)}
             </p>
+            {deliveryDate && (
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium">
+                ✓ Delivered on {fmt(deliveryDate)}
+              </p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-2xl font-semibold text-black dark:text-white">₹{order.total.toLocaleString()}</p>
@@ -307,72 +330,78 @@ export default function OrderDetail() {
             </div>
           </div>
 
-          {/* Order Timeline */}
+          {/* Order Timeline — vertical */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-medium mb-6 flex items-center gap-2">
               <Truck className="w-5 h-5" />
               Order Timeline
             </h2>
-            <div className="mb-6 sm:mb-8 overflow-x-auto">
-              <div className="flex items-start min-w-max">
-                {order.status === 'cancelled' ? (
-                  <div className="flex-1 flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm bg-red-500 text-white shadow-lg shadow-red-500/50">✕</div>
-                    <p className="text-xs mt-2 text-center font-medium text-red-600 dark:text-red-400">Cancelled</p>
-                  </div>
-                ) : buildTimelineSteps()}
-              </div>
-            </div>
-
-            {/* Tracking History */}
-            {tracking.length > 0 && (
-              <div className="space-y-3 sm:space-y-4">
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Tracking History</h3>
-                {tracking.map((track, index) => {
-                  const isCompleted = index !== 0;
-                  const statusColor =
-                    track.status === 'cancelled' ? 'bg-red-500' :
-                    isCompleted ? 'bg-green-500' :
-                    track.status === 'delivered' ? 'bg-green-500' :
-                    track.status === 'shipped' ? 'bg-blue-500' :
-                    track.status === 'processing' ? 'bg-yellow-500' :
-                    track.status === 'pending' ? 'bg-purple-500' : 'bg-gray-500';
-                  return (
-                    <div key={track.id} className="flex gap-3 sm:gap-4">
-                      <div className="flex flex-col items-center flex-shrink-0">
-                        <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${statusColor} ${index === 0 ? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : ''} ${
-                          index === 0 && track.status === 'cancelled' ? 'ring-red-200 dark:ring-red-800' :
-                          index === 0 && (isCompleted || track.status === 'delivered') ? 'ring-green-200 dark:ring-green-800' :
-                          index === 0 && track.status === 'shipped' ? 'ring-blue-200 dark:ring-blue-800' :
-                          index === 0 && track.status === 'processing' ? 'ring-yellow-200 dark:ring-yellow-800' :
-                          index === 0 ? 'ring-purple-200 dark:ring-purple-800' : ''
-                        }`} />
-                        {index !== tracking.length - 1 && (
-                          <div className={`w-0.5 h-full mt-1 ${track.status === 'cancelled' ? 'bg-red-500' : isCompleted ? 'bg-green-500' : statusColor}`} />
+            <div className="space-y-0">
+              {timelineSteps.map((step, idx) => {
+                const colors = stepColors[step.state];
+                const isLast = idx === timelineSteps.length - 1;
+                return (
+                  <div key={step.key} className="flex gap-4">
+                    {/* Left: dot + line */}
+                    <div className="flex flex-col items-center flex-shrink-0 w-8">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all duration-300 ${colors.dot}`}>
+                        {step.icon ?? (
+                          step.state === 'done' ? <CheckCircle className="w-4 h-4" /> :
+                          step.state === 'error' ? <XCircle className="w-4 h-4" /> :
+                          step.state === 'active' ? <Clock className="w-4 h-4" /> :
+                          <span className="w-2 h-2 rounded-full bg-current" />
                         )}
                       </div>
-                      <div className="flex-1 pb-3 sm:pb-4 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-medium text-sm sm:text-base">{track.status.charAt(0).toUpperCase() + track.status.slice(1)}</p>
-                          {index === 0 && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              track.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                              track.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              track.status === 'shipped' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                              track.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                            }`}>Current</span>
-                          )}
-                        </div>
-                        {track.location && <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words mt-1">📍 {track.location}</p>}
-                        {track.notes && <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words mt-1">💬 {track.notes}</p>}
-                        <p className="text-xs text-gray-500 mt-1.5">
-                          🕐 {new Date(track.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
+                      {!isLast && <div className={`w-0.5 flex-1 min-h-[2rem] mt-1 ${colors.line}`} />}
                     </div>
-                  );
-                })}
+
+                    {/* Right: content */}
+                    <div className={`pb-6 flex-1 min-w-0 ${isLast ? 'pb-0' : ''}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <p className={`text-sm ${colors.label}`}>{step.label}</p>
+                        {step.date && (
+                          <p className={`text-xs ${colors.date} sm:text-right`}>{fmtFull(step.date)}</p>
+                        )}
+                      </div>
+                      {step.sublabel && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{step.sublabel}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tracking details (location/notes from admin) */}
+            {tracking.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">Tracking Updates</h3>
+                <div className="space-y-3">
+                  {[...tracking].reverse().map((track, index) => {
+                    const dotColor =
+                      track.status === 'cancelled' ? 'bg-red-500' :
+                      track.status === 'delivered' ? 'bg-green-500' :
+                      track.status === 'shipped' ? 'bg-blue-500' :
+                      track.status === 'processing' ? 'bg-yellow-500' : 'bg-purple-500';
+                    const isFirst = index === 0;
+                    return (
+                      <div key={track.id} className="flex gap-3">
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <div className={`w-3 h-3 rounded-full mt-0.5 ${dotColor} ${isFirst ? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-opacity-30 ' + dotColor.replace('bg-', 'ring-') : ''}`} />
+                          {index !== tracking.length - 1 && <div className="w-0.5 flex-1 min-h-[1.5rem] mt-1 bg-gray-200 dark:bg-gray-700" />}
+                        </div>
+                        <div className="flex-1 pb-3 min-w-0">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <p className="text-sm font-medium">{track.status.charAt(0).toUpperCase() + track.status.slice(1)}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{fmtFull(track.created_at)}</p>
+                          </div>
+                          {track.location && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">📍 {track.location}</p>}
+                          {track.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">💬 {track.notes}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -407,18 +436,16 @@ export default function OrderDetail() {
                   <span className="font-medium">₹{order.tax.toLocaleString()}</span>
                 </div>
               )}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
                   <span>₹{order.total.toLocaleString()}</span>
                 </div>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Payment Method</p>
-                <p className="font-medium capitalize text-sm">{order.payment_method || 'Online'}</p>
-              </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Payment Method</p>
+              <p className="font-medium capitalize text-sm">{order.payment_method || 'Online'}</p>
             </div>
           </div>
 
@@ -428,7 +455,7 @@ export default function OrderDetail() {
               <MapPin className="w-5 h-5" />
               Shipping Address
             </h2>
-            <div className="text-sm space-y-2">
+            <div className="text-sm space-y-1.5">
               <p className="font-medium text-base">{order.shipping_address.full_name}</p>
               <p className="text-gray-600 dark:text-gray-400">{order.shipping_address.phone}</p>
               <p className="text-gray-600 dark:text-gray-400">{order.shipping_address.address_line1}</p>
@@ -447,6 +474,36 @@ export default function OrderDetail() {
               <p className="text-sm font-mono bg-gray-50 dark:bg-gray-700 p-3 rounded-lg break-all border border-gray-200 dark:border-gray-600">
                 {order.tracking_number}
               </p>
+            </div>
+          )}
+
+          {/* Returns/Exchanges summary */}
+          {returns.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5" />
+                Return / Exchange
+              </h2>
+              <div className="space-y-3">
+                {returns.map((r) => {
+                  const isExch = !r.return_type || r.return_type === 'exchange';
+                  const statusCls =
+                    r.status === 'approved' || r.status === 'completed' || r.status === 'refunded'
+                      ? 'text-green-600 dark:text-green-400'
+                      : r.status === 'rejected' ? 'text-red-600 dark:text-red-400'
+                      : 'text-yellow-600 dark:text-yellow-400';
+                  return (
+                    <div key={r.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 text-sm space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{isExch ? '🔄 Exchange' : '↩ Return'}</span>
+                        <span className={`text-xs font-medium capitalize ${statusCls}`}>{r.status}</span>
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs">Requested {fmt(r.created_at)}</p>
+                      {r.admin_notes && <p className="text-xs text-gray-600 dark:text-gray-400 italic">"{r.admin_notes}"</p>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

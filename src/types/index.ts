@@ -119,6 +119,7 @@ export interface Review {
   comment: string | null;
   is_verified_purchase: boolean;
   is_approved: boolean;
+  media_urls: string[];
   created_at: string;
   user?: {
     full_name: string | null;

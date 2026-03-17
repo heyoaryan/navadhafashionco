@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus, Camera, X, Play, CheckCircle, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product, ProductImage, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +35,14 @@ export default function ProductDetail() {
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewMediaFiles, setReviewMediaFiles] = useState<File[]>([]);
+  const [reviewMediaPreviews, setReviewMediaPreviews] = useState<string[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -63,6 +71,26 @@ export default function ProductDetail() {
       fetchRelatedProducts();
     }
   }, [product]);
+
+  // Check if user has purchased this product (delivered order)
+  useEffect(() => {
+    const checkPurchase = async () => {
+      if (!user || !product) { setHasPurchased(false); return; }
+      setCheckingPurchase(true);
+      try {
+        const { data } = await supabase
+          .from('order_items')
+          .select('id, order:orders!inner(status, user_id)')
+          .eq('product_id', product.id)
+          .eq('order.user_id', user.id)
+          .eq('order.status', 'delivered')
+          .limit(1);
+        setHasPurchased((data?.length ?? 0) > 0);
+      } catch { setHasPurchased(false); }
+      finally { setCheckingPurchase(false); }
+    };
+    checkPurchase();
+  }, [user, product]);
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -97,14 +125,9 @@ export default function ProductDetail() {
             .limit(6),
           supabase
             .from('reviews')
-            .select(`
-              *,
-              user:profiles(full_name, avatar_url)
-            `)
+            .select(`*, user:profiles(full_name, avatar_url)`)
             .eq('product_id', productData.id)
-            .eq('is_approved', true)
             .order('created_at', { ascending: false })
-            .limit(10)
         ]);
 
         setImages(imagesResult.data || []);
@@ -252,29 +275,81 @@ export default function ProductDetail() {
 
     setSubmittingReview(true);
     try {
+      // Upload media files first
+      let uploadedUrls: string[] = [];
+      if (reviewMediaFiles.length > 0) {
+        setUploadingMedia(true);
+        for (const file of reviewMediaFiles) {
+          const ext = file.name.split('.').pop();
+          const path = `${user.id}/${product.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from('review-media')
+            .upload(path, file, { upsert: false });
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from('review-media').getPublicUrl(path);
+            uploadedUrls.push(urlData.publicUrl);
+          }
+        }
+        setUploadingMedia(false);
+      }
+
       const { error } = await supabase.from('reviews').insert({
         product_id: product.id,
         user_id: user.id,
         rating: reviewRating,
         title: reviewTitle || null,
         comment: reviewComment,
-        is_verified_purchase: false,
-        is_approved: false,
+        is_verified_purchase: hasPurchased,
+        is_approved: true,
+        media_urls: uploadedUrls,
       });
 
       if (error) throw error;
 
-      alert('Thank you for your review! It will be published after approval.');
+      alert('Thank you for your review!');
       setShowReviewForm(false);
       setReviewRating(0);
       setReviewTitle('');
       setReviewComment('');
+      setReviewMediaFiles([]);
+      setReviewMediaPreviews([]);
+      // Refresh reviews list
+      const { data: updatedReviews } = await supabase
+        .from('reviews')
+        .select(`*, user:profiles(full_name, avatar_url)`)
+        .eq('product_id', product.id)
+        .order('created_at', { ascending: false });
+      setReviews(updatedReviews || []);
     } catch (error) {
       console.error('Error submitting review:', error);
       alert('Failed to submit review. Please try again.');
     } finally {
       setSubmittingReview(false);
+      setUploadingMedia(false);
     }
+  };
+
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid = files.filter(f => {
+      const isImage = f.type.startsWith('image/');
+      const isVideo = f.type.startsWith('video/');
+      return (isImage || isVideo) && f.size <= 50 * 1024 * 1024; // 50MB max
+    });
+    const remaining = 5 - reviewMediaFiles.length;
+    const toAdd = valid.slice(0, remaining);
+    setReviewMediaFiles(prev => [...prev, ...toAdd]);
+    toAdd.forEach(file => {
+      const url = URL.createObjectURL(file);
+      setReviewMediaPreviews(prev => [...prev, url]);
+    });
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
+  };
+
+  const removeMediaFile = (index: number) => {
+    URL.revokeObjectURL(reviewMediaPreviews[index]);
+    setReviewMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setReviewMediaPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const checkDeliveryAvailability = async () => {
@@ -931,80 +1006,173 @@ export default function ProductDetail() {
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-800 pt-12">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-light">Customer Reviews</h2>
-          {user && (
+        {/* Reviews Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-2xl font-light">Customer Reviews</h2>
+            {reviews.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`w-4 h-4 ${i < Math.round(averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {averageRating.toFixed(1)} out of 5 &middot; {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Write Review Button */}
+          {!user ? (
+            <button
+              onClick={() => navigate('/auth', { state: { from: `/product/${slug}` } })}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:border-rose-400 hover:text-rose-500 transition-colors"
+            >
+              <Lock className="w-4 h-4" /> Sign in to Review
+            </button>
+          ) : !checkingPurchase && !hasPurchased ? (
+            <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <ShoppingBag className="w-4 h-4" />
+              <span>Purchase to review</span>
+            </div>
+          ) : hasPurchased ? (
             <button
               onClick={() => setShowReviewForm(!showReviewForm)}
-              className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
               style={{ backgroundColor: '#E91E63', color: 'white' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D63D7F'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#E91E63'}
             >
+              <Star className="w-4 h-4" />
               {showReviewForm ? 'Cancel' : 'Write a Review'}
             </button>
-          )}
+          ) : null}
         </div>
 
-        {showReviewForm && user && (
-          <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-medium mb-4">Write Your Review</h3>
+        {/* Review Form */}
+        {showReviewForm && user && hasPurchased && (
+          <div className="mb-10 p-5 sm:p-6 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl">
+            <div className="flex items-center gap-2 mb-5">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <h3 className="text-base font-medium">Verified Purchase Review</h3>
+            </div>
             <form onSubmit={handleSubmitReview} className="space-y-4">
+              {/* Star Rating */}
               <div>
-                <label className="block text-sm font-medium mb-2">Rating</label>
-                <div className="flex gap-2">
+                <label className="block text-sm font-medium mb-2">Your Rating *</label>
+                <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
                       onClick={() => setReviewRating(star)}
-                      className="transition-colors"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="transition-transform hover:scale-110 active:scale-95"
                     >
                       <Star
-                        className={`w-8 h-8 ${
-                          star <= reviewRating
+                        className={`w-8 h-8 transition-colors ${
+                          star <= (hoverRating || reviewRating)
                             ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
+                            : 'text-gray-300 dark:text-gray-600'
                         }`}
                       />
                     </button>
                   ))}
+                  {reviewRating > 0 && (
+                    <span className="ml-2 text-sm text-gray-500 self-center">
+                      {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewRating]}
+                    </span>
+                  )}
                 </div>
               </div>
 
+              {/* Title */}
               <div>
-                <label className="block text-sm font-medium mb-2">Title (Optional)</label>
+                <label className="block text-sm font-medium mb-1.5">Title <span className="text-gray-400 font-normal">(optional)</span></label>
                 <input
                   type="text"
                   value={reviewTitle}
                   onChange={(e) => setReviewTitle(e.target.value)}
-                  placeholder="Sum up your review"
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  placeholder="Summarize your experience"
+                  maxLength={100}
+                  className="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
                 />
               </div>
 
+              {/* Comment */}
               <div>
-                <label className="block text-sm font-medium mb-2">Review</label>
+                <label className="block text-sm font-medium mb-1.5">Review *</label>
                 <textarea
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Share your thoughts about this product"
+                  placeholder="Share your thoughts — fit, quality, fabric, styling..."
                   rows={4}
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  className="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"
                   required
                 />
               </div>
 
-              <div className="flex gap-3">
+              {/* Media Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Photos / Videos <span className="text-gray-400 font-normal">(up to 5, max 50MB each)</span>
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {reviewMediaPreviews.map((preview, idx) => {
+                    const isVideo = reviewMediaFiles[idx]?.type.startsWith('video/');
+                    return (
+                      <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                        {isVideo ? (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                            <Play className="w-6 h-6 text-white" />
+                          </div>
+                        ) : (
+                          <img src={preview} alt="" className="w-full h-full object-cover" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeMediaFile(idx)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/70 rounded-full flex items-center justify-center hover:bg-black transition-colors"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {reviewMediaFiles.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => mediaInputRef.current?.click()}
+                      className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center gap-1 hover:border-rose-400 hover:text-rose-500 transition-colors text-gray-400 flex-shrink-0"
+                    >
+                      <Camera className="w-5 h-5" />
+                      <span className="text-[10px]">Add</span>
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleMediaSelect}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
                   disabled={submittingReview || reviewRating === 0}
-                  className="px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                   style={{ backgroundColor: '#E91E63' }}
                   onMouseEnter={(e) => !submittingReview && (e.currentTarget.style.backgroundColor = '#D63D7F')}
                   onMouseLeave={(e) => !submittingReview && (e.currentTarget.style.backgroundColor = '#E91E63')}
                 >
-                  {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  {submittingReview ? (uploadingMedia ? 'Uploading media...' : 'Submitting...') : 'Submit Review'}
                 </button>
                 <button
                   type="button"
@@ -1013,8 +1181,11 @@ export default function ProductDetail() {
                     setReviewRating(0);
                     setReviewTitle('');
                     setReviewComment('');
+                    reviewMediaPreviews.forEach(url => URL.revokeObjectURL(url));
+                    setReviewMediaFiles([]);
+                    setReviewMediaPreviews([]);
                   }}
-                  className="px-6 py-2 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="px-6 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -1023,52 +1194,91 @@ export default function ProductDetail() {
           </div>
         )}
 
+        {/* Reviews List */}
         {reviews.length > 0 ? (
-          <div className="space-y-6">
-            {reviews.map((review) => (
-              <div key={review.id} className="border-b border-gray-200 dark:border-gray-800 pb-6">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">
-                        {review.user?.full_name || 'Anonymous'}
-                      </span>
-                      {review.is_verified_purchase && (
-                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-0.5 rounded">
-                          Verified Purchase
-                        </span>
-                      )}
+          <div className="space-y-0">
+            {(showAllReviews ? reviews : reviews.slice(0, 6)).map((review) => (
+              <div key={review.id} className="border-b border-gray-100 dark:border-gray-800 py-6 first:pt-0">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                      {review.user?.full_name?.[0]?.toUpperCase() || 'A'}
                     </div>
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">{review.user?.full_name || 'Anonymous'}</span>
+                        {review.is_verified_purchase && (
+                          <span className="inline-flex items-center gap-1 text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full border border-green-200 dark:border-green-800">
+                            <CheckCircle className="w-3 h-3" /> Verified Purchase
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {new Date(review.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <span className="text-sm text-gray-500">
-                    {new Date(review.created_at).toLocaleDateString()}
-                  </span>
                 </div>
+
                 {review.title && (
-                  <h4 className="font-medium mb-2">{review.title}</h4>
+                  <p className="text-sm font-semibold mb-1.5 text-gray-900 dark:text-gray-100">{review.title}</p>
                 )}
                 {review.comment && (
-                  <p className="text-gray-600 dark:text-gray-400">{review.comment}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">{review.comment}</p>
+                )}
+
+                {/* Review Media */}
+                {review.media_urls && review.media_urls.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {review.media_urls.map((url, idx) => {
+                      const isVideo = url.match(/\.(mp4|mov|webm|avi)$/i);
+                      return (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer"
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0 hover:opacity-90 transition-opacity relative"
+                        >
+                          {isVideo ? (
+                            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                              <Play className="w-5 h-5 text-white" />
+                            </div>
+                          ) : (
+                            <img src={url} alt={`Review media ${idx + 1}`} className="w-full h-full object-cover" />
+                          )}
+                        </a>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             ))}
+
+            {reviews.length > 6 && (
+              <div className="pt-6 text-center">
+                <button
+                  onClick={() => setShowAllReviews(!showAllReviews)}
+                  className="px-6 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-lg hover:border-rose-400 hover:text-rose-500 transition-colors inline-flex items-center gap-2"
+                >
+                  {showAllReviews ? (
+                    <><ChevronUp className="w-4 h-4" /> Show Less</>
+                  ) : (
+                    <><ChevronDown className="w-4 h-4" /> Show All {reviews.length} Reviews</>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
-          <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-            No reviews yet. Be the first to review this product!
-          </p>
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <Star className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-sm">No reviews yet. Be the first to share your experience!</p>
+          </div>
         )}
       </div>
 

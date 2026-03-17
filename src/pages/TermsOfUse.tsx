@@ -53,7 +53,7 @@ export default function TermsOfUse() {
               are subject to change without notice.
             </p>
             <ul className="list-disc pl-5 mt-3 space-y-1">
-              <li>Payments are processed securely via Cashfree payment gateway</li>
+              <li>Payments are processed securely via Razorpay payment gateway</li>
               <li>Free shipping is available on orders above ₹2,999</li>
               <li>Orders cannot be modified after payment confirmation</li>
               <li>We are not responsible for delays caused by incorrect shipping information provided by you</li>
