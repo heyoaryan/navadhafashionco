@@ -31,15 +31,15 @@ function HeroIntro() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
 
-      {/* Faded background image — slow pan */}
+      {/* Static girl image — light opacity, no movement */}
       <div
-        className="absolute inset-0 bg-cover bg-center animate-hero-pan"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('https://images.pexels.com/photos/2220316/pexels-photo-2220316.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
-          opacity: 0.10,
+          backgroundImage: `url('https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
+          opacity: 0.18,
         }}
       />
-      {/* Extra overlay to blend with gradient */}
+      {/* Overlay to blend with gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-rose-50/80 via-pink-50/70 to-purple-50/80 dark:from-gray-900/85 dark:via-gray-800/80 dark:to-gray-900/85 pointer-events-none" />
 
       {/* Soft background blobs */}

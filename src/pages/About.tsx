@@ -61,7 +61,7 @@ export default function About() {
     <div className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden bg-white dark:bg-gray-900">
+      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 overflow-hidden bg-white dark:bg-gray-900">
 
         {/* Soft radial glow */}
         <div
@@ -69,22 +69,22 @@ export default function About() {
           style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(238,69,143,0.07) 0%, transparent 70%)' }}
         />
 
-        {/* Pulsing rings */}
+        {/* Pulsing rings — hidden on very small screens to avoid overflow */}
         <div
-          className="hero-pulse-ring absolute rounded-full pointer-events-none"
-          style={{ width: 'min(420px, 90vw)', height: 'min(420px, 90vw)', border: '1px solid rgba(238,69,143,0.18)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+          className="hero-pulse-ring absolute rounded-full pointer-events-none hidden xs:block"
+          style={{ width: 'min(380px, 80vw)', height: 'min(380px, 80vw)', border: '1px solid rgba(238,69,143,0.18)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
         />
         <div
-          className="hero-pulse-ring absolute rounded-full pointer-events-none"
-          style={{ width: 'min(280px, 65vw)', height: 'min(280px, 65vw)', border: '1px solid rgba(238,69,143,0.12)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', animationDelay: '1s' }}
+          className="hero-pulse-ring absolute rounded-full pointer-events-none hidden xs:block"
+          style={{ width: 'min(250px, 60vw)', height: 'min(250px, 60vw)', border: '1px solid rgba(238,69,143,0.12)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', animationDelay: '1s' }}
         />
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-center w-full max-w-3xl mx-auto">
+        <div className="relative z-10 flex flex-col items-center w-full max-w-3xl mx-auto px-2">
 
           {/* Eyebrow */}
           <p
-            className="hero-fade-up text-[9px] xs:text-[10px] sm:text-xs tracking-[0.4em] sm:tracking-[0.55em] uppercase text-pink-400 font-light mb-6 sm:mb-8 px-2 leading-relaxed"
+            className="hero-fade-up text-[9px] sm:text-[10px] md:text-xs tracking-[0.3em] sm:tracking-[0.45em] uppercase text-pink-400 font-light mb-5 sm:mb-8 leading-relaxed"
             style={{ animationDelay: '0.1s' }}
           >
             From a mother's devotion to a daughter's vision
@@ -92,11 +92,12 @@ export default function About() {
 
           {/* Brand name */}
           <h1
-            className="hero-letter-spacing brand-title leading-none w-full"
+            className="hero-letter-spacing brand-title leading-none w-full text-center"
             style={{
               color: '#EE458F',
               animationDelay: '0.3s',
-              fontSize: 'clamp(3.5rem, 18vw, 10rem)',
+              fontSize: 'clamp(3rem, 16vw, 10rem)',
+              letterSpacing: '0.05em',
             }}
           >
             NAVADHA
@@ -104,17 +105,17 @@ export default function About() {
 
           {/* Divider lines + FASHION CO */}
           <div
-            className="hero-fade-up flex items-center justify-center gap-3 sm:gap-4 mt-4 sm:mt-5 w-full"
+            className="hero-fade-up flex items-center justify-center gap-2 sm:gap-4 mt-3 sm:mt-5 w-full"
             style={{ animationDelay: '0.7s' }}
           >
-            <div className="h-px flex-1 max-w-[60px] sm:max-w-[96px] bg-pink-300/60" />
-            <span className="text-[9px] sm:text-[10px] font-light tracking-[0.4em] sm:tracking-[0.5em] text-pink-400/80 uppercase whitespace-nowrap">Fashion Co</span>
-            <div className="h-px flex-1 max-w-[60px] sm:max-w-[96px] bg-pink-300/60" />
+            <div className="h-px flex-1 max-w-[50px] sm:max-w-[96px] bg-pink-300/60" />
+            <span className="text-[8px] sm:text-[10px] font-light tracking-[0.35em] sm:tracking-[0.5em] text-pink-400/80 uppercase whitespace-nowrap">Fashion Co</span>
+            <div className="h-px flex-1 max-w-[50px] sm:max-w-[96px] bg-pink-300/60" />
           </div>
 
           {/* Quote */}
           <p
-            className="hero-fade-up mt-8 sm:mt-10 text-xs sm:text-sm text-gray-400 dark:text-gray-500 font-light italic max-w-xs sm:max-w-md mx-auto leading-relaxed px-2"
+            className="hero-fade-up mt-6 sm:mt-10 text-xs sm:text-sm text-gray-400 dark:text-gray-500 font-light italic max-w-[280px] sm:max-w-md mx-auto leading-relaxed"
             style={{ animationDelay: '0.95s' }}
           >
             "Where devotion, craftsmanship, and the strength of women come together."
@@ -123,7 +124,7 @@ export default function About() {
         </div>
 
         {/* Scroll indicator */}
-        <div className="hero-fade-up absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2" style={{ animationDelay: '1.3s' }}>
+        <div className="hero-fade-up absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2" style={{ animationDelay: '1.3s' }}>
           <span className="text-[9px] tracking-[0.5em] uppercase text-gray-300 dark:text-gray-600 font-light">Scroll</span>
           <div className="relative w-px h-7 sm:h-8 overflow-hidden">
             <div className="scroll-dot absolute inset-x-0 top-0 h-full bg-gradient-to-b from-pink-400 to-transparent" />

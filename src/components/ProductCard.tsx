@@ -164,17 +164,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {discountPercentage > 0 && (
-          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium z-10">
             {discountPercentage}% OFF
           </div>
         )}
-        {product.stock_quantity <= product.low_stock_threshold && product.stock_quantity > 0 && (
-          <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
-            Low Stock
-          </div>
-        )}
         {product.stock_quantity === 0 && (
-          <div className="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-gray-800 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium z-10">
             Out of Stock
           </div>
         )}
@@ -221,13 +216,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         
         {/* Stock Status Messages */}
         {product.stock_quantity === 0 ? (
-          <div className="mt-2 text-sm font-medium text-red-600 dark:text-red-400">
+          <div className="mt-2 text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">
             Out of Stock
           </div>
-        ) : product.stock_quantity <= 3 ? (
-          <div className="mt-2 text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1">
+        ) : product.stock_quantity <= product.low_stock_threshold && product.stock_quantity > 0 ? (
+          <div className="mt-2 text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1">
             <span className="animate-pulse">⚡</span>
-            Hurry! Few Left
+            Low Stock — Hurry!
           </div>
         ) : null}
         
