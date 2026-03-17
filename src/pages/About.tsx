@@ -61,7 +61,7 @@ export default function About() {
     <div className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 overflow-hidden bg-white dark:bg-gray-900">
+      <section className="relative flex flex-col items-center justify-center text-center px-4 sm:px-6 overflow-hidden bg-white dark:bg-gray-900 pt-24 pb-16 sm:pt-32 sm:pb-20 min-h-[85vh]">
 
         {/* Soft radial glow */}
         <div
@@ -121,14 +121,14 @@ export default function About() {
             "Where devotion, craftsmanship, and the strength of women come together."
           </p>
 
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="hero-fade-up absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2" style={{ animationDelay: '1.3s' }}>
-          <span className="text-[9px] tracking-[0.5em] uppercase text-gray-300 dark:text-gray-600 font-light">Scroll</span>
-          <div className="relative w-px h-7 sm:h-8 overflow-hidden">
-            <div className="scroll-dot absolute inset-x-0 top-0 h-full bg-gradient-to-b from-pink-400 to-transparent" />
+          {/* Scroll indicator — centred below content */}
+          <div className="hero-fade-up mt-12 sm:mt-16 flex flex-col items-center gap-2 z-20" style={{ animationDelay: '1.3s' }}>
+            <span className="text-[9px] tracking-[0.5em] uppercase text-gray-300 dark:text-gray-600 font-light">Scroll</span>
+            <div className="relative w-px h-7 sm:h-8 overflow-hidden">
+              <div className="scroll-dot absolute inset-x-0 top-0 h-full bg-gradient-to-b from-pink-400 to-transparent" />
+            </div>
           </div>
+
         </div>
 
       </section>
@@ -141,7 +141,7 @@ export default function About() {
             <div className="relative">
               <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-20 pointer-events-none" style={{ background: 'linear-gradient(135deg, #EE458F, #a855f7)' }} />
               <img
-                src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&auto=format&fit=crop"
+                src="/1.png"
                 alt="Elegant Indian dresses and garments"
                 className="relative rounded-2xl shadow-2xl w-full h-56 sm:h-72 lg:h-96 object-cover object-center"
               />
@@ -206,7 +206,7 @@ export default function About() {
               <div className="relative">
                 <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-15 pointer-events-none" style={{ background: '#EE458F' }} />
                 <img
-                  src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop"
+                  src="/2.png"
                   alt="Fashion designer working with fabric"
                   className="relative rounded-2xl shadow-2xl w-full h-56 sm:h-72 lg:h-96 object-cover object-center"
                 />
@@ -316,7 +316,7 @@ export default function About() {
               <div className="relative">
                 <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-15 pointer-events-none" style={{ background: '#a855f7' }} />
                 <img
-                  src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&auto=format&fit=crop"
+                  src="/3.png"
                   alt="Beautiful ethnic wear collection"
                   className="relative rounded-2xl shadow-2xl w-full h-56 sm:h-72 lg:h-96 object-cover object-top"
                 />
