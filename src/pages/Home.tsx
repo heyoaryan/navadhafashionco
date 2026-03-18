@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, Gem, Truck, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
@@ -29,22 +29,26 @@ function HeroIntro() {
   }, []);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
 
-      {/* Static girl image — light opacity, no movement */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=1600')`,
-          opacity: 0.18,
-        }}
-      />
-      {/* Overlay to blend with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-rose-50/80 via-pink-50/70 to-purple-50/80 dark:from-gray-900/85 dark:via-gray-800/80 dark:to-gray-900/85 pointer-events-none" />
+      {/* Background — same style as Boutique hero */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-rose-50 to-pink-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900"></div>
 
-      {/* Soft background blobs */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-20 pointer-events-none" style={{ background: '#EE458F' }} />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-10 pointer-events-none" style={{ background: '#a855f7' }} />
+        {/* Animated Grid Lines */}
+        <div className="absolute inset-0 opacity-50">
+          <div className="absolute inset-0 animate-grid-pulse" style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(238, 69, 143, 0.4) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(238, 69, 143, 0.4) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}></div>
+        </div>
+
+        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center opacity-5"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-white/50 dark:from-gray-900/50 via-transparent to-transparent"></div>
+      </div>
 
       <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
 
@@ -105,7 +109,7 @@ function HeroIntro() {
 
         {/* Subtitle */}
         <p
-          className="text-base sm:text-lg md:text-xl lg:text-2xl font-light text-gray-600 dark:text-gray-300 mb-8 sm:mb-10 tracking-wide px-4 italic"
+          className="text-sm sm:text-lg md:text-xl lg:text-2xl font-light text-gray-600 dark:text-gray-300 mb-8 sm:mb-10 tracking-wide px-4 italic"
           style={{
             opacity: showSubtitle ? 1 : 0,
             transform: showSubtitle ? 'translateY(0)' : 'translateY(16px)',
@@ -152,7 +156,7 @@ export default function Home() {
   const [womenProducts, setWomenProducts] = useState<Product[]>([]);
   const [menProducts, setMenProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -287,110 +291,133 @@ export default function Home() {
     }
   }, [page, loadingMore, hasMore, productsPerPage]);
 
+  // Skeleton card component
+  const SkeletonCard = () => (
+    <div className="animate-pulse">
+      <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[3/4] w-full mb-3" />
+      <div className="bg-gray-200 dark:bg-gray-700 rounded h-4 w-3/4 mb-2" />
+      <div className="bg-gray-200 dark:bg-gray-700 rounded h-3 w-1/2" />
+    </div>
+  );
+
+  const skeletonCount = productsPerPage;
+
   return (
     <div>
       <SEO />
       <HeroIntro />
 
       {/* New Arrivals Section */}
-      {newArrivals.length > 0 && (
+      {(loading || newArrivals.length > 0) && (
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">New Arrivals</h2>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Fresh styles for the season</p>
+              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">New Arrivals</h2>
+              <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Fresh styles for the season</p>
             </div>
-            <Link
-              to="/shop?filter=new"
-              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
-            >
-              View All
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {newArrivals.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Women's Products Section */}
-      {womenProducts.length > 0 && (
-        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10">
-          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8 sm:mb-12">
-              <div>
-                <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
-              </div>
+            {!loading && (
               <Link
-                to="/shop?gender=women"
+                to="/shop?filter=new"
                 className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
               >
                 View All
                 <ArrowRight className="w-4 h-4" />
               </Link>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            {loading
+              ? Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)
+              : newArrivals.map((product) => <ProductCard key={product.id} product={product} />)
+            }
+          </div>
+        </section>
+      )}
+
+      {/* Women's Products Section */}
+      {(loading || womenProducts.length > 0) && (
+        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-8 sm:mb-12">
+              <div>
+                <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
+                <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
+              </div>
+              {!loading && (
+                <Link
+                  to="/shop?gender=women"
+                  className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
+                >
+                  View All
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              {womenProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {loading
+                ? Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)
+                : womenProducts.map((product) => <ProductCard key={product.id} product={product} />)
+              }
             </div>
           </div>
         </section>
       )}
 
       {/* Men's Products Section */}
-      {menProducts.length > 0 && (
+      {(loading || menProducts.length > 0) && (
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">Men's Collection</h2>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Contemporary fashion for modern men</p>
+              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">Men's Collection</h2>
+              <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Contemporary fashion for modern men</p>
             </div>
-            <Link
-              to="/shop?gender=men"
-              className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
-            >
-              View All
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {menProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* All Products with Infinite Scroll */}
-      {allProducts.length > 0 && (
-        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
-          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8 sm:mb-12">
-              <div>
-                <h2 className="brand-logo text-2xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
-              </div>
+            {!loading && (
               <Link
-                to="/shop"
+                to="/shop?gender=men"
                 className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
               >
                 View All
                 <ArrowRight className="w-4 h-4" />
               </Link>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            {loading
+              ? Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)
+              : menProducts.map((product) => <ProductCard key={product.id} product={product} />)
+            }
+          </div>
+        </section>
+      )}
+
+      {/* All Products with Infinite Scroll */}
+      {(loading || allProducts.length > 0) && (
+        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-8 sm:mb-12">
+              <div>
+                <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
+                <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
+              </div>
+              {!loading && (
+                <Link
+                  to="/shop"
+                  className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
+                >
+                  View All
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              {allProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {loading
+                ? Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)
+                : allProducts.map((product) => <ProductCard key={product.id} product={product} />)
+              }
             </div>
 
             {/* Infinite scroll trigger */}
-            {hasMore && (
+            {!loading && hasMore && (
               <div ref={observerTarget} className="flex justify-center mt-8">
                 {loadingMore && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
@@ -410,7 +437,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <div className="text-center p-6 sm:p-8">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-black dark:bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white dark:text-black" />
+                <Gem className="w-6 h-6 sm:w-8 sm:h-8 text-white dark:text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-medium mb-2">Premium Quality</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
@@ -419,7 +446,7 @@ export default function Home() {
             </div>
             <div className="text-center p-6 sm:p-8">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-black dark:bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white dark:text-black" />
+                <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-white dark:text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-medium mb-2">Free Shipping</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
@@ -428,7 +455,7 @@ export default function Home() {
             </div>
             <div className="text-center p-6 sm:p-8">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-black dark:bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white dark:text-black" />
+                <RotateCcw className="w-6 h-6 sm:w-8 sm:h-8 text-white dark:text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-medium mb-2">Easy Returns</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">

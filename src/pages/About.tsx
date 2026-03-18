@@ -84,33 +84,35 @@ export default function About() {
 
           {/* Eyebrow */}
           <p
-            className="hero-fade-up text-[9px] sm:text-[10px] md:text-xs tracking-[0.3em] sm:tracking-[0.45em] uppercase text-pink-400 font-light mb-5 sm:mb-8 leading-relaxed"
+            className="hero-fade-up text-[10px] sm:text-[11px] md:text-xs tracking-[0.25em] sm:tracking-[0.45em] uppercase text-pink-400 font-light mb-5 sm:mb-8 leading-relaxed"
             style={{ animationDelay: '0.1s' }}
           >
             From a mother's devotion to a daughter's vision
           </p>
 
-          {/* Brand name */}
-          <h1
-            className="hero-letter-spacing brand-title leading-none w-full text-center"
-            style={{
-              color: '#EE458F',
-              animationDelay: '0.3s',
-              fontSize: 'clamp(3rem, 16vw, 10rem)',
-              letterSpacing: '0.05em',
-            }}
-          >
-            NAVADHA
-          </h1>
+          {/* Brand name + FASHION CO — grouped so lines align with title width */}
+          <div className="relative inline-block w-full text-center">
+            <h1
+              className="hero-letter-spacing brand-title leading-none w-full text-center whitespace-nowrap"
+              style={{
+                color: '#EE458F',
+                animationDelay: '0.3s',
+                fontSize: 'clamp(2.5rem, 10vw, 8rem)',
+                letterSpacing: '0.05em',
+              }}
+            >
+              NAVADHA
+            </h1>
 
-          {/* Divider lines + FASHION CO */}
-          <div
-            className="hero-fade-up flex items-center justify-center gap-2 sm:gap-4 mt-3 sm:mt-5 w-full"
-            style={{ animationDelay: '0.7s' }}
-          >
-            <div className="h-px flex-1 max-w-[50px] sm:max-w-[96px] bg-pink-300/60" />
-            <span className="text-[8px] sm:text-[10px] font-light tracking-[0.35em] sm:tracking-[0.5em] text-pink-400/80 uppercase whitespace-nowrap">Fashion Co</span>
-            <div className="h-px flex-1 max-w-[50px] sm:max-w-[96px] bg-pink-300/60" />
+            {/* Divider lines + FASHION CO — stretches to match title */}
+            <div
+              className="hero-fade-up flex items-center justify-center gap-2 sm:gap-4 mt-2 sm:mt-3 w-full"
+              style={{ animationDelay: '0.7s' }}
+            >
+              <div className="h-px flex-1 bg-pink-300/60" />
+              <span className="text-[8px] sm:text-[10px] font-light tracking-[0.35em] sm:tracking-[0.5em] text-pink-400/80 uppercase whitespace-nowrap">Fashion Co</span>
+              <div className="h-px flex-1 bg-pink-300/60" />
+            </div>
           </div>
 
           {/* Quote */}
@@ -284,14 +286,14 @@ export default function About() {
             </p>
 
             {/* Nine forms visual — 3 cols on mobile, 9 on sm+ */}
-            <div className="mt-10 grid grid-cols-3 sm:grid-cols-9 gap-y-5 gap-x-2 sm:gap-3">
+            <div className="mt-10 grid grid-cols-3 sm:grid-cols-9 gap-y-5 gap-x-3 sm:gap-3">
               {['श्रवण', 'कीर्तन', 'स्मरण', 'पाद-सेवन', 'अर्चन', 'वंदन', 'दास्य', 'सख्य', 'आत्म-निवेदन'].map((form, i) => (
                 <AnimatedSection key={form} animation="animate-scale-in" delay={`[animation-delay:${i * 60}ms]`}>
                   <div className="flex flex-col items-center gap-1.5">
                     <div className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: '#EE458F' }}>
                       {i + 1}
                     </div>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight">{form}</span>
+                    <span className="text-[11px] sm:text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight">{form}</span>
                   </div>
                 </AnimatedSection>
               ))}

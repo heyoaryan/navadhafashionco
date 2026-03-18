@@ -57,17 +57,20 @@ export default function Orders() {
       const pendingOrders = allOrders.filter(o => o.status === 'pending');
       if (pendingOrders.length > 0) {
         await Promise.all(
-          pendingOrders.map(o =>
-            supabase
-              .from('orders')
-              .update({
-                status: 'cancelled',
-                notes: o.payment_method === 'online'
-                  ? 'Order cancelled due to incomplete payment. If amount was debited, it will be refunded within 5-7 business days.'
-                  : 'Order cancelled due to incomplete checkout.',
-              })
-              .eq('id', o.id)
-          )
+          pendingOrders.map(o => {
+            const cancelNote = o.payment_method === 'online'
+              ? 'Order cancelled due to incomplete payment. If amount was debited, it will be refunded within 5-7 business days.'
+              : 'Order cancelled due to incomplete checkout.';
+            // Preserve bespoke notes
+            let finalNote = cancelNote;
+            try {
+              const parsed = o.notes ? JSON.parse(o.notes) : null;
+              if (parsed?.type === 'bespoke') {
+                finalNote = JSON.stringify({ ...parsed, cancelReason: cancelNote });
+              }
+            } catch {}
+            return supabase.from('orders').update({ status: 'cancelled', notes: finalNote }).eq('id', o.id);
+          })
         );
         // Re-fetch after update
         const { data: refreshed } = await supabase
@@ -116,13 +119,22 @@ export default function Orders() {
     return returns.filter(r => r.order_id === orderId);
   };
 
+  const isBespokeOrder = (order: Order) => {
+    try {
+      const parsed = order.notes ? JSON.parse(order.notes) : null;
+      return parsed?.type === 'bespoke';
+    } catch { return false; }
+  };
+
   const filteredOrders = orders.filter(order => {
     if (statusFilter === 'all') return true;
+    if (statusFilter === 'bespoke') return isBespokeOrder(order);
     return order.status === statusFilter;
   });
 
   const getOrderCount = (status: string) => {
     if (status === 'all') return orders.length;
+    if (status === 'bespoke') return orders.filter(isBespokeOrder).length;
     return orders.filter(o => o.status === status).length;
   };
 
@@ -406,6 +418,18 @@ export default function Orders() {
             >
               Cancelled ({getOrderCount('cancelled')})
             </button>
+            {getOrderCount('bespoke') > 0 && (
+              <button
+                onClick={() => setStatusFilter('bespoke')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  statusFilter === 'bespoke'
+                    ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/40'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                ✂ Bespoke ({getOrderCount('bespoke')})
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -444,6 +468,17 @@ export default function Orders() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h3 className="font-medium text-lg">Order #{order.order_number}</h3>
+                    {(() => {
+                      try {
+                        const parsed = order.notes ? JSON.parse(order.notes) : null;
+                        if (parsed?.type === 'bespoke') return (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white">
+                            ✂ Bespoke
+                          </span>
+                        );
+                      } catch {}
+                      return null;
+                    })()}
                     {(() => {
                       const orderReturns = getOrderReturns(order.id);
                       const latestReturn = orderReturns[0];
@@ -605,6 +640,9 @@ export default function Orders() {
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cls}`}
                       >
                         {typeIcon} {typeLabel} · {statusLabel}
+                        {returnItem.status === 'refunded' && (returnItem.refund_amount ?? 0) > 0 && (
+                          <span className="font-semibold"> · ₹{(returnItem.refund_amount ?? 0).toLocaleString()}</span>
+                        )}
                       </span>
                     );
                   })}

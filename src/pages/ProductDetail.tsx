@@ -54,11 +54,15 @@ export default function ProductDetail() {
   const [pincodeError, setPincodeError] = useState('');
 
   // Bespoke customization state
+  const [showBespokeForm, setShowBespokeForm] = useState(false);
   const [bespokeDesignNotes, setBespokeDesignNotes] = useState('');
   const [bespokeMeasurements, setBespokeMeasurements] = useState('');
   const [bespokePhone, setBespokePhone] = useState('');
+  const [bespokeFabric, setBespokeFabric] = useState('');
+  const [bespokeEmbroidery, setBespokeEmbroidery] = useState('');
+  const [bespokeUrgency, setBespokeUrgency] = useState<'standard' | 'express' | 'rush'>('standard');
+  const [bespokeComplexity, setBespokeComplexity] = useState<'simple' | 'moderate' | 'complex'>('simple');
   const [bespokeSubmitting, setBespokeSubmitting] = useState(false);
-  const [bespokeSubmitted, setBespokeSubmitted] = useState(false);
 
   const inWishlist = product ? isInWishlist(product.id) : false;
 
@@ -419,6 +423,13 @@ export default function ProductDetail() {
   const isBespoke = product?.tags?.includes('customization') ?? false;
   const isReadyMade = product?.tags?.includes('made') ?? false;
 
+  // Designer charge based on complexity + urgency
+  const designerCharge = (() => {
+    const complexityCharge = { simple: 500, moderate: 1000, complex: 2000 }[bespokeComplexity];
+    const urgencyCharge = { standard: 0, express: 500, rush: 1000 }[bespokeUrgency];
+    return complexityCharge + urgencyCharge;
+  })();
+
   const handleBespokeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -427,22 +438,42 @@ export default function ProductDetail() {
     }
     if (!product || !bespokePhone.trim()) return;
 
-    // Validate phone
     const cleanPhone = bespokePhone.replace(/\D/g, '');
     if (cleanPhone.length < 10) return;
 
     setBespokeSubmitting(true);
     try {
-      await supabase.from('reviews').insert({
-        product_id: product.id,
-        user_id: user.id,
-        rating: 5,
-        title: 'Bespoke Customization Request',
-        comment: `Phone: ${cleanPhone}\n\nDesign Notes: ${bespokeDesignNotes.trim().slice(0, 1000)}\n\nMeasurements/Additional Info: ${bespokeMeasurements.trim().slice(0, 1000)}`,
-        is_verified_purchase: false,
-        is_approved: false,
+      // Save customization request to localStorage so checkout can attach it to the order
+      const bespokeData = {
+        phone: cleanPhone,
+        designNotes: bespokeDesignNotes.trim(),
+        measurements: bespokeMeasurements.trim(),
+        fabric: bespokeFabric.trim(),
+        embroidery: bespokeEmbroidery.trim(),
+        complexity: bespokeComplexity,
+        urgency: bespokeUrgency,
+        designerCharge,
+        productId: product.id,
+      };
+      localStorage.setItem('bespokeCustomization', JSON.stringify(bespokeData));
+
+      const basePrice = product.price;
+      const totalPrice = basePrice + designerCharge;
+
+      navigate('/checkout', {
+        state: {
+          directBuy: {
+            productId: product.id,
+            productName: `${product.name} (Bespoke Customization)`,
+            productImage: images[0]?.image_url || product.main_image_url,
+            price: totalPrice,
+            quantity: 1,
+            size: selectedSize,
+            color: selectedColor,
+          },
+          isBespokeOrder: true,
+        }
       });
-      setBespokeSubmitted(true);
     } catch (error) {
       console.error('Bespoke request error:', error);
     } finally {
@@ -623,16 +654,136 @@ export default function ProductDetail() {
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <span className="text-2xl sm:text-3xl font-medium">₹{product.price.toLocaleString()}</span>
-              {product.compare_at_price && (
-                <span className="text-lg sm:text-xl text-gray-500 line-through">
-                  ₹{product.compare_at_price.toLocaleString()}
-                </span>
-              )}
-            </div>
+            {!showBespokeForm && (
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <span className="text-2xl sm:text-3xl font-medium">₹{product.price.toLocaleString()}</span>
+                {product.compare_at_price && (
+                  <span className="text-lg sm:text-xl text-gray-500 line-through">
+                    ₹{product.compare_at_price.toLocaleString()}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
+          {/* ── BESPOKE MODE: full form replaces product options ── */}
+          {showBespokeForm ? (
+            <div className="space-y-4">
+              {/* Back link */}
+              <button
+                onClick={() => setShowBespokeForm(false)}
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-rose-500 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                Back to product
+              </button>
+
+              {/* Price summary */}
+              <div className="flex items-center justify-between px-4 py-3 bg-rose-50 dark:bg-rose-900/10 rounded-xl border border-rose-200 dark:border-rose-800/50">
+                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                  <div className="flex justify-between gap-8">
+                    <span>Base price</span>
+                    <span>₹{product.price.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between gap-8">
+                    <span>Designer charge</span>
+                    <span className="text-rose-500">+₹{designerCharge.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="text-right ml-6">
+                  <p className="text-xs text-gray-500">Total</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">₹{(product.price + designerCharge).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Complexity + Urgency pickers */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Customization Level</label>
+                  <div className="space-y-2">
+                    {([
+                      { value: 'simple', label: 'Simple', desc: 'Minor tweaks', charge: 500 },
+                      { value: 'moderate', label: 'Moderate', desc: 'Design changes', charge: 1000 },
+                      { value: 'complex', label: 'Complex', desc: 'Full custom', charge: 2000 },
+                    ] as const).map(opt => (
+                      <button key={opt.value} type="button" onClick={() => setBespokeComplexity(opt.value)}
+                        className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all ${bespokeComplexity === opt.value ? 'border-rose-500 bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 font-medium' : 'border-gray-200 dark:border-gray-700 hover:border-rose-300'}`}>
+                        <span className="font-medium">{opt.label}</span><span className="text-gray-400"> +₹{opt.charge}</span><br />
+                        <span className="text-gray-400 dark:text-gray-500">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Delivery Timeline</label>
+                  <div className="space-y-2">
+                    {([
+                      { value: 'standard', label: 'Standard', desc: '21–30 days', charge: 0 },
+                      { value: 'express', label: 'Express', desc: '14–20 days', charge: 500 },
+                      { value: 'rush', label: 'Rush', desc: '7–13 days', charge: 1000 },
+                    ] as const).map(opt => (
+                      <button key={opt.value} type="button" onClick={() => setBespokeUrgency(opt.value)}
+                        className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all ${bespokeUrgency === opt.value ? 'border-rose-500 bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 font-medium' : 'border-gray-200 dark:border-gray-700 hover:border-rose-300'}`}>
+                        <span className="font-medium">{opt.label}</span>{opt.charge > 0 && <span className="text-gray-400"> +₹{opt.charge}</span>}<br />
+                        <span className="text-gray-400 dark:text-gray-500">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleBespokeSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                    <Palette className="w-3 h-3" /> Design Notes
+                  </label>
+                  <textarea value={bespokeDesignNotes} onChange={(e) => setBespokeDesignNotes(e.target.value)}
+                    placeholder="Colors, embroidery style, neckline, sleeve length, fabric preferences..."
+                    rows={3} className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                    <Ruler className="w-3 h-3" /> Your Measurements <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea value={bespokeMeasurements} onChange={(e) => setBespokeMeasurements(e.target.value)}
+                    placeholder="Bust, waist, hip, height, shoulder width... (inches or cm)"
+                    required
+                    rows={2} className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fabric Preference <span className="text-rose-500">*</span></label>
+                    <input type="text" value={bespokeFabric} onChange={(e) => setBespokeFabric(e.target.value)}
+                      required placeholder="e.g. Pure silk, Cotton" className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Embroidery / Work <span className="text-rose-500">*</span></label>
+                    <input type="text" value={bespokeEmbroidery} onChange={(e) => setBespokeEmbroidery(e.target.value)}
+                      required placeholder="e.g. Zari, Gota, None" className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                    <Phone className="w-3 h-3" /> Contact Number <span className="text-rose-500">*</span>
+                  </label>
+                  <input type="tel" value={bespokePhone} onChange={(e) => setBespokePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="Designer will call to confirm details" required
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400" />
+                </div>
+                <button type="submit" disabled={bespokeSubmitting || bespokePhone.replace(/\D/g, '').length < 10 || !bespokeMeasurements.trim() || !bespokeFabric.trim() || !bespokeEmbroidery.trim()}
+                  className="w-full py-3.5 px-6 text-sm font-semibold bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100 shadow-lg">
+                  <Scissors className="w-4 h-4" />
+                  {bespokeSubmitting ? 'Processing...' : `Proceed to Payment — ₹${(product.price + designerCharge).toLocaleString()}`}
+                </button>
+                {!user && (
+                  <p className="text-xs text-center text-gray-500">
+                    <button type="button" onClick={() => navigate('/auth', { state: { from: `/product/${slug}` } })} className="text-rose-500 underline">Sign in</button> to place a bespoke order
+                  </p>
+                )}
+              </form>
+            </div>
+          ) : (
+            <>
           {product.sizes && product.sizes.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -745,71 +896,49 @@ export default function ProductDetail() {
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {isBespoke ? (
-              // Bespoke: show customization request form instead of buy buttons
-              bespokeSubmitted ? (
-                <div className="w-full p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-center">
-                  <p className="text-green-700 dark:text-green-300 font-semibold text-lg mb-1">Request Sent!</p>
-                  <p className="text-sm text-green-600 dark:text-green-400">Our designer will contact you on <span className="font-medium">{bespokePhone}</span> shortly.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleBespokeSubmit} className="w-full space-y-3">
-                  <div className="p-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-xl">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Palette className="w-4 h-4 text-rose-500" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Design Your Dream Outfit</span>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Design Notes</label>
-                        <textarea
-                          value={bespokeDesignNotes}
-                          onChange={(e) => setBespokeDesignNotes(e.target.value)}
-                          placeholder="Describe your design preferences — colors, embroidery, style changes, fabric choice..."
-                          rows={3}
-                          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
-                          <Ruler className="w-3 h-3" /> Measurements / Additional Info
-                        </label>
-                        <textarea
-                          value={bespokeMeasurements}
-                          onChange={(e) => setBespokeMeasurements(e.target.value)}
-                          placeholder="Bust, waist, hip, height... or any other requirements"
-                          rows={2}
-                          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
-                          <Phone className="w-3 h-3" /> Your Phone Number *
-                        </label>
-                        <input
-                          type="tel"
-                          value={bespokePhone}
-                          onChange={(e) => setBespokePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          placeholder="Our designer will call you"
-                          required
-                          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                        />
-                      </div>
-                    </div>
-                  </div>
+              // Bespoke: show normal buy buttons + a "Customize This" button
+              product.stock_quantity > 0 ? (
+                <>
                   <button
-                    type="submit"
-                    disabled={bespokeSubmitting || !bespokePhone}
-                    className="w-full py-3.5 px-6 text-sm font-semibold bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100 shadow-lg"
+                    onClick={() => { setBuyRipple(true); setTimeout(() => setBuyRipple(false), 600); handleBuyNow(); }}
+                    disabled={buyingNow}
+                    className="relative overflow-hidden flex-1 py-3.5 sm:py-4 px-4 sm:px-6 text-sm sm:text-base bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-medium min-h-[52px] shadow-lg hover:shadow-rose-300 hover:shadow-xl disabled:opacity-50 disabled:scale-100"
                   >
-                    <Scissors className="w-4 h-4" />
-                    {bespokeSubmitting ? 'Sending Request...' : 'Request Custom Order'}
+                    {buyRipple && (
+                      <span className="absolute inset-0 pointer-events-none">
+                        <span className="animate-pulse absolute inline-flex h-full w-full rounded-lg bg-white opacity-20" />
+                      </span>
+                    )}
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    Buy Now
                   </button>
-                  {!user && (
-                    <p className="text-xs text-center text-gray-500">
-                      <button onClick={() => navigate('/auth', { state: { from: `/product/${slug}` } })} className="text-rose-500 underline">Sign in</button> to submit your request
-                    </p>
-                  )}
-                </form>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={addingToCart}
+                    className="flex-1 py-3.5 sm:py-4 px-4 sm:px-6 text-sm sm:text-base rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-medium min-h-[52px] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:scale-100 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                  >
+                    <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    {cartSuccess ? 'Added!' : addingToCart ? 'Adding...' : 'Add to Cart'}
+                  </button>
+                  <button
+                    onClick={handleToggleWishlist}
+                    disabled={isTogglingWishlist}
+                    className="p-3.5 sm:p-4 border-2 rounded-lg transition-all transform hover:scale-105 active:scale-95 min-w-[52px] min-h-[52px] flex items-center justify-center disabled:opacity-50"
+                    style={{ borderColor: inWishlist ? '#E91E63' : undefined, backgroundColor: inWishlist ? '#E91E6310' : undefined }}
+                  >
+                    <Heart className={`w-5 h-5 sm:w-6 sm:h-6 transition-all ${inWishlist ? 'fill-current' : ''}`} style={inWishlist ? { color: '#E91E63' } : {}} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleToggleWishlist}
+                  disabled={isTogglingWishlist}
+                  className="flex-1 py-3.5 sm:py-4 px-4 sm:px-6 text-sm sm:text-base rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-medium min-h-[52px] shadow-md disabled:opacity-50 border-2"
+                  style={{ borderColor: inWishlist ? '#E91E63' : '#d1d5db', backgroundColor: inWishlist ? '#E91E6310' : 'transparent', color: inWishlist ? '#E91E63' : undefined }}
+                >
+                  <Heart className={`w-5 h-5 flex-shrink-0 transition-all ${inWishlist ? 'fill-current' : ''}`} style={inWishlist ? { color: '#E91E63' } : {}} />
+                  {inWishlist ? 'Saved to Wishlist' : 'Add to Wishlist'}
+                </button>
               )
             ) : product.stock_quantity > 0 ? (
               <>
@@ -881,6 +1010,20 @@ export default function ProductDetail() {
               </button>
             )}
           </div>
+
+          {/* Bespoke Customization toggle button */}
+          {isBespoke && (
+            <button
+              onClick={() => setShowBespokeForm(true)}
+              className="w-full py-3.5 px-6 text-sm font-semibold rounded-lg transition-all transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 border-2 border-rose-400 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 text-rose-500 hover:text-rose-600"
+            >
+              <Scissors className="w-4 h-4" />
+              Bespoke Customization — Design Yours
+            </button>
+          )}
+          </>
+          )}
+
 
           <div className="grid grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-800">
             <div className="text-center">

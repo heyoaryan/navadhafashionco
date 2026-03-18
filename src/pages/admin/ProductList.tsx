@@ -291,17 +291,14 @@ export default function ProductList() {
           {/* Desktop Table */}
           <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px]">
+              <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-900/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[35%]">Product</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">SKU</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Price</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Stock</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Status</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -310,40 +307,37 @@ export default function ProductList() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {product.main_image_url ? (
-                            <img src={product.main_image_url} alt={product.name} className="w-11 h-11 object-cover rounded-lg flex-shrink-0 border border-gray-100 dark:border-gray-700" />
+                            <img src={product.main_image_url} alt={product.name} className="w-12 h-12 object-cover rounded-lg flex-shrink-0 border border-gray-100 dark:border-gray-700" />
                           ) : (
-                            <div className="w-11 h-11 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                               <Package className="w-5 h-5 text-gray-400" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">{product.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{product.slug}</p>
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-1">{product.name}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {product.sku && <span className="text-xs text-gray-400 font-mono">{product.sku}</span>}
+                              {product.gender && (
+                                <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 capitalize">
+                                  {product.gender}
+                                </span>
+                              )}
+                              {product.category && (
+                                <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 capitalize">
+                                  {product.category}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-xs text-gray-600 dark:text-gray-300 font-mono">{product.sku || <span className="text-gray-400">—</span>}</td>
-                      <td className="px-3 py-3">
-                        {product.gender ? (
-                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 capitalize">
-                            {product.gender}
-                          </span>
-                        ) : <span className="text-gray-400 text-xs">—</span>}
-                      </td>
-                      <td className="px-3 py-3">
-                        {product.category ? (
-                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 capitalize">
-                            {product.category}
-                          </span>
-                        ) : <span className="text-gray-400 text-xs">—</span>}
-                      </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
                         {product.compare_at_price && (
                           <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>
                         )}
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
                           product.stock_quantity > 10 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
                           product.stock_quantity > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
@@ -352,7 +346,7 @@ export default function ProductList() {
                           {product.stock_quantity} units
                         </span>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
                           product.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
                           'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
@@ -361,7 +355,7 @@ export default function ProductList() {
                           {product.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-right">
+                      <td className="px-3 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openQuickEdit(product)}

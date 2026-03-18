@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit2, Trash2, MapPin, Navigation, ArrowLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Navigation, ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Address } from '../../types';
 import { toast } from '../../utils/toast';
-import { validatePhone } from '../../utils/validation';
+import { validatePhone, validatePincode, verifyPincode } from '../../utils/validation';
 
 export default function Addresses() {
   const { user } = useAuth();
@@ -15,6 +15,8 @@ export default function Addresses() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [pincodeError, setPincodeError] = useState('');
+  const [verifyingPincode, setVerifyingPincode] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -141,6 +143,39 @@ export default function Addresses() {
       return;
     }
 
+    // Validate pincode format
+    if (!validatePincode(formData.postal_code)) {
+      setPincodeError('Please enter a valid 6-digit pincode');
+      toast.error('Please enter a valid 6-digit pincode');
+      return;
+    }
+
+    // Verify pincode exists
+    setVerifyingPincode(true);
+    const pincodeInfo = await verifyPincode(formData.postal_code);
+    setVerifyingPincode(false);
+
+    if (!pincodeInfo) {
+      setPincodeError('Invalid pincode — please check and try again');
+      toast.error('Invalid pincode — please check and try again');
+      return;
+    }
+
+    // Check if area is blacklisted
+    const { data: blacklistData } = await supabase
+      .from('blacklist')
+      .select('id')
+      .eq('entity_type', 'area')
+      .eq('is_active', true)
+      .or(`area_pincode.eq.${formData.postal_code},and(area_city.eq.${formData.city},area_state.eq.${formData.state})`)
+      .maybeSingle();
+
+    if (blacklistData) {
+      setPincodeError('We currently do not deliver to this area');
+      toast.error(`Sorry, we don't deliver to ${formData.city}, ${formData.state} (${formData.postal_code})`);
+      return;
+    }
+
     try {
       if (editingId) {
         const { error } = await supabase
@@ -160,6 +195,7 @@ export default function Addresses() {
       await fetchAddresses();
       resetForm();
       setPhoneError('');
+      setPincodeError('');
       toast.success(editingId ? 'Address updated!' : 'Address added!');
     } catch (error) {
       console.error('Error saving address:', error);
@@ -230,6 +266,8 @@ export default function Addresses() {
     });
     setEditingId(null);
     setShowForm(false);
+    setPhoneError('');
+    setPincodeError('');
   };
 
   if (loading) {
@@ -369,9 +407,16 @@ export default function Addresses() {
                   type="text"
                   required
                   value={formData.postal_code}
-                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-rose-400 dark:bg-gray-700"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                    setFormData({ ...formData, postal_code: val });
+                    setPincodeError('');
+                  }}
+                  maxLength={6}
+                  placeholder="110001"
+                  className={`w-full px-4 py-2 border ${pincodeError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:ring-2 focus:ring-rose-400 dark:bg-gray-700`}
                 />
+                {pincodeError && <p className="text-red-500 text-xs mt-1">{pincodeError}</p>}
               </div>
             </div>
 
@@ -391,9 +436,11 @@ export default function Addresses() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                disabled={verifyingPincode}
+                className="flex items-center gap-2 px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-60"
               >
-                {editingId ? 'Update' : 'Save'} Address
+                {verifyingPincode && <Loader2 className="w-4 h-4 animate-spin" />}
+                {verifyingPincode ? 'Verifying...' : `${editingId ? 'Update' : 'Save'} Address`}
               </button>
               <button
                 type="button"

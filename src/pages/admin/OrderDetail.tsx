@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, User, MapPin, CreditCard, Truck } from 'lucide-react';
+import { ArrowLeft, Package, User, MapPin, CreditCard, Truck, Scissors } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
 import LoadingState from '../../components/LoadingState';
@@ -24,6 +24,7 @@ interface Order {
   payment_status: string;
   payment_method: string;
   created_at: string;
+  notes: string | null;
   shipping_address: any;
   order_items: OrderItem[];
   profiles: {
@@ -33,11 +34,28 @@ interface Order {
   };
 }
 
+interface Return {
+  id: string;
+  product_name: string;
+  product_image: string | null;
+  quantity: number;
+  size: string | null;
+  color: string | null;
+  reason: string;
+  reason_details: string | null;
+  status: string;
+  refund_amount: number | null;
+  return_type: 'exchange' | 'refund' | null;
+  admin_notes: string | null;
+  created_at: string;
+}
+
 export default function AdminOrderDetail() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
+  const [returns, setReturns] = useState<Return[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
@@ -47,13 +65,13 @@ export default function AdminOrderDetail() {
 
   const fetchOrderDetails = async () => {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items (*), profiles (full_name, email, phone)')
-        .eq('id', orderId)
-        .single();
+      const [{ data, error }, { data: returnsData }] = await Promise.all([
+        supabase.from('orders').select('*, order_items (*), profiles (full_name, email, phone)').eq('id', orderId).single(),
+        supabase.from('returns').select('*').eq('order_id', orderId).order('created_at', { ascending: true }),
+      ]);
       if (error) throw error;
       setOrder(data);
+      setReturns(returnsData || []);
     } catch (error: any) {
       console.error('Error fetching order:', error);
       showToast(error?.message || 'Failed to load order details', 'error');
@@ -187,6 +205,127 @@ export default function AdminOrderDetail() {
             </div>
           </div>
 
+          {/* Returns Section */}
+          {returns.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-orange-200 dark:border-orange-800/50 p-6 shadow-sm">
+              <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                <span className="text-lg">↩</span>
+                Returns / Exchanges
+              </h2>
+              <div className="space-y-4">
+                {returns.map((r) => {
+                  const isExch = !r.return_type || r.return_type === 'exchange';
+                  const statusCls =
+                    r.status === 'refunded' || r.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' :
+                    r.status === 'approved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
+                    r.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300';
+                  return (
+                    <div key={r.id} className="flex gap-4 p-4 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-100 dark:border-orange-900/20">
+                      {r.product_image && (
+                        <img src={r.product_image} alt={r.product_name} className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{r.product_name}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
+                              {isExch ? '🔄 Exchange' : '↩ Return'}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold capitalize ${statusCls}`}>
+                              {r.status}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                          {r.size && <span>Size: {r.size}</span>}
+                          {r.color && <span>Color: {r.color}</span>}
+                          <span>Qty: {r.quantity}</span>
+                          {(r.refund_amount ?? 0) > 0 && (
+                            <span className="text-green-600 dark:text-green-400 font-semibold">Refund: ₹{(r.refund_amount ?? 0).toLocaleString()}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Reason: <span className="capitalize">{r.reason.replace(/_/g, ' ')}</span>
+                          {r.reason_details && ` — ${r.reason_details}`}
+                        </p>
+                        {r.admin_notes && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Admin note: {r.admin_notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bespoke Customization Details */}
+          {(() => {
+            try {
+              const notes = order.notes ? JSON.parse(order.notes) : null;
+              if (!notes || notes.type !== 'bespoke') return null;
+              return (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-rose-200 dark:border-rose-800/50 p-6 shadow-sm">
+                  <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                    <Scissors className="w-5 h-5" />
+                    Bespoke Customization Details
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {notes.complexity && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Customization Level</p>
+                        <p className="font-medium capitalize text-gray-900 dark:text-gray-100">{notes.complexity}</p>
+                      </div>
+                    )}
+                    {notes.urgency && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Delivery Timeline</p>
+                        <p className="font-medium capitalize text-gray-900 dark:text-gray-100">{notes.urgency}</p>
+                      </div>
+                    )}
+                    {notes.designerCharge != null && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Designer Charge</p>
+                        <p className="font-semibold text-rose-600 dark:text-rose-400">₹{notes.designerCharge.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {notes.phone && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Contact Number</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{notes.phone}</p>
+                      </div>
+                    )}
+                    {notes.fabric && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Fabric Preference</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{notes.fabric}</p>
+                      </div>
+                    )}
+                    {notes.embroidery && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Embroidery / Work</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{notes.embroidery}</p>
+                      </div>
+                    )}
+                    {notes.measurements && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg col-span-2">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Measurements</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{notes.measurements}</p>
+                      </div>
+                    )}
+                    {notes.designNotes && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg col-span-2">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Design Notes</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{notes.designNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            } catch { return null; }
+          })()}
+
           {/* Customer Info */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
             <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-gray-100">
@@ -207,9 +346,35 @@ export default function AdminOrderDetail() {
               Shipping Address
             </h2>
             <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-              <p>{order.shipping_address.street}</p>
-              <p>{order.shipping_address.city}, {order.shipping_address.state}</p>
-              <p>{order.shipping_address.pincode}</p>
+              {order.shipping_address?.full_name && (
+                <p className="font-medium text-gray-900 dark:text-gray-100">{order.shipping_address.full_name}</p>
+              )}
+              {order.shipping_address?.phone && (
+                <p>{order.shipping_address.phone}</p>
+              )}
+              {order.shipping_address?.address_line1 && (
+                <p>{order.shipping_address.address_line1}</p>
+              )}
+              {order.shipping_address?.address_line2 && (
+                <p>{order.shipping_address.address_line2}</p>
+              )}
+              {(order.shipping_address?.city || order.shipping_address?.state) && (
+                <p>
+                  {[order.shipping_address.city, order.shipping_address.state].filter(Boolean).join(', ')}
+                  {order.shipping_address?.postal_code ? ` - ${order.shipping_address.postal_code}` : ''}
+                </p>
+              )}
+              {order.shipping_address?.country && (
+                <p>{order.shipping_address.country}</p>
+              )}
+              {/* fallback for old format */}
+              {!order.shipping_address?.address_line1 && order.shipping_address?.street && (
+                <>
+                  <p>{order.shipping_address.street}</p>
+                  <p>{order.shipping_address.city}, {order.shipping_address.state}</p>
+                  <p>{order.shipping_address.pincode}</p>
+                </>
+              )}
             </div>
           </div>
         </div>

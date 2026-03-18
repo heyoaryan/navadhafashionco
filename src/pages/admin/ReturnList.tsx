@@ -42,11 +42,18 @@ export default function ReturnList() {
   const updateReturnStatus = async (id: string, status: string, notes?: string) => {
     setUpdating(true);
     try {
-      const { error } = await supabase.from('returns')
-        .update({ status, admin_notes: notes || null, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
       const ret = returns.find(r => r.id === id);
+      // When marking as refunded, ensure refund_amount is set (use price * qty as fallback)
+      const updatePayload: Record<string, unknown> = {
+        status,
+        admin_notes: notes || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (status === 'refunded' && ret && !ret.refund_amount) {
+        updatePayload.refund_amount = (ret.price ?? 0) * (ret.quantity ?? 1);
+      }
+      const { error } = await supabase.from('returns').update(updatePayload).eq('id', id);
+      if (error) throw error;
       if (ret && status === 'approved' && ret.return_type === 'refund') {
         await supabase.from('orders').update({ status: 'returned' }).eq('id', ret.order_id);
       }

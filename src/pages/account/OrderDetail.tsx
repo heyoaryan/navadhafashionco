@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Package, MapPin, CreditCard, Truck, ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, RotateCcw } from 'lucide-react';
+import { Package, MapPin, CreditCard, Truck, ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, RotateCcw, Scissors } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Order, OrderItem, Return } from '../../types';
@@ -330,6 +330,72 @@ export default function OrderDetail() {
             </div>
           </div>
 
+          {/* Bespoke Customization Details */}
+          {(() => {
+            try {
+              const notes = order.notes ? JSON.parse(order.notes) : null;
+              if (!notes || notes.type !== 'bespoke') return null;
+              return (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-rose-200 dark:border-rose-800/50 p-4 sm:p-6">
+                  <h2 className="text-lg sm:text-xl font-medium mb-4 flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                    <Scissors className="w-5 h-5" />
+                    Bespoke Customization Details
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    {notes.complexity && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Customization Level</p>
+                        <p className="font-medium capitalize">{notes.complexity}</p>
+                      </div>
+                    )}
+                    {notes.urgency && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Delivery Timeline</p>
+                        <p className="font-medium capitalize">{notes.urgency}</p>
+                      </div>
+                    )}
+                    {notes.designerCharge != null && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Designer Charge</p>
+                        <p className="font-medium text-rose-600 dark:text-rose-400">₹{notes.designerCharge.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {notes.phone && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Contact Number</p>
+                        <p className="font-medium">{notes.phone}</p>
+                      </div>
+                    )}
+                    {notes.fabric && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Fabric Preference</p>
+                        <p className="font-medium">{notes.fabric}</p>
+                      </div>
+                    )}
+                    {notes.embroidery && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Embroidery / Work</p>
+                        <p className="font-medium">{notes.embroidery}</p>
+                      </div>
+                    )}
+                    {notes.measurements && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg sm:col-span-2">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Measurements</p>
+                        <p className="font-medium whitespace-pre-wrap">{notes.measurements}</p>
+                      </div>
+                    )}
+                    {notes.designNotes && (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg sm:col-span-2">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Design Notes</p>
+                        <p className="font-medium whitespace-pre-wrap">{notes.designNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            } catch { return null; }
+          })()}
+
           {/* Order Timeline — vertical */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-medium mb-6 flex items-center gap-2">
@@ -441,6 +507,18 @@ export default function OrderDetail() {
                   <span>Total</span>
                   <span>₹{order.total.toLocaleString()}</span>
                 </div>
+                {(() => {
+                  const refundedTotal = returns
+                    .filter(r => r.status === 'refunded' && (r.refund_amount ?? 0) > 0)
+                    .reduce((sum, r) => sum + (r.refund_amount ?? 0), 0);
+                  if (refundedTotal <= 0) return null;
+                  return (
+                    <div className="flex justify-between text-green-600 dark:text-green-400 font-medium mt-2 pt-2 border-t border-green-100 dark:border-green-900/30">
+                      <span>Refunded</span>
+                      <span>-₹{refundedTotal.toLocaleString()}</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">

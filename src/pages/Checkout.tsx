@@ -7,7 +7,7 @@ import { openRazorpayCheckout } from '../lib/razorpay';
 import { Address } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { useScrollLock } from '../hooks/useScrollLock';
-import { validatePhone } from '../utils/validation';
+import { validatePhone, validatePincode, verifyPincode } from '../utils/validation';
 
 // Updated: 3-Step Checkout with Security Indicators - v2.0
 export default function Checkout() {
@@ -71,6 +71,7 @@ export default function Checkout() {
   });
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [pincodeError, setPincodeError] = useState('');
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -133,14 +134,47 @@ export default function Checkout() {
   const handleAddAddress = async () => {
     if (!user) return;
 
-    // Validate phone number
+    // Validate phone
     if (!validatePhone(newAddress.phone)) {
       setPhoneError('Please enter a valid 10-digit phone number');
       showToast('Please enter a valid 10-digit phone number', 'error');
       return;
     }
 
+    // Validate pincode format
+    if (!validatePincode(newAddress.postal_code)) {
+      setPincodeError('Please enter a valid 6-digit pincode');
+      showToast('Please enter a valid 6-digit pincode', 'error');
+      return;
+    }
+
     setLoading(true);
+
+    // Verify pincode exists
+    const pincodeInfo = await verifyPincode(newAddress.postal_code);
+    if (!pincodeInfo) {
+      setPincodeError('Invalid pincode — please check and try again');
+      showToast('Invalid pincode — please check and try again', 'error');
+      setLoading(false);
+      return;
+    }
+
+    // Check blacklist
+    const { data: blacklistData } = await supabase
+      .from('blacklist')
+      .select('id')
+      .eq('entity_type', 'area')
+      .eq('is_active', true)
+      .or(`area_pincode.eq.${newAddress.postal_code},and(area_city.eq.${newAddress.city},area_state.eq.${newAddress.state})`)
+      .maybeSingle();
+
+    if (blacklistData) {
+      setPincodeError('We currently do not deliver to this area');
+      showToast(`Sorry, we don't deliver to ${newAddress.city}, ${newAddress.state} (${newAddress.postal_code})`, 'error');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('addresses')
@@ -154,6 +188,7 @@ export default function Checkout() {
       setSelectedAddress(data.id);
       setShowNewAddressForm(false);
       setPhoneError('');
+      setPincodeError('');
       setNewAddress({
         full_name: '',
         phone: '',
@@ -295,7 +330,13 @@ export default function Checkout() {
         total,
         coupon_code: appliedCoupon?.code || null,
         shipping_address: shippingAddress,
-        notes: deliveryMethod === 'pickup' ? 'Store Pickup Order' : null,
+        notes: deliveryMethod === 'pickup' ? 'Store Pickup Order' : (() => {
+          const bespoke = localStorage.getItem('bespokeCustomization');
+          if (bespoke) {
+            try { return JSON.stringify({ type: 'bespoke', ...JSON.parse(bespoke) }); } catch { return null; }
+          }
+          return null;
+        })(),
       }])
       .select()
       .single();
@@ -351,6 +392,7 @@ export default function Checkout() {
         const { order } = await createOrderInDB();
         setConfirmedOrderDetails({ total, paymentMethod, deliveryMethod });
         if (!directBuy) await clearCart();
+        localStorage.removeItem('bespokeCustomization');
         setConfirmedOrderId(order.id);
         setOrderConfirmed(true);
         setIsProcessingOrder(false);
@@ -391,6 +433,7 @@ export default function Checkout() {
           try {
             const { order } = await createOrderInDB(paymentData.razorpay_payment_id);
             if (!directBuy) await clearCart();
+            localStorage.removeItem('bespokeCustomization');
             setPaymentStatus('success');
             setConfirmedOrderId(order.id);
             setOrderConfirmed(true);
@@ -1202,18 +1245,28 @@ export default function Checkout() {
                     type="text"
                     placeholder="Postal Code *"
                     value={newAddress.postal_code}
-                    maxLength={10}
-                    onChange={e => setNewAddress({ ...newAddress, postal_code: e.target.value.replace(/[^0-9]/g, '').slice(0, 10) })}
-                    className="px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    maxLength={6}
+                    onChange={e => {
+                      setNewAddress({ ...newAddress, postal_code: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) });
+                      setPincodeError('');
+                    }}
+                    className={`px-4 py-3 text-sm sm:text-base bg-white dark:bg-gray-800 border ${pincodeError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent`}
                   />
+                  {pincodeError && <p className="text-red-500 text-xs mt-1 col-span-full">{pincodeError}</p>}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
                   <button
                     onClick={handleAddAddress}
                     disabled={loading}
-                    className="flex-1 sm:flex-none px-6 sm:px-8 py-3 text-sm sm:text-base bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:transform-none font-semibold shadow-md hover:shadow-lg"
+                    className="flex-1 sm:flex-none px-6 sm:px-8 py-3 text-sm sm:text-base bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:transform-none font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   >
-                    Save Address
+                    {loading && (
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                    )}
+                    {loading ? 'Verifying...' : 'Save Address'}
                   </button>
                   {addresses.length > 0 && (
                     <button
@@ -1246,23 +1299,34 @@ export default function Checkout() {
                     />
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="font-semibold text-base mb-1">{address.full_name}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-base">{address.full_name}</p>
+                          {address.is_default && (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 uppercase tracking-wide">
+                              Default
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {address.address_line1}
                           {address.address_line2 && `, ${address.address_line2}`}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {address.city}, {address.state} {address.postal_code}
+                          {address.city}, {address.state} — {address.postal_code}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          <span className="font-medium">Phone:</span> {address.phone}
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          📞 {address.phone}
                         </p>
                       </div>
-                      {selectedAddress === address.id && (
-                        <svg className="w-6 h-6 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      )}
+                      <div className="flex-shrink-0 ml-3 mt-0.5">
+                        {selectedAddress === address.id ? (
+                          <svg className="w-6 h-6 text-rose-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                        )}
+                      </div>
                     </div>
                   </label>
                 ))}

@@ -181,7 +181,7 @@ export default function Shop() {
         <section className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="text-center px-4">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3 md:mb-4">
-              <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#E91E63' }}>
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#EE458F' }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-wider">New Arrivals</h1>
@@ -203,23 +203,25 @@ export default function Shop() {
               {products.length} {products.length === 1 ? 'product' : 'products'}
             </p>
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="lg:hidden flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm sm:text-base font-medium min-h-[44px] active:scale-95 shadow-sm hover:shadow-md"
-          >
-            <Filter className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-            <span>Filters</span>
-            {(selectedCategory || selectedGender || sortBy !== 'latest' || priceRange) && (
-              <span className="ml-1 px-2 py-0.5 bg-rose-500 text-white text-xs rounded-full">
-                {[selectedCategory, selectedGender, sortBy !== 'latest', priceRange].filter(Boolean).length}
-              </span>
-            )}
-          </button>
+          {!isNewArrivals && (
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="lg:hidden flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm sm:text-base font-medium min-h-[44px] active:scale-95 shadow-sm hover:shadow-md"
+            >
+              <Filter className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span>Filters</span>
+              {(selectedCategory || selectedGender || sortBy !== 'latest' || priceRange) && (
+                <span className="ml-1 px-2 py-0.5 bg-rose-500 text-white text-xs rounded-full">
+                  {[selectedCategory, selectedGender, sortBy !== 'latest', priceRange].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
       <div className="flex gap-8">
         {/* Mobile Filter Overlay */}
-        {showFilters && (
+        {showFilters && !isNewArrivals && (
           <div
             className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setShowFilters(false)}
@@ -227,6 +229,7 @@ export default function Shop() {
         )}
 
         {/* Filter Sidebar */}
+        {!isNewArrivals && (
         <aside
           className={`${
             showFilters ? 'translate-x-0' : '-translate-x-full'
@@ -394,6 +397,7 @@ export default function Shop() {
             </div>
           </div>
         </aside>
+        )}
 
         <div className="flex-1">
           {loading ? (
@@ -423,7 +427,7 @@ export default function Shop() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
+              <div className={`grid gap-3 sm:gap-4 md:gap-5 ${isNewArrivals ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-8'}`}>
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

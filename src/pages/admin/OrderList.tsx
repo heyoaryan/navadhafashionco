@@ -10,11 +10,23 @@ interface Order {
   total: number;
   status: string;
   payment_status: string;
+  notes: string | null;
   created_at: string;
+}
+
+interface ReturnItem {
+  id: string;
+  order_id: string;
+  product_name: string;
+  quantity: number;
+  refund_amount: number | null;
+  status: string;
+  return_type: 'exchange' | 'refund' | null;
 }
 
 export default function OrderList() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returns, setReturns] = useState<ReturnItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -25,13 +37,13 @@ export default function OrderList() {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const [{ data: ordersData, error }, { data: returnsData }] = await Promise.all([
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('returns').select('id, order_id, product_name, quantity, refund_amount, status, return_type').order('created_at', { ascending: false }),
+      ]);
       if (error) throw error;
-      setOrders(data || []);
+      setOrders(ordersData || []);
+      setReturns(returnsData || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -39,14 +51,25 @@ export default function OrderList() {
     }
   };
 
+  const getOrderReturns = (orderId: string) => returns.filter(r => r.order_id === orderId);
+
+  const isBespoke = (order: Order) => {
+    try { return JSON.parse(order.notes || '{}')?.type === 'bespoke'; } catch { return false; }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    const matchesStatus = statusFilter === 'all'
+      ? true
+      : statusFilter === 'bespoke'
+      ? isBespoke(order)
+      : order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getOrderCount = (status: string) => {
     if (status === 'all') return orders.length;
+    if (status === 'bespoke') return orders.filter(isBespoke).length;
     return orders.filter(o => o.status === status).length;
   };
 
@@ -144,16 +167,18 @@ export default function OrderList() {
             >
               Cancelled ({getOrderCount('cancelled')})
             </button>
-            <button
-              onClick={() => setStatusFilter('returned')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === 'returned'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              Returned ({getOrderCount('returned')})
-            </button>
+            {getOrderCount('bespoke') > 0 && (
+              <button
+                onClick={() => setStatusFilter('bespoke')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  statusFilter === 'bespoke'
+                    ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/40'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                ✂ Bespoke ({getOrderCount('bespoke')})
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -179,6 +204,9 @@ export default function OrderList() {
                     <tr key={order.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors">
                       <td className="px-5 py-3.5">
                         <span className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-100">#{order.order_number}</span>
+                        {isBespoke(order) && (
+                          <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white">✂ Bespoke</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                         {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -220,11 +248,37 @@ export default function OrderList() {
                 className="block bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                  <span className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-100">#{order.order_number}</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-100">#{order.order_number}</span>
+                    {isBespoke(order) && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white">✂ Bespoke</span>
+                    )}
+                  </div>
                   <span className="text-xs text-gray-400 dark:text-gray-500">
                     {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
+                {getOrderReturns(order.id).length > 0 && (
+                  <div className="px-4 py-2 bg-orange-50 dark:bg-orange-900/10 border-b border-orange-100 dark:border-orange-900/20 space-y-1">
+                    {getOrderReturns(order.id).map(r => {
+                      const isExch = !r.return_type || r.return_type === 'exchange';
+                      const statusCls =
+                        r.status === 'refunded' || r.status === 'completed' ? 'text-green-600 dark:text-green-400' :
+                        r.status === 'rejected' ? 'text-red-500' :
+                        r.status === 'approved' ? 'text-blue-500' : 'text-orange-500';
+                      return (
+                        <div key={r.id} className="flex items-center gap-1.5 text-xs">
+                          <span>{isExch ? '🔄' : '↩'}</span>
+                          <span className="text-gray-600 dark:text-gray-400 truncate">{r.product_name}</span>
+                          <span className={`font-medium ${statusCls}`}>· {r.status}</span>
+                          {r.status === 'refunded' && (r.refund_amount ?? 0) > 0 && (
+                            <span className="text-green-600 dark:text-green-400 font-semibold">₹{(r.refund_amount ?? 0).toLocaleString()}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
                   <div className="px-4 py-3">
                     <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Total</p>

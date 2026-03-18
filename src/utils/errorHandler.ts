@@ -5,7 +5,7 @@ export const suppressNonCriticalErrors = () => {
     const errorString = args.join(' ');
     if (errorString.includes('CORS') && errorString.includes('supabase')) return;
     if (errorString.includes('Analytics:')) return;
-    if (errorString.includes('page_views') || errorString.includes('product_analytics') || errorString.includes('user_signups')) return;
+    if (errorString.includes('page_views') || errorString.includes('product_analytics') || errorString.includes('signup_tracking')) return;
     originalError.apply(console, args);
   };
 };
