@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, Heart, Search, Menu, X, Moon, Sun, ChevronDown, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,6 +6,7 @@ import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { lockScroll, unlockScroll } from '../utils/scrollLock';
+import { useDebounce } from '../hooks/useDebounce';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,6 +25,9 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Debounce search query to avoid navigation on every keystroke
+  const debouncedSearch = useDebounce(searchQuery, 350);
 
   // Category pages that support in-page search
   const categoryPagePaths = [
@@ -160,23 +164,28 @@ export default function Header() {
     }
   };
 
-  // Real-time search - trigger on every keystroke
-  const handleSearchInput = (value: string) => {
+  // Real-time search - debounced to avoid navigation on every keystroke
+  const handleSearchInput = useCallback((value: string) => {
     setSearchQuery(value);
-    if (value.trim()) {
+  }, []);
+
+  // Navigate when debounced value changes
+  useEffect(() => {
+    if (!searchOpen) return;
+    if (debouncedSearch.trim()) {
       if (isOnCategoryPage) {
-        navigate(`${location.pathname}?search=${encodeURIComponent(value.trim())}`);
+        navigate(`${location.pathname}?search=${encodeURIComponent(debouncedSearch.trim())}`);
       } else {
-        navigate(`/shop?search=${encodeURIComponent(value.trim())}`);
+        navigate(`/shop?search=${encodeURIComponent(debouncedSearch.trim())}`);
       }
-    } else {
+    } else if (debouncedSearch === '') {
       if (isOnCategoryPage) {
         navigate(location.pathname);
       } else {
         navigate('/shop');
       }
     }
-  };
+  }, [debouncedSearch, searchOpen]);
 
   // Determine season based on current date
   const getCurrentSeason = () => {

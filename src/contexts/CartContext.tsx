@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { CartItem, Product } from '../types';
@@ -20,6 +20,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState<(CartItem & { product: Product })[]>([]);
+  const [cartId, setCartId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -30,40 +31,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
       refreshCart();
     } else {
       setCartItems([]);
+      setCartId(null);
     }
   }, [user]);
 
-  const refreshCart = async () => {
-    if (!user) return;
+  const getOrCreateCart = useCallback(async (): Promise<string | null> => {
+    if (cartId) return cartId;
+    if (!user) return null;
 
+    const { data: existing } = await supabase
+      .from('cart')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existing) {
+      setCartId(existing.id);
+      return existing.id;
+    }
+
+    const { data: created } = await supabase
+      .from('cart')
+      .insert([{ user_id: user.id }])
+      .select()
+      .single();
+
+    if (created) {
+      setCartId(created.id);
+      return created.id;
+    }
+    return null;
+  }, [user, cartId]);
+
+  const refreshCart = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      const { data: cart } = await supabase
-        .from('cart')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!cart) {
-        const { data: newCart } = await supabase
-          .from('cart')
-          .insert([{ user_id: user.id }])
-          .select()
-          .single();
-
-        if (newCart) {
-          setCartItems([]);
-        }
-        return;
-      }
+      const id = await getOrCreateCart();
+      if (!id) return;
 
       const { data: items } = await supabase
         .from('cart_items')
-        .select(`
-          *,
-          product:products (*)
-        `)
-        .eq('cart_id', cart.id);
+        .select('*, product:products (*)')
+        .eq('cart_id', id);
 
       setCartItems(items || []);
     } catch (error) {
@@ -71,99 +81,100 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, getOrCreateCart]);
 
-  const addToCart = async (productId: string, quantity: number, size?: string, color?: string) => {
+  const addToCart = useCallback(async (productId: string, quantity: number, size?: string, color?: string) => {
     if (!user) throw new Error('Must be logged in to add to cart');
 
-    const { data: cart } = await supabase
-      .from('cart')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    let cartId = cart?.id;
-
-    if (!cartId) {
-      const { data: newCart } = await supabase
-        .from('cart')
-        .insert([{ user_id: user.id }])
-        .select()
-        .single();
-      cartId = newCart?.id;
-    }
+    const id = await getOrCreateCart();
+    if (!id) return;
 
     const existingItem = cartItems.find(
-      item =>
-        item.product_id === productId &&
-        item.size === size &&
-        item.color === color
+      item => item.product_id === productId && item.size === size && item.color === color
     );
 
     if (existingItem) {
-      await updateCartItem(existingItem.id, existingItem.quantity + quantity);
-    } else {
-      await supabase
+      // Optimistic update
+      const newQty = existingItem.quantity + quantity;
+      setCartItems(prev => prev.map(i => i.id === existingItem.id ? { ...i, quantity: newQty } : i));
+      const { error } = await supabase
         .from('cart_items')
-        .insert([
-          {
-            cart_id: cartId,
-            product_id: productId,
-            quantity,
-            size,
-            color,
-          },
-        ]);
-
+        .update({ quantity: newQty })
+        .eq('id', existingItem.id);
+      if (error) {
+        // Rollback
+        setCartItems(prev => prev.map(i => i.id === existingItem.id ? { ...i, quantity: existingItem.quantity } : i));
+        throw error;
+      }
+    } else {
+      const { error } = await supabase
+        .from('cart_items')
+        .insert([{ cart_id: id, product_id: productId, quantity, size, color }]);
+      if (error) throw error;
       await refreshCart();
     }
-  };
+  }, [user, cartItems, getOrCreateCart, refreshCart]);
 
-  const updateCartItem = async (itemId: string, quantity: number) => {
+  const updateCartItem = useCallback(async (itemId: string, quantity: number) => {
     if (!user) return;
-    
+
     if (quantity <= 0) {
       await removeFromCart(itemId);
       return;
     }
 
-    await supabase
+    // Optimistic update
+    const previous = cartItems;
+    setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
+
+    const { error } = await supabase
       .from('cart_items')
       .update({ quantity })
       .eq('id', itemId);
 
-    await refreshCart();
-  };
+    if (error) {
+      setCartItems(previous);
+      throw error;
+    }
+  }, [user, cartItems]);
 
-  const removeFromCart = async (itemId: string) => {
+  const removeFromCart = useCallback(async (itemId: string) => {
     if (!user) return;
-    
-    await supabase
+
+    // Optimistic update
+    const previous = cartItems;
+    setCartItems(prev => prev.filter(i => i.id !== itemId));
+
+    const { error } = await supabase
       .from('cart_items')
       .delete()
       .eq('id', itemId);
 
-    await refreshCart();
-  };
+    if (error) {
+      setCartItems(previous);
+      throw error;
+    }
+  }, [user, cartItems]);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     if (!user) return;
 
-    const { data: cart } = await supabase
-      .from('cart')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    const id = await getOrCreateCart();
+    if (!id) return;
 
-    if (cart) {
-      await supabase
-        .from('cart_items')
-        .delete()
-        .eq('cart_id', cart.id);
+    const previous = cartItems;
+    setCartItems([]);
 
-      await refreshCart();
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', id);
+
+    if (error) {
+      setCartItems(previous);
+      throw error;
     }
-  };
+  }, [user, cartItems, getOrCreateCart]);
 
   return (
     <CartContext.Provider

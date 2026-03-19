@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, ShoppingBag, Users, TrendingUp, IndianRupee, XCircle, RotateCcw, RefreshCw, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -43,6 +43,9 @@ export default function AdminDashboard() {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Cache all order dates to avoid repeated fetches
+  const allOrderDatesRef = useRef<{ created_at: string }[]>([]);
+
   // Month/Year filter for revenue card — only years/months with actual data
   const now = new Date();
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -58,19 +61,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats();
     fetchRecentOrders();
-    // Fetch all distinct year-months that have orders
+    // Fetch all distinct year-months that have orders — cached in ref
     supabase.from('orders').select('created_at').then(({ data }) => {
       if (!data) return;
+      allOrderDatesRef.current = data;
       const yearSet = new Set<number>();
-      const monthSet = new Set<number>();
-      data.forEach(o => {
-        const d = new Date(o.created_at);
-        yearSet.add(d.getFullYear());
-        // collect months for current selYear — we'll filter in the year change handler
-      });
+      data.forEach(o => yearSet.add(new Date(o.created_at).getFullYear()));
       const years = Array.from(yearSet).sort((a, b) => b - a);
       setAvailableYears(years);
-      // months for current year
+
       const monthsForYear = new Set<number>();
       data.forEach(o => {
         const d = new Date(o.created_at);
@@ -78,27 +77,24 @@ export default function AdminDashboard() {
       });
       const months = Array.from(monthsForYear).sort((a, b) => a - b);
       setAvailableMonths(months);
-      // default to current month if exists, else latest available
       if (!months.includes(now.getMonth() + 1) && months.length > 0) {
         setSelMonth(months[months.length - 1]);
       }
     });
   }, []);
 
-  // When year changes, update available months for that year
-  const handleYearChange = async (year: number) => {
+  // When year changes, derive months from cached data — no extra DB call
+  const handleYearChange = useCallback((year: number) => {
     setSelYear(year);
-    const { data } = await supabase.from('orders').select('created_at');
-    if (!data) return;
     const monthsForYear = new Set<number>();
-    data.forEach(o => {
+    allOrderDatesRef.current.forEach(o => {
       const d = new Date(o.created_at);
       if (d.getFullYear() === year) monthsForYear.add(d.getMonth() + 1);
     });
     const months = Array.from(monthsForYear).sort((a, b) => a - b);
     setAvailableMonths(months);
     setSelMonth(months[months.length - 1] ?? 1);
-  };
+  }, []);
 
   // Fetch revenue when year/month changes
   useEffect(() => {

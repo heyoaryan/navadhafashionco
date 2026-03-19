@@ -1,18 +1,9 @@
 // Input validation utilities
 
-const ALLOWED_EMAIL_DOMAINS = [
-  'gmail.com', 'yahoo.com', 'yahoo.co.in', 'hotmail.com', 'outlook.com',
-  'rediffmail.com', 'aol.com', 'icloud.com', 'protonmail.com', 'zoho.com',
-  'mail.com', 'yandex.com', 'gmx.com', 'inbox.com', 'live.com',
-  'msn.com', 'ymail.com', 'rocketmail.com'
-];
-
 export const validateEmail = (email: string): boolean => {
+  // Standard RFC 5322 email validation — no domain whitelist (too restrictive for real users)
   const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-  const trimmedEmail = email.trim().toLowerCase();
-  if (!emailRegex.test(trimmedEmail)) return false;
-  const domain = trimmedEmail.split('@')[1];
-  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+  return emailRegex.test(email.trim().toLowerCase());
 };
 
 export const validatePhone = (phone: string): boolean => {
@@ -25,15 +16,30 @@ export const validatePincode = (pincode: string): boolean => {
   return /^[1-9][0-9]{5}$/.test(pincode.trim());
 };
 
+// Pincode cache to avoid repeated API calls
+const pincodeCache = new Map<string, { city: string; state: string } | null>();
+
 // Verify pincode exists via India Post API (returns city/state or null)
 export const verifyPincode = async (pincode: string): Promise<{ city: string; state: string } | null> => {
+  if (pincodeCache.has(pincode)) return pincodeCache.get(pincode)!;
+
   try {
-    const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+    const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
     const data = await res.json();
     if (data?.[0]?.Status === 'Success' && data[0].PostOffice?.length > 0) {
       const po = data[0].PostOffice[0];
-      return { city: po.District, state: po.State };
+      const result = { city: po.District, state: po.State };
+      pincodeCache.set(pincode, result);
+      return result;
     }
+    pincodeCache.set(pincode, null);
     return null;
   } catch {
     return null;

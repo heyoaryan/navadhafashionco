@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Search, Package, Zap, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Package, Zap, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Product } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 import LoadingState from '../../components/LoadingState';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface QuickEditData {
   price: string;
@@ -18,6 +19,9 @@ export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 20;
   const [quickEditProduct, setQuickEditProduct] = useState<Product | null>(null);
   const [quickEditData, setQuickEditData] = useState<QuickEditData>({
     price: '',
@@ -28,9 +32,38 @@ export default function ProductList() {
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchProducts();
+  const debouncedSearch = useDebounce(searchTerm, 350);
+
+  const fetchProducts = useCallback(async (pageNum = 1, search = '') => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (search) {
+        query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
+      }
+
+      const from = (pageNum - 1) * PAGE_SIZE;
+      query = query.range(from, from + PAGE_SIZE - 1);
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      setProducts(data || []);
+      setTotalCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+    fetchProducts(1, debouncedSearch);
+  }, [debouncedSearch, fetchProducts]);
 
   useEffect(() => {
     if (quickEditProduct) {
@@ -41,21 +74,12 @@ export default function ProductList() {
     return () => unlockScroll();
   }, [quickEditProduct]);
 
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchProducts(newPage, debouncedSearch);
   };
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
@@ -67,7 +91,8 @@ export default function ProductList() {
         .eq('id', id);
 
       if (error) throw error;
-      setProducts(products.filter(p => p.id !== id));
+      // Refresh current page after delete
+      fetchProducts(page, debouncedSearch);
       showToast('Product deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -113,7 +138,7 @@ export default function ProductList() {
 
       if (error) throw error;
 
-      // Update local state
+      // Optimistic local state update
       setProducts(products.map(p => 
         p.id === quickEditProduct.id 
           ? {
@@ -135,11 +160,6 @@ export default function ProductList() {
       setSaving(false);
     }
   };
-
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   if (loading) {
     return <LoadingState type="page" message="Loading Products..." variant="spinner" />;
@@ -239,7 +259,7 @@ export default function ProductList() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-light tracking-wider mb-1 sm:mb-2 text-gray-900 dark:text-gray-100">Products</h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{products.length} total products</p>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{totalCount} total products</p>
         </div>
         <Link
           to="/admin/products/new"
@@ -278,7 +298,7 @@ export default function ProductList() {
             Add Your First Product
           </Link>
         </div>
-      ) : filteredProducts.length === 0 ? (
+      ) : products.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg">
           <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="text-xl font-medium mb-2 text-gray-900 dark:text-gray-100">No products found</h3>
@@ -302,7 +322,7 @@ export default function ProductList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -389,7 +409,7 @@ export default function ProductList() {
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
-            {filteredProducts.map((product) => (
+            {products.map((product) => (
               <div key={product.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
                 <div className="flex gap-3 p-3">
                   {product.main_image_url ? (
@@ -480,6 +500,47 @@ export default function ProductList() {
             ))}
           </div>
         </>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Page {page} of {totalPages} ({totalCount} products)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 1}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                    pageNum === page
+                      ? 'bg-rose-500 text-white'
+                      : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page === totalPages}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

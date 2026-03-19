@@ -45,7 +45,7 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
 
   return (
     <div
-      className={`fixed bottom-6 left-4 right-4 sm:bottom-auto sm:top-4 sm:left-auto sm:right-4 sm:max-w-md z-[9999] flex items-start gap-3 px-4 py-3.5 rounded-xl border shadow-xl animate-slide-in ${getBgColor()}`}
+      className={`flex items-start gap-3 px-4 py-3.5 rounded-xl border shadow-xl animate-slide-in ${getBgColor()}`}
     >
       <div className="flex-shrink-0 mt-0.5">
         {getIcon()}

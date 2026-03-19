@@ -4,7 +4,7 @@ import { Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { trackProductAction } from '../utils/analytics';
 import OptimizedImage from './OptimizedImage';
@@ -13,7 +13,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default memo(function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -38,6 +38,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   }, [images.length]);
 
   const fetchProductImages = async () => {
+    // Use main_image_url immediately to avoid blank state
+    if (product.main_image_url) {
+      setImages([product.main_image_url]);
+    }
     try {
       const { data } = await supabase
         .from('product_images')
@@ -46,18 +50,17 @@ export default function ProductCard({ product }: ProductCardProps) {
         .order('display_order', { ascending: true });
       if (data && data.length > 0) {
         setImages(data.map(img => img.image_url));
-      } else if (product.main_image_url) {
-        setImages([product.main_image_url]);
-      } else {
+      } else if (!product.main_image_url) {
         setImages(['https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
       }
-    } catch (error) {
-      console.error('Error fetching product images:', error);
-      setImages([product.main_image_url || 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
+    } catch {
+      if (!product.main_image_url) {
+        setImages(['https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
+      }
     }
   };
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) {
       localStorage.setItem('pendingCartItem', JSON.stringify({ productId: product.id, quantity: 1, size: undefined, color: undefined, timestamp: Date.now() }));
@@ -68,16 +71,16 @@ export default function ProductCard({ product }: ProductCardProps) {
     try { await addToCart(product.id, 1); }
     catch (error) { console.error('Error adding to cart:', error); }
     finally { setIsAdding(false); }
-  };
+  }, [user, product.id, product.slug, addToCart, navigate]);
 
-  const handleToggleWishlist = async (e: React.MouseEvent) => {
+  const handleToggleWishlist = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) { navigate('/auth', { state: { from: `/product/${product.slug}` } }); return; }
     setIsTogglingWishlist(true);
     try { await toggleWishlist(product.id); }
     catch (error) { console.error('Error toggling wishlist:', error); }
     finally { setIsTogglingWishlist(false); }
-  };
+  }, [user, product.id, product.slug, toggleWishlist, navigate]);
 
   const discountPercentage = product.compare_at_price
     ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
@@ -99,7 +102,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <OptimizedImage
               src={image}
               alt={`${product.name} - View ${index + 1}`}
-              className={`transition-transform duration-500 ${!isOutOfStock ? 'group-hover:scale-110' : ''}`}
+              className="transition-transform duration-500 group-hover:scale-110"
               aspectRatio="3/4"
               priority={index === 0}
             />
@@ -126,17 +129,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Out of Stock — full image overlay, always visible */}
-        {isOutOfStock && (
-          <div className="absolute inset-0 bg-black/45 flex items-center justify-center z-20 rounded-lg pointer-events-none">
-            <span className="bg-white text-gray-800 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full shadow-md">
-              Out of Stock
-            </span>
-          </div>
-        )}
 
-        {/* Add to cart hover overlay — only for in-stock */}
-        {!isOutOfStock && (
+
+        {/* Hover overlay */}
+        {isOutOfStock ? (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 rounded-lg">
+            <div className="absolute bottom-3 left-3 right-3">
+              <div className="bg-white/90 text-gray-800 py-2 rounded-lg text-xs sm:text-sm font-medium text-center shadow-lg">
+                View Product
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
             <div className="absolute bottom-3 left-3 right-3 flex gap-2">
               <button
@@ -173,7 +177,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {isOutOfStock ? (
-          <div className="mt-1.5 text-xs sm:text-sm font-medium text-red-600 dark:text-red-400">Out of Stock</div>
+          <div className="mt-1.5 text-xs sm:text-sm font-medium text-red-500 dark:text-red-400">
+            Out of Stock
+          </div>
         ) : product.stock_quantity <= product.low_stock_threshold ? (
           <div className="mt-1.5 text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1">
             <span className="animate-pulse">⚡</span> Low Stock — Hurry!
@@ -195,4 +201,4 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
     </Link>
   );
-}
+});

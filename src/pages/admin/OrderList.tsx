@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Search, Eye } from 'lucide-react';
+import { Package, Search, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface Order {
   id: string;
@@ -30,26 +31,52 @@ export default function OrderList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 25;
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const debouncedSearch = useDebounce(searchTerm, 350);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async (pageNum = 1, search = '', status = 'all') => {
+    setLoading(true);
     try {
-      const [{ data: ordersData, error }, { data: returnsData }] = await Promise.all([
-        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+      let query = supabase
+        .from('orders')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (search) query = query.ilike('order_number', `%${search}%`);
+      if (status !== 'all' && status !== 'bespoke') query = query.eq('status', status);
+
+      const from = (pageNum - 1) * PAGE_SIZE;
+      query = query.range(from, from + PAGE_SIZE - 1);
+
+      const [{ data: ordersData, error, count }, { data: returnsData }] = await Promise.all([
+        query,
         supabase.from('returns').select('id, order_id, product_name, quantity, refund_amount, status, return_type').order('created_at', { ascending: false }),
       ]);
       if (error) throw error;
       setOrders(ordersData || []);
       setReturns(returnsData || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+    fetchOrders(1, debouncedSearch, statusFilter);
+  }, [debouncedSearch, statusFilter, fetchOrders]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchOrders(newPage, debouncedSearch, statusFilter);
   };
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const getOrderReturns = (orderId: string) => returns.filter(r => r.order_id === orderId);
 
@@ -57,18 +84,13 @@ export default function OrderList() {
     try { return JSON.parse(order.notes || '{}')?.type === 'bespoke'; } catch { return false; }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all'
-      ? true
-      : statusFilter === 'bespoke'
-      ? isBespoke(order)
-      : order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Client-side bespoke filter (bespoke is determined by notes JSON, can't be done server-side easily)
+  const filteredOrders = statusFilter === 'bespoke'
+    ? orders.filter(isBespoke)
+    : orders;
 
   const getOrderCount = (status: string) => {
-    if (status === 'all') return orders.length;
+    if (status === 'all') return totalCount;
     if (status === 'bespoke') return orders.filter(isBespoke).length;
     return orders.filter(o => o.status === status).length;
   };
@@ -97,7 +119,7 @@ export default function OrderList() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-light tracking-wider mb-1 sm:mb-2 text-gray-900 dark:text-gray-100">Orders</h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{orders.length} total orders</p>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{totalCount} total orders</p>
         </div>
       </div>
 
@@ -312,6 +334,47 @@ export default function OrderList() {
               ? 'Try adjusting your search terms' 
               : 'Orders will appear here when customers make purchases'}
           </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Page {page} of {totalPages} ({totalCount} orders)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 1}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                    pageNum === page
+                      ? 'bg-rose-500 text-white'
+                      : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page === totalPages}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

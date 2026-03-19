@@ -20,18 +20,11 @@ export default function ReturnList() {
   const fetchReturns = async () => {
     try {
       const { data, error } = await supabase
-        .from('returns').select('*').order('created_at', { ascending: false });
+        .from('returns')
+        .select('*, user:profiles(full_name, email)')
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      const withUsers = await Promise.all(
-        (data || []).map(async (ret: any) => {
-          if (ret.user_id) {
-            const { data: u } = await supabase.from('profiles').select('full_name, email').eq('id', ret.user_id).single();
-            return { ...ret, user: u };
-          }
-          return ret;
-        })
-      );
-      setReturns(withUsers);
+      setReturns(data || []);
     } catch (e) {
       console.error(e);
     } finally {

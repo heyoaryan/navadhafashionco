@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
+import { trackSignup } from '../utils/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -72,26 +73,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const loadingTimeout = setTimeout(() => setLoading(false), 5000);
+    const loadingTimeout = setTimeout(() => setLoading(false), 2000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(loadingTimeout);
+
       if (session?.user) {
-        // Check blacklist before setting state on initial load
+        // Set state immediately — don't wait for blacklist check
+        setSession(session);
+        setUser(session.user);
+
+        // Load cached profile instantly
+        const cached = localStorage.getItem(`profile_${session.user.id}`);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (!parsed?.is_blacklisted) setProfile(parsed);
+          } catch { /* ignore */ }
+        }
+
+        // Show UI immediately
+        setLoading(false);
+
+        // Blacklist check + fresh profile fetch in background
         isUserBlacklisted(session.user.id).then(async (blacklisted) => {
           if (blacklisted) {
             await forceSignOut(session.user.id);
             return;
           }
-          setSession(session);
-          setUser(session.user);
-          const cached = localStorage.getItem(`profile_${session.user.id}`);
-          if (cached) {
-            try {
-              const parsed = JSON.parse(cached);
-              if (!parsed?.is_blacklisted) setProfile(parsed);
-            } catch { /* ignore */ }
-          }
+          fetchProfile(session.user.id);
+        }).catch(() => {
           fetchProfile(session.user.id);
         });
       } else {
@@ -163,6 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { full_name: fullName }, emailRedirectTo: undefined },
     });
     if (error) throw error;
+    if (data?.user) {
+      trackSignup(data.user.id, 'email');
+    }
     return data as any;
   };
 

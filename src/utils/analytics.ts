@@ -9,38 +9,72 @@ const getSessionId = (): string => {
       sessionStorage.setItem('analytics_session_id', sessionId);
     }
     return sessionId;
-  } catch (error) {
-    // Fallback if sessionStorage is not available
+  } catch {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 };
+
+// --- Batching queue ---
+interface AnalyticsEvent {
+  table: string;
+  payload: Record<string, unknown>;
+}
+
+const eventQueue: AnalyticsEvent[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+const enqueue = (table: string, payload: Record<string, unknown>) => {
+  eventQueue.push({ table, payload });
+  if (!flushTimer) {
+    flushTimer = setTimeout(flushQueue, 2000); // flush every 2s
+  }
+};
+
+const flushQueue = async () => {
+  flushTimer = null;
+  if (eventQueue.length === 0) return;
+
+  // Group by table
+  const byTable: Record<string, Record<string, unknown>[]> = {};
+  while (eventQueue.length > 0) {
+    const event = eventQueue.shift()!;
+    if (!byTable[event.table]) byTable[event.table] = [];
+    byTable[event.table].push(event.payload);
+  }
+
+  // Batch insert per table
+  await Promise.allSettled(
+    Object.entries(byTable).map(([table, rows]) =>
+      supabase.from(table).insert(rows)
+    )
+  );
+};
+
+// Flush on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushQueue();
+  });
+}
 
 // Track page view
 export const trackPageView = async (pageUrl: string, pageTitle?: string) => {
   try {
     const sessionId = getSessionId();
     const { data: { user } } = await supabase.auth.getUser();
-
-    // Extract path from URL
     const url = new URL(pageUrl, window.location.origin);
-    const pagePath = url.pathname;
 
-    const { error } = await supabase.from('page_views').insert({
+    enqueue('page_views', {
       page_url: pageUrl,
-      page_path: pagePath,
+      page_path: url.pathname,
       page_title: pageTitle || document.title,
       user_id: user?.id || null,
       session_id: sessionId,
       referrer: document.referrer || null,
       user_agent: navigator.userAgent,
     });
-
-    if (error) {
-      console.error('Analytics: Page view tracking error:', error);
-    }
-  } catch (error) {
-    // Silently fail - analytics should not break the app
-    console.error('Analytics: Could not track page view', error);
+  } catch {
+    // Silently fail — analytics must not break the app
   }
 };
 
@@ -53,19 +87,14 @@ export const trackProductAction = async (
     const sessionId = getSessionId();
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from('product_analytics').insert({
+    enqueue('product_analytics', {
       product_id: productId,
       user_id: user?.id || null,
       session_id: sessionId,
       action_type: actionType,
     });
-
-    if (error) {
-      console.error('Analytics: Product action tracking error:', error);
-    }
-  } catch (error) {
-    // Silently fail - analytics should not break the app
-    console.error('Analytics: Could not track product action', error);
+  } catch {
+    // Silently fail
   }
 };
 
@@ -73,18 +102,12 @@ export const trackProductAction = async (
 export const trackSignup = async (userId: string, signupMethod: string = 'email') => {
   try {
     const sessionId = getSessionId();
-
-    const { error } = await supabase.from('signup_tracking').insert({
+    enqueue('signup_tracking', {
       user_id: userId,
       session_id: sessionId,
       signup_method: signupMethod,
     });
-
-    if (error) {
-      console.error('Analytics: Signup tracking error:', error);
-    }
-  } catch (error) {
-    // Silently fail - analytics should not break the app
-    console.error('Analytics: Could not track signup', error);
+  } catch {
+    // Silently fail
   }
 };

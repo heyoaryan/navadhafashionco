@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus, Camera, X, Play, CheckCircle, Lock } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus, Camera, X, Play, CheckCircle, Lock, Bell } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { Product, ProductImage, Review } from '../types';
@@ -64,6 +64,13 @@ export default function ProductDetail() {
   const [bespokeComplexity, setBespokeComplexity] = useState<'simple' | 'moderate' | 'complex'>('simple');
   const [bespokeSubmitting, setBespokeSubmitting] = useState(false);
 
+  // Interest / notify me state
+  const [interestRegistered, setInterestRegistered] = useState(false);
+  const [registeringInterest, setRegisteringInterest] = useState(false);
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [showInterestForm, setShowInterestForm] = useState(false);
+
   const inWishlist = product ? isInWishlist(product.id) : false;
 
   useEffect(() => {
@@ -83,6 +90,7 @@ export default function ProductDetail() {
     const checkPurchase = async () => {
       if (!user || !product) { setHasPurchased(false); return; }
       setCheckingPurchase(true);
+      const timeout = setTimeout(() => setCheckingPurchase(false), 8000);
       try {
         const { data } = await supabase
           .from('order_items')
@@ -93,13 +101,15 @@ export default function ProductDetail() {
           .limit(1);
         setHasPurchased((data?.length ?? 0) > 0);
       } catch { setHasPurchased(false); }
-      finally { setCheckingPurchase(false); }
+      finally { clearTimeout(timeout); setCheckingPurchase(false); }
     };
     checkPurchase();
   }, [user, product]);
 
   const fetchProduct = async () => {
     setLoading(true);
+    // Safety timeout — never stay stuck on loading screen
+    const timeout = setTimeout(() => setLoading(false), 15000);
     try {
       const { data: productData } = await supabase
         .from('products')
@@ -111,8 +121,9 @@ export default function ProductDetail() {
       if (productData) {
         setProduct(productData);
         
-        // Track product view
+        // Track product view and click
         trackProductAction(productData.id, 'view');
+        trackProductAction(productData.id, 'click');
         
         if (productData.sizes && productData.sizes.length > 0) {
           setSelectedSize(productData.sizes[0]);
@@ -142,6 +153,7 @@ export default function ProductDetail() {
     } catch (error) {
       console.error('Error fetching product:', error);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
@@ -478,6 +490,33 @@ export default function ProductDetail() {
       console.error('Bespoke request error:', error);
     } finally {
       setBespokeSubmitting(false);
+    }
+  };
+
+  const handleRegisterInterest = async () => {
+    if (!product) return;
+    setRegisteringInterest(true);
+    try {
+      if (user) {
+        // Logged-in user
+        const { error } = await supabase.from('product_interest').upsert(
+          { product_id: product.id, user_id: user.id, email: user.email, name: user.email },
+          { onConflict: 'product_id,user_id', ignoreDuplicates: true }
+        );
+        if (!error) setInterestRegistered(true);
+      } else {
+        // Guest — validate email
+        if (!guestEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) return;
+        const { error } = await supabase.from('product_interest').upsert(
+          { product_id: product.id, user_id: null, email: guestEmail, name: guestName || null },
+          { onConflict: 'product_id,email', ignoreDuplicates: true }
+        );
+        if (!error) { setInterestRegistered(true); setShowInterestForm(false); }
+      }
+    } catch (err) {
+      console.error('Interest registration error:', err);
+    } finally {
+      setRegisteringInterest(false);
     }
   };
 
@@ -881,6 +920,58 @@ export default function ProductDetail() {
               <p className="text-sm text-red-500 dark:text-red-300 text-center mt-1">
                 This piece has found its people. Add to wishlist and be the first to know when it's back.
               </p>
+
+              {/* Notify Me / Interest section */}
+              <div className="mt-4">
+                {interestRegistered ? (
+                  <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+                    <CheckCircle className="w-4 h-4" />
+                    We'll notify you when it's back in stock!
+                  </div>
+                ) : user ? (
+                  <button
+                    onClick={handleRegisterInterest}
+                    disabled={registeringInterest}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {registeringInterest ? 'Registering...' : 'Notify Me When Back in Stock'}
+                  </button>
+                ) : showInterestForm ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Your name (optional)"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Your email address *"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                    <button
+                      onClick={handleRegisterInterest}
+                      disabled={registeringInterest || !guestEmail}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                    >
+                      <Bell className="w-4 h-4" />
+                      {registeringInterest ? 'Registering...' : 'Notify Me'}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowInterestForm(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-rose-400 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg text-sm font-medium transition-all"
+                  >
+                    <Bell className="w-4 h-4" />
+                    Notify Me When Back in Stock
+                  </button>
+                )}
+              </div>
             </div>
           ) : product.stock_quantity <= 3 ? (
             <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">

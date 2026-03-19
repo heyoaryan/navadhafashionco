@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { Product } from '../types';
@@ -39,59 +39,60 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const refreshWishlist = async () => {
+  const refreshWishlist = useCallback(async () => {
     if (!user) return;
-
     setLoading(true);
     try {
       const { data } = await supabase
         .from('wishlist')
-        .select(`
-          *,
-          product:products (*)
-        `)
+        .select('*, product:products (*)')
         .eq('user_id', user.id);
-
       setWishlistItems(data || []);
     } catch (error) {
       console.error('Error fetching wishlist:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const isInWishlist = (productId: string): boolean => {
+  const isInWishlist = useCallback((productId: string): boolean => {
     return wishlistItems.some(item => item.product_id === productId);
-  };
+  }, [wishlistItems]);
 
-  const addToWishlist = async (productId: string) => {
+  const addToWishlist = useCallback(async (productId: string) => {
     if (!user) throw new Error('Must be logged in to add to wishlist');
+
+    // Optimistic update — add a placeholder item immediately
+    const tempItem: WishlistItem = {
+      id: `temp_${productId}`,
+      user_id: user.id,
+      product_id: productId,
+      created_at: new Date().toISOString(),
+      product: {} as Product,
+    };
+    setWishlistItems(prev => [...prev, tempItem]);
 
     try {
       const { error } = await supabase
         .from('wishlist')
-        .insert([
-          {
-            user_id: user.id,
-            product_id: productId,
-          },
-        ]);
+        .insert([{ user_id: user.id, product_id: productId }]);
 
-      if (error) throw error;
-
-      // Refresh wishlist
+      if (error && !error.message?.includes('duplicate')) throw error;
+      // Refresh to get full product data
       await refreshWishlist();
     } catch (error: any) {
-      // If already exists, ignore error
-      if (!error.message?.includes('duplicate')) {
-        console.error('Error adding to wishlist:', error);
-        throw error;
-      }
+      // Rollback optimistic update
+      setWishlistItems(prev => prev.filter(i => i.id !== `temp_${productId}`));
+      if (!error.message?.includes('duplicate')) throw error;
     }
-  };
+  }, [user, refreshWishlist]);
 
-  const removeFromWishlist = async (productId: string) => {
+  const removeFromWishlist = useCallback(async (productId: string) => {
     if (!user) return;
+
+    // Optimistic update — remove immediately
+    const previous = wishlistItems;
+    setWishlistItems(prev => prev.filter(item => item.product_id !== productId));
 
     try {
       const { error } = await supabase
@@ -101,22 +102,20 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         .eq('product_id', productId);
 
       if (error) throw error;
-
-      // Refresh wishlist
-      await refreshWishlist();
     } catch (error) {
-      console.error('Error removing from wishlist:', error);
+      // Rollback
+      setWishlistItems(previous);
       throw error;
     }
-  };
+  }, [user, wishlistItems]);
 
-  const toggleWishlist = async (productId: string) => {
+  const toggleWishlist = useCallback(async (productId: string) => {
     if (isInWishlist(productId)) {
       await removeFromWishlist(productId);
     } else {
       await addToWishlist(productId);
     }
-  };
+  }, [isInWishlist, addToWishlist, removeFromWishlist]);
 
   return (
     <WishlistContext.Provider

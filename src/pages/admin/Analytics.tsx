@@ -51,30 +51,51 @@ export default function Analytics() {
     if (timeRange === 'custom' && customStart && customEnd) fetchAnalytics();
   }, [customStart, customEnd]);
 
-  const getDateFilter = () => {
+  const getDateRange = (range: typeof timeRange, start?: string, end?: string) => {
     const now = new Date();
-    switch (timeRange) {
-      case 'today': { const d = new Date(now); d.setHours(0,0,0,0); return d.toISOString(); }
-      case 'week': { const d = new Date(now); d.setDate(d.getDate()-7); return d.toISOString(); }
-      case 'month': { const d = new Date(now); d.setMonth(d.getMonth()-1); return d.toISOString(); }
-      case 'custom': return customStart ? new Date(customStart).toISOString() : null;
-      default: return null;
-    }
-  };
+    let from: string | null = null;
+    let to: string | null = null;
 
-  const getCustomEndFilter = () => {
-    if (timeRange === 'custom' && customEnd) {
-      const d = new Date(customEnd);
-      d.setHours(23, 59, 59, 999);
-      return d.toISOString();
+    switch (range) {
+      case 'today': {
+        const d = new Date(now); d.setHours(0, 0, 0, 0);
+        from = d.toISOString();
+        break;
+      }
+      case 'week': {
+        const d = new Date(now); d.setDate(d.getDate() - 7);
+        from = d.toISOString();
+        break;
+      }
+      case 'month': {
+        const d = new Date(now); d.setMonth(d.getMonth() - 1);
+        from = d.toISOString();
+        break;
+      }
+      case 'custom': {
+        if (start) from = new Date(start).toISOString();
+        if (end) { const d = new Date(end); d.setHours(23, 59, 59, 999); to = d.toISOString(); }
+        break;
+      }
+      default: break;
     }
-    return null;
+    return { from, to };
   };
 
   const fetchAnalytics = async () => {
+    setLoading(true);
+    // Safety timeout — never stay stuck loading
+    const timeout = setTimeout(() => setLoading(false), 15000);
     try {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const dateFilter = getDateFilter();
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const { from, to } = getDateRange(timeRange, customStart, customEnd);
+
+      // Build reusable query helpers
+      const applyRange = (q: any) => {
+        if (from) q = q.gte('created_at', from);
+        if (to) q = q.lte('created_at', to);
+        return q;
+      };
 
       const [
         { count: totalProductClicks },
@@ -90,17 +111,12 @@ export default function Analytics() {
         supabase.from('signup_tracking').select('*', { count: 'exact', head: true }),
         supabase.from('signup_tracking').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
         supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
-        dateFilter
-          ? supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled').gte('created_at', dateFilter)
-          : supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
-        dateFilter
-          ? supabase.from('product_clicks').select('*', { count: 'exact', head: true }).gte('created_at', dateFilter)
-          : supabase.from('product_clicks').select('*', { count: 'exact', head: true }),
+        applyRange(supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled')),
+        applyRange(supabase.from('product_clicks').select('*', { count: 'exact', head: true })),
       ]);
 
       const clicks = rangeClicks || 0;
       const orders = rangeOrders || 0;
-      // Conversion rate: orders placed out of unique sessions (clicks), capped at 100%
       const rawRate = clicks > 0 ? (orders / clicks) * 100 : 0;
       const conversionRate = Math.min(rawRate, 100).toFixed(2);
 
@@ -113,38 +129,51 @@ export default function Analytics() {
         conversionRate,
       });
 
-      // Popular products
-      let productQuery = supabase.from('product_clicks').select('product_id, products(name, main_image_url)');
-      if (dateFilter) productQuery = productQuery.gte('created_at', dateFilter);
-      const endFilter = getCustomEndFilter();
-      if (endFilter) productQuery = productQuery.lte('created_at', endFilter);
-      const { data: productClicksData } = await productQuery;
+      // Popular products — filtered by same time range
+      const { data: productClicksData } = await applyRange(
+        supabase.from('product_clicks').select('product_id, products(name, main_image_url)')
+      );
 
       if (productClicksData) {
         const counts = productClicksData.reduce((acc: any, click: any) => {
           const id = click.product_id;
-          if (!acc[id]) acc[id] = { product_id: id, product_name: click.products?.name || 'Unknown', product_image: click.products?.main_image_url || '', click_count: 0 };
+          if (!acc[id]) acc[id] = {
+            product_id: id,
+            product_name: click.products?.name || 'Unknown',
+            product_image: click.products?.main_image_url || '',
+            click_count: 0,
+          };
           acc[id].click_count++;
           return acc;
         }, {});
-        setPopularProducts(Object.values(counts).sort((a: any, b: any) => b.click_count - a.click_count).slice(0, 10) as PopularProduct[]);
+        setPopularProducts(
+          Object.values(counts)
+            .sort((a: any, b: any) => b.click_count - a.click_count)
+            .slice(0, 10) as PopularProduct[]
+        );
+      } else {
+        setPopularProducts([]);
       }
 
       // Top orders by value
-      let ordersQuery = supabase.from('orders').select('id, order_number, total, status, created_at').neq('status', 'cancelled').order('total', { ascending: false }).limit(8);
-      if (dateFilter) ordersQuery = ordersQuery.gte('created_at', dateFilter);
-      if (endFilter) ordersQuery = ordersQuery.lte('created_at', endFilter);
-      const { data: ordersData } = await ordersQuery;
+      const { data: ordersData } = await applyRange(
+        supabase.from('orders')
+          .select('id, order_number, total, status, created_at')
+          .neq('status', 'cancelled')
+          .order('total', { ascending: false })
+          .limit(8)
+      );
       setTopOrders(ordersData || []);
 
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
 
-  const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7 Days' : timeRange === 'month' ? '30 Days' : timeRange === 'custom' ? 'Custom' : 'Total';
+  const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? 'Last 7 Days' : timeRange === 'month' ? 'Last 30 Days' : timeRange === 'custom' ? 'Custom Range' : 'All Time';
   const currentClicks = timeRange === 'today' ? stats.todayProductClicks : stats.totalProductClicks;
   const currentSignups = timeRange === 'today' ? stats.todaySignups : stats.totalSignups;
 
@@ -157,10 +186,24 @@ export default function Analytics() {
     }
   };
 
+  const StatCard = ({ gradient, icon: Icon, iconColor, value, label }: {
+    gradient: string; icon: any; iconColor: string; value: string | number; label: string;
+  }) => (
+    <div className={`p-4 sm:p-6 bg-gradient-to-br ${gradient} rounded-xl`}>
+      <div className="flex items-center justify-between mb-3">
+        <Icon className={`w-6 h-6 ${iconColor}`} />
+        <span className="text-xs text-gray-500 dark:text-gray-400">{rangeLabel}</span>
+      </div>
+      <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{value}</p>
+      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{label}</p>
+    </div>
+  );
+
   if (loading) return <LoadingState type="page" message="Loading Analytics..." variant="spinner" />;
 
   return (
     <div className="space-y-6">
+      {/* Header + Dropdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-light tracking-wider mb-2 text-gray-900 dark:text-gray-100">Analytics</h1>
@@ -179,7 +222,7 @@ export default function Analytics() {
             <option value="custom">Custom Range</option>
           </select>
           {timeRange === 'custom' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <input
                 type="date"
                 value={customStart}
@@ -198,78 +241,87 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Stats — 3 cards */}
+      {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl">
-          <div className="flex items-center justify-between mb-3">
-            <MousePointerClick className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">{rangeLabel}</span>
-          </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{currentClicks}</p>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Product Clicks</p>
-        </div>
-
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl">
-          <div className="flex items-center justify-between mb-3">
-            <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">{rangeLabel}</span>
-          </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{currentSignups}</p>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">New Signups</p>
-        </div>
-
-        <div className="p-4 sm:p-6 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 rounded-xl">
-          <div className="flex items-center justify-between mb-3">
-            <ShoppingCart className="w-6 h-6 text-rose-600 dark:text-rose-400" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">All Time</span>
-          </div>
-          <p className="text-2xl sm:text-3xl font-light mb-1 text-gray-900 dark:text-gray-100">{stats.conversionRate}%</p>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
-        </div>
+        <StatCard
+          gradient="from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20"
+          icon={MousePointerClick}
+          iconColor="text-purple-600 dark:text-purple-400"
+          value={currentClicks}
+          label="Product Clicks"
+        />
+        <StatCard
+          gradient="from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20"
+          icon={Users}
+          iconColor="text-green-600 dark:text-green-400"
+          value={currentSignups}
+          label="New Signups"
+        />
+        <StatCard
+          gradient="from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20"
+          icon={ShoppingCart}
+          iconColor="text-rose-600 dark:text-rose-400"
+          value={`${stats.conversionRate}%`}
+          label="Conversion Rate"
+        />
       </div>
 
-      {/* Stacked sections */}
+      {/* Sections */}
       <div className="flex flex-col gap-6">
         {/* Most Clicked Products */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Package className="w-5 h-5 text-purple-500" />
-            Most Clicked Products
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Package className="w-5 h-5 text-purple-500" />
+              Most Clicked Products
+            </h2>
+            <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
+              {rangeLabel}
+            </span>
+          </div>
           {popularProducts.length > 0 ? (
             <div className="space-y-3">
               {popularProducts.map((product, index) => (
                 <div key={product.product_id} className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-400 dark:text-gray-500 w-5 shrink-0">{index + 1}</span>
                   {product.product_image && (
-                    <img src={product.product_image} alt={product.product_name} className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                    <img
+                      src={product.product_image}
+                      alt={product.product_name}
+                      className="w-10 h-10 object-cover rounded-lg shrink-0"
+                    />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{product.product_name}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
                         <div
-                          className="bg-purple-400 h-1.5 rounded-full"
+                          className="bg-purple-400 h-1.5 rounded-full transition-all duration-500"
                           style={{ width: `${(product.click_count / (popularProducts[0]?.click_count || 1)) * 100}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{product.click_count}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{product.click_count} clicks</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No product clicks yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No product clicks for {rangeLabel.toLowerCase()}</p>
           )}
         </div>
 
         {/* Top Orders by Value */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-medium mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-rose-500" />
-            Top Orders by Value
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-rose-500" />
+              Top Orders by Value
+            </h2>
+            <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
+              {rangeLabel}
+            </span>
+          </div>
           {topOrders.length > 0 ? (
             <div className="space-y-2">
               {topOrders.map((order) => (
@@ -288,7 +340,7 @@ export default function Analytics() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No orders yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8 text-sm">No orders for {rangeLabel.toLowerCase()}</p>
           )}
         </div>
       </div>

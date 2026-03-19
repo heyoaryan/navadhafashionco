@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -17,6 +17,7 @@ export default function Shop() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const categoriesFetched = useRef(false);
   const PRODUCTS_PER_PAGE = 20;
 
   const selectedCategory = searchParams.get('category');
@@ -29,7 +30,11 @@ export default function Shop() {
   const isNewArrivals = filterType === 'new';
 
   useEffect(() => {
-    fetchCategories();
+    // Only fetch categories once
+    if (!categoriesFetched.current) {
+      categoriesFetched.current = true;
+      fetchCategories();
+    }
     setPage(1);
     setProducts([]);
     fetchProducts(1);

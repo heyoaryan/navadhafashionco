@@ -12,7 +12,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('theme') as Theme;
-    return stored || 'light';
+    if (stored === 'light' || stored === 'dark') return stored;
+    // Respect system preference if no stored preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
   useEffect(() => {
@@ -21,6 +23,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Listen for system preference changes (only if user hasn't manually set a preference)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      // Only auto-switch if user hasn't manually set a preference
+      const stored = localStorage.getItem('theme');
+      if (!stored) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');

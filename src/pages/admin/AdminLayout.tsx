@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Tag, Users, LogOut, RotateCcw, Menu, X, TrendingUp, MapPin, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Tag, Users, LogOut, RotateCcw, Menu, X, TrendingUp, MapPin, Briefcase, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
@@ -46,6 +46,7 @@ export default function AdminLayout() {
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
     { to: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
     { to: '/admin/products', icon: Package, label: 'Products' },
+    { to: '/admin/stock-interest', icon: Bell, label: 'Stock Interest' },
     { to: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
     { to: '/admin/returns', icon: RotateCcw, label: 'Returns' },
     { to: '/admin/coupons', icon: Tag, label: 'Coupons' },
@@ -151,7 +152,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 lg:pt-8 px-4 sm:px-6 lg:px-8 pb-8 min-h-screen">
+      <main className="lg:ml-64 pt-20 lg:pt-8 px-4 sm:px-6 lg:px-8 pb-8 min-h-screen">
         <Outlet />
       </main>
     </div>
