@@ -45,7 +45,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase
         .from('wishlist')
-        .select('*, product:products (*)')
+        .select('*, product:products(id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active)')
         .eq('user_id', user.id);
       setWishlistItems(data || []);
     } catch (error) {

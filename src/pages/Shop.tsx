@@ -83,7 +83,7 @@ export default function Shop() {
     try {
       let query = supabase
         .from('products')
-        .select('*', { count: 'exact' })
+        .select('id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season', { count: 'exact' })
         .eq('is_active', true);
 
       // Handle search query - exact phrase match

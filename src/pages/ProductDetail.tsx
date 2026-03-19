@@ -142,9 +142,10 @@ export default function ProductDetail() {
             .limit(6),
           supabase
             .from('reviews')
-            .select(`*, user:profiles(full_name, avatar_url)`)
+            .select(`id, rating, title, comment, created_at, is_verified_purchase, media_urls, user:profiles(full_name, avatar_url)`)
             .eq('product_id', productData.id)
             .order('created_at', { ascending: false })
+            .limit(20)
         ]);
 
         setImages(imagesResult.data || []);
@@ -164,8 +165,9 @@ export default function ProductDetail() {
     try {
       const { data } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id')
         .eq('is_active', true)
+        .eq('gender', product.gender || 'women')
         .neq('id', product.id)
         .limit(4);
 
@@ -334,9 +336,10 @@ export default function ProductDetail() {
       // Refresh reviews list
       const { data: updatedReviews } = await supabase
         .from('reviews')
-        .select(`*, user:profiles(full_name, avatar_url)`)
+        .select(`id, rating, title, comment, created_at, is_verified_purchase, media_urls, user:profiles(full_name, avatar_url)`)
         .eq('product_id', product.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       setReviews(updatedReviews || []);
     } catch (error) {
       console.error('Error submitting review:', error);

@@ -33,10 +33,10 @@ export default function BestSellers() {
     }
     
     try {
-      // Step 1: Get all active products
+      // Step 1: Get all active products (only needed fields)
       let productQuery = supabase
         .from('products')
-        .select('*')
+        .select('id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
         .eq('is_active', true);
 
       if (filter !== 'all') {
@@ -49,12 +49,9 @@ export default function BestSellers() {
       // Step 2: Get sales counts from completed orders only (exclude cancelled/refunded)
       const { data: salesData, error: salesError } = await supabase
         .from('order_items')
-        .select(`
-          product_id,
-          quantity,
-          orders!inner(status)
-        `)
-        .in('orders.status', ['processing', 'shipped', 'delivered']);
+        .select('product_id, quantity, orders!inner(status)')
+        .in('orders.status', ['processing', 'shipped', 'delivered'])
+        .limit(5000);
 
       if (salesError) throw salesError;
 

@@ -151,6 +151,9 @@ function HeroIntro() {
   );
 }
 
+// Minimal product fields needed for product cards — avoids fetching heavy columns like description
+const PRODUCT_FIELDS = 'id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, created_at, tags, category_id';
+
 export default function Home() {
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [womenProducts, setWomenProducts] = useState<Product[]>([]);
@@ -218,7 +221,7 @@ export default function Home() {
       
       const { data: arrivals } = await supabase
         .from('products')
-        .select('*')
+        .select(PRODUCT_FIELDS)
         .eq('is_active', true)
         .gte('created_at', tenDaysAgo.toISOString())
         .order('created_at', { ascending: false })
@@ -227,7 +230,7 @@ export default function Home() {
       // Get Women's products
       const { data: women } = await supabase
         .from('products')
-        .select('*')
+        .select(PRODUCT_FIELDS)
         .eq('is_active', true)
         .eq('gender', 'women')
         .order('created_at', { ascending: false })
@@ -236,7 +239,7 @@ export default function Home() {
       // Get Men's products
       const { data: men } = await supabase
         .from('products')
-        .select('*')
+        .select(PRODUCT_FIELDS)
         .eq('is_active', true)
         .eq('gender', 'men')
         .order('created_at', { ascending: false })
@@ -245,7 +248,7 @@ export default function Home() {
       // Get initial batch of all products for infinite scroll
       const { data: all, count } = await supabase
         .from('products')
-        .select('*', { count: 'exact' })
+        .select(PRODUCT_FIELDS, { count: 'exact' })
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .range(0, productsPerPage - 1);
@@ -272,7 +275,7 @@ export default function Home() {
 
       const { data, count } = await supabase
         .from('products')
-        .select('*', { count: 'exact' })
+        .select(PRODUCT_FIELDS, { count: 'exact' })
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .range(from, to);

@@ -58,43 +58,53 @@ export default function CustomerList() {
 
       const blacklistedIds = new Set((blacklistData || []).map((b: any) => b.entity_id));
 
-      // For each customer, fetch their order stats
-      const customersWithStats = await Promise.all(
-        (profilesData || []).map(async (customer: any) => {
-          const { count: orderCount } = await supabase
-            .from('orders')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', customer.id);
+      // Batch fetch all orders and returns in 2 queries instead of N*3 queries
+      const customerIds = (profilesData || []).map((c: any) => c.id);
 
-          const { data: ordersData } = await supabase
-            .from('orders')
-            .select('total')
-            .eq('user_id', customer.id);
+      const [{ data: allOrdersData }, { data: allReturnsData }] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('user_id, total')
+          .in('user_id', customerIds),
+        supabase
+          .from('returns')
+          .select('user_id, refund_amount, return_type')
+          .in('user_id', customerIds)
+          .eq('return_type', 'refund'),
+      ]);
 
-          const totalSpent = ordersData?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+      // Build lookup maps
+      const ordersByUser = new Map<string, { count: number; total: number }>();
+      for (const order of allOrdersData || []) {
+        const existing = ordersByUser.get(order.user_id) || { count: 0, total: 0 };
+        ordersByUser.set(order.user_id, {
+          count: existing.count + 1,
+          total: existing.total + Number(order.total),
+        });
+      }
 
-          const { data: returnsData } = await supabase
-            .from('returns')
-            .select('refund_amount, return_type')
-            .eq('user_id', customer.id);
+      const returnsByUser = new Map<string, { count: number; total: number }>();
+      for (const ret of allReturnsData || []) {
+        const existing = returnsByUser.get(ret.user_id) || { count: 0, total: 0 };
+        returnsByUser.set(ret.user_id, {
+          count: existing.count + 1,
+          total: existing.total + Number(ret.refund_amount),
+        });
+      }
 
-          const actualReturns = returnsData?.filter(r => r.return_type === 'refund') || [];
-          const returnCount = actualReturns.length;
-          const totalReturnsValue = actualReturns.reduce((sum, r) => sum + Number(r.refund_amount), 0);
-
-          // is_blacklisted = true if EITHER profiles field OR blacklist table says so
-          const isBlacklisted = customer.is_blacklisted === true || blacklistedIds.has(customer.id);
-
-          return {
-            ...customer,
-            is_blacklisted: isBlacklisted,
-            order_count: orderCount || 0,
-            total_spent: totalSpent,
-            return_count: returnCount,
-            total_returns_value: totalReturnsValue,
-          };
-        })
-      );
+      const customersWithStats = (profilesData || []).map((customer: any) => {
+        const orders = ordersByUser.get(customer.id) || { count: 0, total: 0 };
+        const returns = returnsByUser.get(customer.id) || { count: 0, total: 0 };
+        const isBlacklisted = customer.is_blacklisted === true || blacklistedIds.has(customer.id);
+        return {
+          ...customer,
+          is_blacklisted: isBlacklisted,
+          order_count: orders.count,
+          total_spent: orders.total,
+          return_count: returns.count,
+          total_returns_value: returns.total,
+        };
+      });
       
       setCustomers(customersWithStats);
     } catch (error) {
