@@ -152,7 +152,7 @@ function HeroIntro() {
 }
 
 // Minimal product fields needed for product cards — avoids fetching heavy columns like description
-const PRODUCT_FIELDS = 'id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, created_at, tags, category_id';
+const PRODUCT_FIELDS = 'id, name, slug, price, compare_at_price, main_image_url, stock_quantity, low_stock_threshold, sizes, colors, gender, is_active, created_at, tags, category_id';
 
 export default function Home() {
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
@@ -215,48 +215,26 @@ export default function Home() {
 
   const fetchInitialProducts = async () => {
     try {
-      // Get products from last 10 days as New Arrivals
       const tenDaysAgo = new Date();
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-      
-      const { data: arrivals } = await supabase
-        .from('products')
-        .select(PRODUCT_FIELDS)
-        .eq('is_active', true)
-        .gte('created_at', tenDaysAgo.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(productsPerPage);
 
-      // Get Women's products
-      const { data: women } = await supabase
-        .from('products')
-        .select(PRODUCT_FIELDS)
-        .eq('is_active', true)
-        .eq('gender', 'women')
-        .order('created_at', { ascending: false })
-        .limit(productsPerPage);
-
-      // Get Men's products
-      const { data: men } = await supabase
-        .from('products')
-        .select(PRODUCT_FIELDS)
-        .eq('is_active', true)
-        .eq('gender', 'men')
-        .order('created_at', { ascending: false })
-        .limit(productsPerPage);
-
-      // Get initial batch of all products for infinite scroll
-      const { data: all, count } = await supabase
+      const { data: all, count, error } = await supabase
         .from('products')
         .select(PRODUCT_FIELDS, { count: 'exact' })
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .range(0, productsPerPage - 1);
+        .limit(60);
 
-      setNewArrivals(arrivals || []);
-      setWomenProducts(women || []);
-      setMenProducts(men || []);
-      setAllProducts(all || []);
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
+      }
+
+      const products = all || [];
+      setNewArrivals(products.filter(p => new Date(p.created_at) >= tenDaysAgo).slice(0, productsPerPage));
+      setWomenProducts(products.filter(p => p.gender === 'women').slice(0, productsPerPage));
+      setMenProducts(products.filter(p => p.gender === 'men').slice(0, productsPerPage));
+      setAllProducts(products.slice(0, productsPerPage));
       setHasMore((count || 0) > productsPerPage);
     } catch (error) {
       console.error('Error fetching products:', error);

@@ -39,6 +39,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return !!data;
   };
 
+  // Single query: fetch profile and check blacklist together
+  const fetchProfileAndCheckBlacklist = async (userId: string): Promise<{ blacklisted: boolean; profile: Profile | null }> => {
+    const [blacklistRes, profileRes] = await Promise.all([
+      supabase.from('blacklist').select('id').eq('entity_id', userId).eq('entity_type', 'customer').eq('is_active', true).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+    ]);
+    const blacklisted = !!blacklistRes.data || !!profileRes.data?.is_blacklisted;
+    return { blacklisted, profile: profileRes.data ?? null };
+  };
+
   const forceSignOut = async (userId: string) => {
     blockingRef.current = true;
     localStorage.removeItem(`profile_${userId}`);
@@ -79,11 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(loadingTimeout);
 
       if (session?.user) {
-        // Set state immediately — don't wait for blacklist check
-        setSession(session);
-        setUser(session.user);
-
-        // Load cached profile instantly
+        // Load cached profile instantly & show UI
         const cached = localStorage.getItem(`profile_${session.user.id}`);
         if (cached) {
           try {
@@ -91,20 +97,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!parsed?.is_blacklisted) setProfile(parsed);
           } catch { /* ignore */ }
         }
-
-        // Show UI immediately
+        setSession(session);
+        setUser(session.user);
         setLoading(false);
 
-        // Blacklist check + fresh profile fetch in background
-        isUserBlacklisted(session.user.id).then(async (blacklisted) => {
+        // Single combined query: blacklist + profile in background
+        fetchProfileAndCheckBlacklist(session.user.id).then(async ({ blacklisted, profile: p }) => {
           if (blacklisted) {
             await forceSignOut(session.user.id);
             return;
           }
-          fetchProfile(session.user.id);
-        }).catch(() => {
-          fetchProfile(session.user.id);
-        });
+          if (p) {
+            setProfile(p);
+            localStorage.setItem(`profile_${session.user.id}`, JSON.stringify(p));
+          }
+        }).catch(() => { /* silently ignore */ });
       } else {
         setLoading(false);
       }
@@ -114,44 +121,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // If we triggered this event by force-signing out a blacklisted user, ignore it
       if (blockingRef.current) return;
 
       (async () => {
         if (session?.user) {
-          // FIRST: check blacklist before setting any state
-          const blacklisted = await isUserBlacklisted(session.user.id);
+          // Single combined query: blacklist + profile
+          const { blacklisted, profile: p } = await fetchProfileAndCheckBlacklist(session.user.id);
           if (blacklisted) {
             await forceSignOut(session.user.id);
             window.location.replace('/auth?blocked=1');
             return;
           }
 
-          // Also check profile's is_blacklisted field
-          const { data: pd } = await supabase
-            .from('profiles')
-            .select('is_blacklisted')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          if (pd?.is_blacklisted) {
-            await forceSignOut(session.user.id);
-            window.location.replace('/auth?blocked=1');
-            return;
-          }
-
-          // Only set user/session AFTER blacklist check passes
           setSession(session);
           setUser(session.user);
 
-          // Load cached profile
-          const cached = localStorage.getItem(`profile_${session.user.id}`);
-          if (cached) {
-            try {
-              const parsed = JSON.parse(cached);
-              if (!parsed?.is_blacklisted) setProfile(parsed);
-            } catch { /* ignore */ }
+          if (p) {
+            setProfile(p);
+            localStorage.setItem(`profile_${session.user.id}`, JSON.stringify(p));
           }
-          await fetchProfile(session.user.id);
+          setLoading(false);
         } else {
           setSession(null);
           setUser(null);
@@ -213,15 +202,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('No user logged in');
     const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
     if (error) throw error;
-    await fetchProfile(user.id);
-    if (profile) {
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify({ ...profile, ...updates }));
+    const { profile: p } = await fetchProfileAndCheckBlacklist(user.id);
+    if (p) {
+      setProfile(p);
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(p));
     }
   };
 
   const refreshProfile = async () => {
     if (!user) return;
-    await fetchProfile(user.id);
+    const { profile: p } = await fetchProfileAndCheckBlacklist(user.id);
+    if (p) {
+      setProfile(p);
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(p));
+    }
   };
 
   return (
