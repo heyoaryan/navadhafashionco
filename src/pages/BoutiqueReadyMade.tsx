@@ -8,10 +8,11 @@ export default function BoutiqueReadyMade() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('latest');
+  const [genderFilter, setGenderFilter] = useState<'all' | 'men' | 'women'>('all');
 
   useEffect(() => {
     fetchProducts();
-  }, [sortBy]);
+  }, [sortBy, genderFilter]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -21,6 +22,10 @@ export default function BoutiqueReadyMade() {
         .select('*')
         .eq('is_active', true)
         .contains('tags', ['made']);
+
+      if (genderFilter !== 'all') {
+        query = query.eq('gender', genderFilter);
+      }
 
       if (sortBy === 'latest') {
         query = query.order('created_at', { ascending: false });
@@ -101,18 +106,27 @@ export default function BoutiqueReadyMade() {
                   {products.length} {products.length === 1 ? 'piece' : 'pieces'} available
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Filter className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                >
-                  <option value="latest">Latest Arrivals</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                </select>
-              </div>
+                <div className="flex items-center gap-3">
+                  <Filter className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <select
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value as 'all' | 'men' | 'women')}
+                    className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  >
+                    <option value="all">All</option>
+                    <option value="men">Men</option>
+                    <option value="women">Women</option>
+                  </select>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  >
+                    <option value="latest">Latest Arrivals</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                  </select>
+                </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {products.map((product) => (
