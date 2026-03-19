@@ -985,6 +985,17 @@ export default function ProductDetail() {
             </div>
           ) : null}
 
+          {/* Bespoke Customization toggle button — above buy buttons on mobile */}
+          {isBespoke && !showBespokeForm && (
+            <button
+              onClick={() => setShowBespokeForm(true)}
+              className="sm:hidden w-full py-3.5 px-6 text-sm font-semibold rounded-lg transition-all transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 border-2 border-rose-400 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 text-rose-500 hover:text-rose-600"
+            >
+              <Scissors className="w-4 h-4" />
+              Bespoke Customization — Design Yours
+            </button>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {isBespoke ? (
               // Bespoke: show normal buy buttons + a "Customize This" button
@@ -1102,11 +1113,11 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {/* Bespoke Customization toggle button */}
-          {isBespoke && (
+          {/* Bespoke Customization toggle button — below buy buttons on desktop only */}
+          {isBespoke && !showBespokeForm && (
             <button
               onClick={() => setShowBespokeForm(true)}
-              className="w-full py-3.5 px-6 text-sm font-semibold rounded-lg transition-all transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 border-2 border-rose-400 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 text-rose-500 hover:text-rose-600"
+              className="hidden sm:flex w-full py-3.5 px-6 text-sm font-semibold rounded-lg transition-all transform hover:scale-[1.01] active:scale-95 items-center justify-center gap-2 border-2 border-rose-400 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 text-rose-500 hover:text-rose-600"
             >
               <Scissors className="w-4 h-4" />
               Bespoke Customization — Design Yours

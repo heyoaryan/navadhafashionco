@@ -1062,6 +1062,7 @@ export default function ProductForm() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) handleImageUpload(index, file);
+                          e.target.value = '';
                         }}
                       />
                     </label>
