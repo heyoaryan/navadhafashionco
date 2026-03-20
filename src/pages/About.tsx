@@ -175,11 +175,11 @@ export default function About() {
       </section>
 
       {/* ── FOUNDER'S VISION ── */}
-      <section className="py-14 sm:py-20 lg:py-24" style={{ background: 'linear-gradient(135deg, #fdf2f8, #faf5ff)' }}>
+      <section className="py-14 sm:py-20 lg:py-24 bg-pink-50 dark:bg-gray-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection animation="animate-fade-in-up" className="text-center mb-10 sm:mb-14">
             <p className="text-xs tracking-[0.35em] uppercase text-pink-500 font-light mb-3">The Founder</p>
-            <h2 className="brand-title text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-gray-900">
+            <h2 className="brand-title text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white">
               A Daughter's Promise
             </h2>
             <Divider />
@@ -197,7 +197,7 @@ export default function About() {
                 Watching her shaped my vision. I wanted the world to see what I saw every day — a woman whose artistry deserved recognition. NAVADHA was created to transform that belief into reality.
               </p>
               <div className="pt-2">
-                <p className="text-base sm:text-lg font-semibold text-gray-900" style={{ fontFamily: 'Playfair Display, serif' }}>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
                   — Aanchal Mishra
                 </p>
                 <p className="text-xs sm:text-sm text-pink-500 tracking-widest uppercase">Founder &amp; Creative Director</p>
@@ -303,11 +303,11 @@ export default function About() {
       </section>
 
       {/* ── WOMEN OF NAVADHA ── */}
-      <section className="py-14 sm:py-20 lg:py-24" style={{ background: 'linear-gradient(135deg, #fdf2f8, #faf5ff)' }}>
+      <section className="py-14 sm:py-20 lg:py-24 bg-pink-50 dark:bg-gray-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection animation="animate-fade-in-up" className="text-center mb-10 sm:mb-14">
             <p className="text-xs tracking-[0.35em] uppercase text-pink-500 font-light mb-3">Our Heart</p>
-            <h2 className="brand-title text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-gray-900">
+            <h2 className="brand-title text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white">
               Strength Woven Into Every Thread
             </h2>
             <Divider />
