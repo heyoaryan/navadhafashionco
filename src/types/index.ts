@@ -73,6 +73,7 @@ export interface Product {
   id: string;
   name: string;
   slug: string;
+  product_images?: Array<{ image_url: string; display_order: number }>;
   description: string | null;
   price: number;
   compare_at_price: number | null;

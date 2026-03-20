@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Gem, Truck, RotateCcw } from 'lucide-react';
+import { ArrowRight, Gem, Truck, RotateCcw, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
@@ -160,6 +160,8 @@ export default function Home() {
   const [menProducts, setMenProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchDone, setFetchDone] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -214,32 +216,47 @@ export default function Home() {
   }, [hasMore, loadingMore, page]);
 
   const fetchInitialProducts = async () => {
+    setLoading(true);
+    setFetchError(false);
+    setFetchDone(false);
+    setAllProducts([]);
+    setNewArrivals([]);
+    setWomenProducts([]);
+    setMenProducts([]);
+    setPage(1);
+    setHasMore(true);
+    // Max 15 seconds skeleton — then show error
+    const safetyTimer = setTimeout(() => { setLoading(false); setFetchError(true); }, 15000);
     try {
-      const tenDaysAgo = new Date();
-      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-
       const { data: all, count, error } = await supabase
         .from('products')
         .select(PRODUCT_FIELDS, { count: 'exact' })
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(60);
+        .limit(24);
 
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('Supabase products error:', error.message, error.code, error.details);
+        setFetchError(true);
         return;
       }
 
       const products = all || [];
-      setNewArrivals(products.filter(p => new Date(p.created_at) >= tenDaysAgo).slice(0, productsPerPage));
+      // New arrivals: only products from last 30 days — no fallback
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      setNewArrivals(products.filter(p => new Date(p.created_at) >= thirtyDaysAgo).slice(0, productsPerPage));
       setWomenProducts(products.filter(p => p.gender === 'women').slice(0, productsPerPage));
       setMenProducts(products.filter(p => p.gender === 'men').slice(0, productsPerPage));
       setAllProducts(products.slice(0, productsPerPage));
       setHasMore((count || 0) > productsPerPage);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setFetchError(true);
     } finally {
+      clearTimeout(safetyTimer);
       setLoading(false);
+      setFetchDone(true);
     }
   };
 
@@ -288,7 +305,7 @@ export default function Home() {
       <SEO />
       <HeroIntro />
 
-      {/* New Arrivals Section */}
+      {/* New Arrivals Section — only show if loading or has products */}
       {(loading || newArrivals.length > 0) && (
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
@@ -296,13 +313,9 @@ export default function Home() {
               <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">New Arrivals</h2>
               <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Fresh styles for the season</p>
             </div>
-            {!loading && (
-              <Link
-                to="/shop?filter=new"
-                className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
-              >
-                View All
-                <ArrowRight className="w-4 h-4" />
+            {!loading && newArrivals.length > 0 && (
+              <Link to="/shop?filter=new" className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4">
+                View All <ArrowRight className="w-4 h-4" />
               </Link>
             )}
           </div>
@@ -324,13 +337,9 @@ export default function Home() {
                 <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
                 <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
               </div>
-              {!loading && (
-                <Link
-                  to="/shop?gender=women"
-                  className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
-                >
-                  View All
-                  <ArrowRight className="w-4 h-4" />
+              {!loading && womenProducts.length > 0 && (
+                <Link to="/shop?gender=women" className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4">
+                  View All <ArrowRight className="w-4 h-4" />
                 </Link>
               )}
             </div>
@@ -352,13 +361,9 @@ export default function Home() {
               <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">Men's Collection</h2>
               <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Contemporary fashion for modern men</p>
             </div>
-            {!loading && (
-              <Link
-                to="/shop?gender=men"
-                className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
-              >
-                View All
-                <ArrowRight className="w-4 h-4" />
+            {!loading && menProducts.length > 0 && (
+              <Link to="/shop?gender=men" className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4">
+                View All <ArrowRight className="w-4 h-4" />
               </Link>
             )}
           </div>
@@ -371,46 +376,70 @@ export default function Home() {
         </section>
       )}
 
-      {/* All Products with Infinite Scroll */}
-      {(loading || allProducts.length > 0) && (
-        <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
-          <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8 sm:mb-12">
-              <div>
-                <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
-                <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
-              </div>
-              {!loading && (
-                <Link
-                  to="/shop"
-                  className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4"
-                >
-                  View All
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              )}
+      {/* All Products — always visible: skeleton while loading, products or empty state after */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-gray-900">
+        <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8 sm:mb-12">
+            <div>
+              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
+              <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              {loading
-                ? Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)
-                : allProducts.map((product) => <ProductCard key={product.id} product={product} />)
-              }
-            </div>
-
-            {/* Infinite scroll trigger */}
-            {!loading && hasMore && (
-              <div ref={observerTarget} className="flex justify-center mt-8">
-                {loadingMore && (
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <div className="rounded-full h-6 w-6 border-4 border-rose-200 border-t-rose-400 animate-spin"></div>
-                    <span className="text-sm sm:text-base">Loading more...</span>
-                  </div>
-                )}
-              </div>
+            {!loading && allProducts.length > 0 && (
+              <Link to="/shop" className="text-xs sm:text-sm hover:text-rose-400 transition-colors flex items-center gap-2 flex-shrink-0 ml-4">
+                View All <ArrowRight className="w-4 h-4" />
+              </Link>
             )}
           </div>
-        </section>
-      )}
+
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+              {Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : fetchError ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 mb-4 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 font-medium mb-4">Couldn't load products. Check your connection.</p>
+              <button
+                onClick={fetchInitialProducts}
+                className="px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
+                style={{ backgroundColor: '#EE458F' }}
+              >
+                Try Again
+              </button>
+            </div>
+          ) : allProducts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                {allProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+              </div>
+              {hasMore && (
+                <div ref={observerTarget} className="flex justify-center mt-8">
+                  {loadingMore && (
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <div className="rounded-full h-6 w-6 border-4 border-rose-200 border-t-rose-400 animate-spin"></div>
+                      <span className="text-sm sm:text-base">Loading more...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : fetchDone ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-5">
+                <ShoppingBag className="w-9 h-9 text-gray-400 dark:text-gray-500" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No Products Yet</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+                Our collection is being curated. Check back soon for new arrivals.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </section>
 
       {/* Features Section */}
       <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-gray-800 dark:to-gray-900">

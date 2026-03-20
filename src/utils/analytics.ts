@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase';
 
-// Generate a session ID for tracking unique visitors
 const getSessionId = (): string => {
   try {
     let sessionId = sessionStorage.getItem('analytics_session_id');
@@ -12,6 +11,20 @@ const getSessionId = (): string => {
   } catch {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+};
+
+// Cache user ID from session — no extra DB call
+let cachedUserId: string | null | undefined = undefined;
+supabase.auth.getSession().then(({ data: { session } }) => {
+  cachedUserId = session?.user?.id ?? null;
+});
+supabase.auth.onAuthStateChange((_event, session) => {
+  cachedUserId = session?.user?.id ?? null;
+});
+
+const getUserId = (): string | null => {
+  // undefined = not yet resolved, null = logged out
+  return cachedUserId ?? null;
 };
 
 // --- Batching queue ---
@@ -26,7 +39,7 @@ let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const enqueue = (table: string, payload: Record<string, unknown>) => {
   eventQueue.push({ table, payload });
   if (!flushTimer) {
-    flushTimer = setTimeout(flushQueue, 2000); // flush every 2s
+    flushTimer = setTimeout(flushQueue, 3000); // flush every 3s
   }
 };
 
@@ -34,7 +47,6 @@ const flushQueue = async () => {
   flushTimer = null;
   if (eventQueue.length === 0) return;
 
-  // Group by table
   const byTable: Record<string, Record<string, unknown>[]> = {};
   while (eventQueue.length > 0) {
     const event = eventQueue.shift()!;
@@ -42,7 +54,6 @@ const flushQueue = async () => {
     byTable[event.table].push(event.payload);
   }
 
-  // Batch insert per table
   await Promise.allSettled(
     Object.entries(byTable).map(([table, rows]) =>
       supabase.from(table).insert(rows)
@@ -50,64 +61,47 @@ const flushQueue = async () => {
   );
 };
 
-// Flush on page unload
 if (typeof window !== 'undefined') {
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushQueue();
   });
 }
 
-// Track page view
-export const trackPageView = async (pageUrl: string, pageTitle?: string) => {
+export const trackPageView = (pageUrl: string, pageTitle?: string) => {
   try {
-    const sessionId = getSessionId();
-    const { data: { user } } = await supabase.auth.getUser();
     const url = new URL(pageUrl, window.location.origin);
-
     enqueue('page_views', {
       page_url: pageUrl,
       page_path: url.pathname,
       page_title: pageTitle || document.title,
-      user_id: user?.id || null,
-      session_id: sessionId,
+      user_id: getUserId(),
+      session_id: getSessionId(),
       referrer: document.referrer || null,
       user_agent: navigator.userAgent,
     });
-  } catch {
-    // Silently fail — analytics must not break the app
-  }
+  } catch { /* silently fail */ }
 };
 
-// Track product view/click
-export const trackProductAction = async (
+export const trackProductAction = (
   productId: string,
   actionType: 'view' | 'click' | 'add_to_cart' | 'add_to_wishlist'
 ) => {
   try {
-    const sessionId = getSessionId();
-    const { data: { user } } = await supabase.auth.getUser();
-
     enqueue('product_analytics', {
       product_id: productId,
-      user_id: user?.id || null,
-      session_id: sessionId,
+      user_id: getUserId(),
+      session_id: getSessionId(),
       action_type: actionType,
     });
-  } catch {
-    // Silently fail
-  }
+  } catch { /* silently fail */ }
 };
 
-// Track user signup
-export const trackSignup = async (userId: string, signupMethod: string = 'email') => {
+export const trackSignup = (userId: string, signupMethod: string = 'email') => {
   try {
-    const sessionId = getSessionId();
     enqueue('signup_tracking', {
       user_id: userId,
-      session_id: sessionId,
+      session_id: getSessionId(),
       signup_method: signupMethod,
     });
-  } catch {
-    // Silently fail
-  }
+  } catch { /* silently fail */ }
 };

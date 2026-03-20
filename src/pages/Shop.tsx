@@ -13,6 +13,7 @@ export default function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -30,14 +31,15 @@ export default function Shop() {
   const isNewArrivals = filterType === 'new';
 
   useEffect(() => {
-    // Only fetch categories once
     if (!categoriesFetched.current) {
       categoriesFetched.current = true;
       fetchCategories();
+    } else {
+      // categories already loaded, fetch products immediately
+      setPage(1);
+      setProducts([]);
+      fetchProducts(1);
     }
-    setPage(1);
-    setProducts([]);
-    fetchProducts(1);
   }, [selectedCategory, selectedGender, sortBy, priceRange, filterType, searchQuery]);
 
   useEffect(() => {
@@ -61,47 +63,53 @@ export default function Shop() {
         .eq('is_active', true)
         .order('display_order');
 
-      // Filter to only show Women category (exclude Men, Streetwear, Essentials, Boutique)
       const allowedCategories = ['women'];
       const filteredCategories = (data || []).filter(cat => 
         allowedCategories.includes(cat.slug.toLowerCase())
       );
       
       setCategories(filteredCategories);
+      // Pass freshly loaded categories directly to avoid stale closure
+      setPage(1);
+      setProducts([]);
+      fetchProducts(1, filteredCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      // Still fetch products even if categories fail
+      setPage(1);
+      setProducts([]);
+      fetchProducts(1, []);
     }
   };
 
-  const fetchProducts = async (pageNum: number = 1) => {
+  const fetchProducts = async (pageNum: number = 1, currentCategories?: Category[]) => {
+    const cats = currentCategories ?? categories;
     if (pageNum === 1) {
       setLoading(true);
+      setFetchError(false);
     } else {
       setLoadingMore(true);
     }
-    
+    const timeout = pageNum === 1 ? setTimeout(() => { setLoading(false); setFetchError(true); }, 10000) : null;
     try {
       let query = supabase
         .from('products')
-        .select('id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season', { count: 'exact' })
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season', { count: 'exact' })
         .eq('is_active', true);
 
-      // Handle search query - exact phrase match
       if (searchQuery) {
         const phrase = searchQuery.trim();
         query = query.or(`name.ilike.%${phrase}%,description.ilike.%${phrase}%`);
       }
 
-      // Handle filter type (new arrivals, featured, etc.)
       if (filterType === 'new') {
-        // Get products from last 10 days
-        const tenDaysAgo = new Date();
-        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-        query = query.gte('created_at', tenDaysAgo.toISOString());
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        query = query.gte('created_at', thirtyDaysAgo.toISOString());
       }
 
       if (selectedCategory) {
-        const category = categories.find(c => c.slug === selectedCategory);
+        const category = cats.find(c => c.slug === selectedCategory);
         if (category) {
           query = query.eq('category_id', category.id);
         }
@@ -148,7 +156,9 @@ export default function Shop() {
       setHasMore(hasMoreProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
+      if (pageNum === 1) setFetchError(true);
     } finally {
+      if (timeout) clearTimeout(timeout);
       setLoading(false);
       setLoadingMore(false);
     }
@@ -157,7 +167,7 @@ export default function Shop() {
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchProducts(nextPage);
+    fetchProducts(nextPage, categories);
   };
 
   const handleFilterChange = (key: string, value: string) => {
@@ -407,6 +417,23 @@ export default function Shop() {
         <div className="flex-1">
           {loading ? (
             <LoadingState type="skeleton" skeletonType="product" skeletonCount={6} />
+          ) : fetchError ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-20 h-20 mb-6 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">Failed to load products</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-6">Check your connection and try again.</p>
+              <button
+                onClick={() => fetchProducts(1)}
+                className="px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
+                style={{ backgroundColor: '#EE458F' }}
+              >
+                Try Again
+              </button>
+            </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-20 h-20 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">

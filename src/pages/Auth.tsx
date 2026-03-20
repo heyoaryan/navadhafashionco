@@ -72,7 +72,7 @@ export default function Auth() {
         }
 
         const pendingCartItemStr = localStorage.getItem('pendingCartItem');
-        if (pendingCartItemStr) {
+        if (pendingCartItemStr && action !== 'buyNow') {
           try {
             const pendingCartItem = JSON.parse(pendingCartItemStr);
             const oneHour = 60 * 60 * 1000;
@@ -89,7 +89,21 @@ export default function Auth() {
           }
         }
         if (from) {
-          if (action === 'buyNow') navigate('/checkout');
+          if (action === 'buyNow') {
+            const pendingBuyNowStr = localStorage.getItem('pendingBuyNow');
+            let directBuy = undefined;
+            if (pendingBuyNowStr) {
+              try {
+                const parsed = JSON.parse(pendingBuyNowStr);
+                const oneHour = 60 * 60 * 1000;
+                if (Date.now() - parsed.timestamp < oneHour) {
+                  directBuy = parsed;
+                }
+              } catch { /* ignore */ }
+              localStorage.removeItem('pendingBuyNow');
+            }
+            navigate('/checkout', { state: directBuy ? { directBuy } : undefined });
+          }
           else if (action === 'addToCart') navigate('/cart');
           else navigate(from);
         } else if (profile.role === 'admin') {

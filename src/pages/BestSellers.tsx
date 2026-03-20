@@ -13,6 +13,7 @@ interface ProductWithSales extends Product {
 export default function BestSellers() {
   const [products, setProducts] = useState<ProductWithSales[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [filter, setFilter] = useState<'all' | 'men' | 'women'>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -28,15 +29,16 @@ export default function BestSellers() {
   const fetchBestSellers = async (pageNum: number = 1) => {
     if (pageNum === 1) {
       setLoading(true);
+      setFetchError(false);
     } else {
       setLoadingMore(true);
     }
-    
+    const timeout = pageNum === 1 ? setTimeout(() => { setLoading(false); setFetchError(true); }, 10000) : null;
     try {
       // Step 1: Get all active products (only needed fields)
       let productQuery = supabase
         .from('products')
-        .select('id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
         .eq('is_active', true);
 
       if (filter !== 'all') {
@@ -46,28 +48,39 @@ export default function BestSellers() {
       const { data: allProducts, error: productError } = await productQuery;
       if (productError) throw productError;
 
-      // Step 2: Get sales counts from completed orders only (exclude cancelled/refunded)
-      const { data: salesData, error: salesError } = await supabase
-        .from('order_items')
-        .select('product_id, quantity, orders!inner(status)')
-        .in('orders.status', ['processing', 'shipped', 'delivered'])
-        .limit(5000);
+      // Step 2: Try to get sales counts — may fail due to RLS, that's okay
+      let salesMap = new Map<string, number>();
+      try {
+        const { data: salesData } = await supabase
+          .from('order_items')
+          .select('product_id, quantity, order_id')
+          .limit(5000);
 
-      if (salesError) throw salesError;
+        const { data: validOrders } = await supabase
+          .from('orders')
+          .select('id')
+          .in('status', ['processing', 'shipped', 'delivered']);
 
-      // Step 3: Aggregate sales per product
-      const salesMap = new Map<string, number>();
-      salesData?.forEach((item: any) => {
-        const pid = item.product_id;
-        salesMap.set(pid, (salesMap.get(pid) || 0) + (item.quantity || 0));
-      });
+        const validOrderIds = new Set((validOrders || []).map((o: any) => o.id));
 
-      // Step 4: Merge and sort — products with most sales first, unsold products last
+        (salesData || []).forEach((item: any) => {
+          if (validOrderIds.has(item.order_id)) {
+            const pid = item.product_id;
+            salesMap.set(pid, (salesMap.get(pid) || 0) + (item.quantity || 0));
+          }
+        });
+      } catch {
+        // Sales data unavailable — products will still show sorted by latest
+      }
+
+      // Step 3: Only keep products that have been sold, sorted by most sold first
+      // Only show products that have been sold, sorted by most sold first
       const allSortedProducts: ProductWithSales[] = (allProducts || [])
         .map(p => ({ ...p, sales_count: salesMap.get(p.id) || 0 }))
+        .filter(p => p.sales_count > 0)
         .sort((a, b) => b.sales_count - a.sales_count);
 
-      // Step 5: Paginate
+      // Step 4: Paginate
       const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
       const paginatedProducts = allSortedProducts.slice(from, from + PRODUCTS_PER_PAGE);
 
@@ -80,8 +93,9 @@ export default function BestSellers() {
       setHasMore(allSortedProducts.length > pageNum * PRODUCTS_PER_PAGE);
     } catch (error) {
       console.error('Error fetching best sellers:', error);
-      setProducts([]);
+      if (pageNum === 1) setFetchError(true);
     } finally {
+      if (timeout) clearTimeout(timeout);
       setLoading(false);
       setLoadingMore(false);
     }
@@ -94,12 +108,41 @@ export default function BestSellers() {
   };
 
   if (loading) {
-    return <LoadingState type="page" message="Finding Most Loved..." variant="pulse" />;
+    return (
+      <>
+        <SEO 
+          title="Most Loved - Top Trending Fashion"
+          description="Shop our best-selling products. Discover what everyone is loving from Navadha Fashion Co."
+        />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-rose-50/30 to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+          <div className="relative bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 text-center">
+              <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 rounded-full border border-rose-200 dark:border-rose-800">
+                <Award className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Most Popular</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">Most Loved</h1>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[3/4] w-full mb-3" />
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded h-4 w-3/4 mb-2" />
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
     <>
-      <SEO 
+      <SEO
         title="Most Loved - Top Trending Fashion"
         description="Shop our best-selling products. Discover what everyone is loving from Navadha Fashion Co."
       />
@@ -186,11 +229,27 @@ export default function BestSellers() {
 
         {/* Products Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          {products.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[3/4] w-full mb-3" />
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded h-4 w-3/4 mb-2" />
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : fetchError ? (
             <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
               <Award className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">No most loved products available</p>
-              <p className="text-gray-500 dark:text-gray-500 text-sm">Check back soon for trending products!</p>
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">No trending products right now</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm">Check back soon — our best sellers will appear here!</p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <Award className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">No trending products right now</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm">Check back soon — our best sellers will appear here!</p>
             </div>
           ) : (
             <>

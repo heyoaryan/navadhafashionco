@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Snowflake, Heart, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
-import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
 
 export default function WomenWinterCollection() {
@@ -30,7 +29,6 @@ export default function WomenWinterCollection() {
   }, [searchQuery]);
 
   const fetchWinterProducts = async (pageNum: number) => {
-    const startTime = Date.now();
     if (pageNum === 1) setLoading(true); else setLoadingMore(true);
     try {
       const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
@@ -50,12 +48,8 @@ export default function WomenWinterCollection() {
     } catch (error) {
       console.error('Error fetching winter products:', error);
     } finally {
-      if (pageNum === 1) {
-        const elapsedTime = Date.now() - startTime;
-        setTimeout(() => setLoading(false), Math.max(0, 800 - elapsedTime));
-      } else {
-        setLoadingMore(false);
-      }
+      setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -64,10 +58,6 @@ export default function WomenWinterCollection() {
     setPage(next);
     fetchWinterProducts(next);
   };
-
-  if (loading) {
-    return <LoadingState type="page" message="Loading Winter Collection..." variant="pulse" />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -131,7 +121,17 @@ export default function WomenWinterCollection() {
 
       {/* Products Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        {products.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-200 dark:bg-gray-700 rounded-xl aspect-[3/4] w-full mb-3" />
+                <div className="bg-gray-200 dark:bg-gray-700 rounded h-4 w-3/4 mb-2" />
+                <div className="bg-gray-200 dark:bg-gray-700 rounded h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
           <div className="text-center py-20">
             <Snowflake className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" />
             <p className="text-gray-600 dark:text-gray-400 text-lg">No winter products available at the moment.</p>

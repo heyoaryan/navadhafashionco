@@ -56,22 +56,12 @@ export default function Orders() {
       // Auto-cancel stuck pending orders (payment not completed)
       const pendingOrders = allOrders.filter(o => o.status === 'pending');
       if (pendingOrders.length > 0) {
-        await Promise.all(
-          pendingOrders.map(o => {
-            const cancelNote = o.payment_method === 'online'
-              ? 'Order cancelled due to incomplete payment. If amount was debited, it will be refunded within 5-7 business days.'
-              : 'Order cancelled due to incomplete checkout.';
-            // Preserve bespoke notes
-            let finalNote = cancelNote;
-            try {
-              const parsed = o.notes ? JSON.parse(o.notes) : null;
-              if (parsed?.type === 'bespoke') {
-                finalNote = JSON.stringify({ ...parsed, cancelReason: cancelNote });
-              }
-            } catch {}
-            return supabase.from('orders').update({ status: 'cancelled', notes: finalNote }).eq('id', o.id);
-          })
-        );
+      // Batch cancel all pending orders in one query
+      const pendingIds = pendingOrders.map(o => o.id);
+      await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .in('id', pendingIds);
         // Re-fetch after update
         const { data: refreshed } = await supabase
           .from('orders')
@@ -264,31 +254,30 @@ export default function Orders() {
         ? orderReturns.find(r => r.return_type === 'exchange' && (r.status === 'approved' || r.status === 'completed'))
         : null;
 
-      // Create return for all items in the order
-      for (const item of (orderItems || [])) {
-        const { error: insertError } = await supabase.from('returns').insert({
-          order_id: selectedOrder.id,
-          order_item_id: item.id,
-          user_id: user.id,
-          product_id: item.product_id,
-          product_name: item.product_name,
-          product_image: item.product_image,
-          quantity: item.quantity,
-          size: item.size,
-          color: item.color,
-          price: item.price,
-          reason: returnReason,
-          reason_details: returnDetails,
-          refund_amount: item.subtotal,
-          images: returnImages,
-          return_type: returnType,
-          previous_return_id: previousReturn?.id || null,
-          status: 'pending'
-        });
-        if (insertError) {
-          console.error('[RETURN INSERT ERROR]', insertError);
-          throw insertError;
-        }
+      // Batch insert all return items in one query
+      const returnRows = (orderItems || []).map(item => ({
+        order_id: selectedOrder.id,
+        order_item_id: item.id,
+        user_id: user.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        product_image: item.product_image,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: item.price,
+        reason: returnReason,
+        reason_details: returnDetails,
+        refund_amount: item.subtotal,
+        images: returnImages,
+        return_type: returnType,
+        previous_return_id: previousReturn?.id || null,
+        status: 'pending'
+      }));
+      const { error: insertError } = await supabase.from('returns').insert(returnRows);
+      if (insertError) {
+        console.error('[RETURN INSERT ERROR]', insertError);
+        throw insertError;
       }
       
       showToast(

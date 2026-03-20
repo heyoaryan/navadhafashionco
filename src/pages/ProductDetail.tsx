@@ -26,6 +26,7 @@ export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [cartSuccess, setCartSuccess] = useState(false);
@@ -75,6 +76,10 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (slug) {
+      setProduct(null);
+      setImages([]);
+      setReviews([]);
+      setSelectedImage(0);
       fetchProduct();
     }
   }, [slug]);
@@ -108,22 +113,24 @@ export default function ProductDetail() {
 
   const fetchProduct = async () => {
     setLoading(true);
+    setFetchError(false);
     // Safety timeout — never stay stuck on loading screen
-    const timeout = setTimeout(() => setLoading(false), 15000);
+    const timeout = setTimeout(() => { setLoading(false); setFetchError(true); }, 15000);
     try {
-      const { data: productData } = await supabase
+      const { data: productData, error } = await supabase
         .from('products')
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)
         .maybeSingle();
 
-      if (productData) {
+      if (error) {
+        setFetchError(true);
+      } else if (productData) {
         setProduct(productData);
         
-        // Track product view and click
+        // Track product view only once
         trackProductAction(productData.id, 'view');
-        trackProductAction(productData.id, 'click');
         
         if (productData.sizes && productData.sizes.length > 0) {
           setSelectedSize(productData.sizes[0]);
@@ -153,6 +160,7 @@ export default function ProductDetail() {
       }
     } catch (error) {
       console.error('Error fetching product:', error);
+      setFetchError(true);
     } finally {
       clearTimeout(timeout);
       setLoading(false);
@@ -165,7 +173,7 @@ export default function ProductDetail() {
     try {
       const { data } = await supabase
         .from('products')
-        .select('id, name, slug, price, sale_price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id')
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id')
         .eq('is_active', true)
         .eq('gender', product.gender || 'women')
         .neq('id', product.id)
@@ -219,6 +227,20 @@ export default function ProductDetail() {
 
   const handleBuyNow = () => {
     if (!user) {
+      // Save directBuy data so Auth can restore it after login
+      if (product) {
+        const pendingBuyNow = {
+          productId: product.id,
+          productName: product.name,
+          productImage: images[0]?.image_url || product.main_image_url,
+          price: product.sale_price ?? product.price,
+          quantity,
+          size: selectedSize,
+          color: selectedColor,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem('pendingBuyNow', JSON.stringify(pendingBuyNow));
+      }
       navigate('/auth', { state: { from: `/product/${slug}`, action: 'buyNow' } });
       return;
     }
@@ -539,6 +561,22 @@ export default function ProductDetail() {
   }
 
   if (!product) {
+    if (fetchError) {
+      return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <h2 className="text-2xl font-light mb-2">Something went wrong</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">Could not load the product. Please check your connection and try again.</p>
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={() => fetchProduct()} className="px-5 py-2.5 bg-rose-500 text-white rounded-lg text-sm hover:bg-rose-600 transition-colors">
+              Try Again
+            </button>
+            <Link to="/shop" className="text-rose-400 hover:text-rose-500 text-sm">
+              Continue shopping
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
         <h2 className="text-2xl font-light mb-4">Product not found</h2>

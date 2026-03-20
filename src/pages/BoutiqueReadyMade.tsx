@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard';
 export default function BoutiqueReadyMade() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [sortBy, setSortBy] = useState('latest');
   const [genderFilter, setGenderFilter] = useState<'all' | 'men' | 'women'>('all');
 
@@ -16,12 +17,14 @@ export default function BoutiqueReadyMade() {
 
   const fetchProducts = async () => {
     setLoading(true);
+    setError(false);
+    const timeout = setTimeout(() => { setLoading(false); setError(true); }, 10000);
     try {
       let query = supabase
         .from('products')
-        .select('*')
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
         .eq('is_active', true)
-        .contains('tags', ['made']);
+        .or('tags.cs.{"made"},tags.cs.{"ready-made"},tags.cs.{"boutique"}');
 
       if (genderFilter !== 'all') {
         query = query.eq('gender', genderFilter);
@@ -35,11 +38,40 @@ export default function BoutiqueReadyMade() {
         query = query.order('price', { ascending: false });
       }
 
-      const { data } = await query;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+      const { data, error: fetchErr } = await query;
+      if (fetchErr) throw fetchErr;
+
+      let result = data || [];
+
+      // Fallback: if no tag-matched products, show all active products
+      if (result.length === 0) {
+        let fallbackQuery = supabase
+          .from('products')
+          .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
+          .eq('is_active', true);
+
+        if (genderFilter !== 'all') {
+          fallbackQuery = fallbackQuery.eq('gender', genderFilter);
+        }
+
+        if (sortBy === 'latest') {
+          fallbackQuery = fallbackQuery.order('created_at', { ascending: false });
+        } else if (sortBy === 'price-low') {
+          fallbackQuery = fallbackQuery.order('price', { ascending: true });
+        } else if (sortBy === 'price-high') {
+          fallbackQuery = fallbackQuery.order('price', { ascending: false });
+        }
+
+        const { data: fallback } = await fallbackQuery;
+        result = fallback || [];
+      }
+
+      setProducts(result);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError(true);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
@@ -134,17 +166,44 @@ export default function BoutiqueReadyMade() {
               ))}
             </div>
           </>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-xl">
+              <Package className="w-20 h-20 text-purple-300 dark:text-purple-700 mx-auto mb-6" />
+              <h3 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-white">
+                Something went wrong
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
+                We couldn't load the collection. Please try again.
+              </p>
+              <button
+                onClick={fetchProducts}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors font-medium"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="text-center py-20">
             <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-xl">
               <Package className="w-20 h-20 text-purple-300 dark:text-purple-700 mx-auto mb-6" />
               <h3 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-white">
-                Coming Soon
+                No Products Found
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Our exquisite ready-made collection is being curated. 
-                Check back soon for stunning pieces!
+                {genderFilter !== 'all'
+                  ? `No ready-made pieces available for ${genderFilter} right now. Try viewing all.`
+                  : 'Our ready-made collection is being curated. Check back soon!'}
               </p>
+              {genderFilter !== 'all' && (
+                <button
+                  onClick={() => setGenderFilter('all')}
+                  className="mt-6 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors font-medium"
+                >
+                  View All
+                </button>
+              )}
             </div>
           </div>
         )}

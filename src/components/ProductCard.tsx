@@ -26,39 +26,39 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
   const inWishlist = isInWishlist(product.id);
   const isOutOfStock = product.stock_quantity === 0;
 
-  useEffect(() => { fetchProductImages(); }, [product.id]);
+  useEffect(() => {
+    // Always show main_image_url immediately — no blank state, no extra DB call
+    if (product.main_image_url) {
+      setImages([product.main_image_url]);
+    } else {
+      // Only hit DB if there's no main_image_url at all
+      supabase
+        .from('product_images')
+        .select('image_url')
+        .eq('product_id', product.id)
+        .order('display_order', { ascending: true })
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setImages(data.map(img => img.image_url));
+          } else {
+            setImages(['https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
+          }
+        })
+        .catch(() => {
+          setImages(['https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
+        });
+    }
+  }, [product.id, product.main_image_url]);
 
   useEffect(() => {
     if (images.length > 1) {
       const interval = setInterval(() => {
         setCurrentImageIndex((prev) => (prev + 1) % images.length);
-      }, 5000);
+      }, 3000);
       return () => clearInterval(interval);
     }
   }, [images.length]);
-
-  const fetchProductImages = async () => {
-    // Use main_image_url immediately to avoid blank state
-    if (product.main_image_url) {
-      setImages([product.main_image_url]);
-    }
-    try {
-      const { data } = await supabase
-        .from('product_images')
-        .select('image_url')
-        .eq('product_id', product.id)
-        .order('display_order', { ascending: true });
-      if (data && data.length > 0) {
-        setImages(data.map(img => img.image_url));
-      } else if (!product.main_image_url) {
-        setImages(['https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
-      }
-    } catch {
-      if (!product.main_image_url) {
-        setImages(['https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=600']);
-      }
-    }
-  };
 
   const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();

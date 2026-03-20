@@ -59,9 +59,9 @@ export default function AdminDashboard() {
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   useEffect(() => {
-    fetchStats();
-    fetchRecentOrders();
-    // Fetch all distinct year-months that have orders — cached in ref
+    // Run all initial fetches in parallel
+    Promise.all([fetchStats(), fetchRecentOrders()]);
+    // Fetch only created_at for year/month picker — minimal data
     supabase.from('orders').select('created_at').then(({ data }) => {
       if (!data) return;
       allOrderDatesRef.current = data;
@@ -69,7 +69,6 @@ export default function AdminDashboard() {
       data.forEach(o => yearSet.add(new Date(o.created_at).getFullYear()));
       const years = Array.from(yearSet).sort((a, b) => b - a);
       setAvailableYears(years);
-
       const monthsForYear = new Set<number>();
       data.forEach(o => {
         const d = new Date(o.created_at);
@@ -133,69 +132,39 @@ export default function AdminDashboard() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Today's orders (non-cancelled)
-      const { data: todayOrdersData } = await supabase
-        .from('orders')
-        .select('total, status')
-        .gte('created_at', today.toISOString());
+      // All queries in parallel — single round trip
+      const [
+        todayOrdersRes,
+        todayReturnsRes,
+        allOrdersRes,
+        refundReturnsRes,
+        productsRes,
+        customersRes,
+      ] = await Promise.all([
+        supabase.from('orders').select('total, status').gte('created_at', today.toISOString()),
+        supabase.from('returns').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+        supabase.from('orders').select('total, status'),
+        supabase.from('returns').select('refund_amount, return_type').eq('status', 'completed'),
+        supabase.from('products').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'customer'),
+      ]);
 
-      const todayNonCancelled = todayOrdersData?.filter(o => o.status !== 'cancelled') || [];
-      const todaySales = todayNonCancelled.reduce((sum, o) => sum + Number(o.total), 0);
-      const todayOrders = todayNonCancelled.length;
-      const todayCancelled = todayOrdersData?.filter(o => o.status === 'cancelled').length || 0;
-
-      // Today's returns
-      const { count: todayReturnsCount } = await supabase
-        .from('returns')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today.toISOString());
-
-      // All orders
-      const { data: allOrders } = await supabase
-        .from('orders')
-        .select('total, status');
-
-      const totalRevenue = allOrders
-        ?.filter(o => o.status !== 'cancelled')
-        .reduce((sum, o) => sum + Number(o.total), 0) || 0;
-
-      const totalOrders = allOrders?.filter(o => o.status !== 'cancelled').length || 0;
-      const totalCancelled = allOrders?.filter(o => o.status === 'cancelled').length || 0;
-
-      // Total refund: only 2nd returns (return_type = 'refund'), completed
-      const { data: refundReturns } = await supabase
-        .from('returns')
-        .select('refund_amount, return_type')
-        .eq('status', 'completed');
-
-      const totalRefund = refundReturns
-        ?.filter(r => r.return_type === 'refund')
-        .reduce((sum, r) => sum + Number(r.refund_amount), 0) || 0;
-
-      // Total exchange count: 1st returns (return_type = 'exchange')
-      const totalExchange = refundReturns?.filter(r => r.return_type === 'exchange').length || 0;
-
-      const { count: productsCount } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
-
-      const { count: customersCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'customer');
+      const todayNonCancelled = todayOrdersRes.data?.filter(o => o.status !== 'cancelled') || [];
+      const allOrders = allOrdersRes.data || [];
+      const refundReturns = refundReturnsRes.data || [];
 
       setStats({
-        todaySales,
-        todayOrders,
-        todayCancelled,
-        todayReturns: todayReturnsCount || 0,
-        totalRevenue,
-        totalOrders,
-        totalCancelled,
-        totalRefund,
-        totalExchange,
-        totalProducts: productsCount || 0,
-        totalCustomers: customersCount || 0,
+        todaySales: todayNonCancelled.reduce((sum, o) => sum + Number(o.total), 0),
+        todayOrders: todayNonCancelled.length,
+        todayCancelled: todayOrdersRes.data?.filter(o => o.status === 'cancelled').length || 0,
+        todayReturns: todayReturnsRes.count || 0,
+        totalRevenue: allOrders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total), 0),
+        totalOrders: allOrders.filter(o => o.status !== 'cancelled').length,
+        totalCancelled: allOrders.filter(o => o.status === 'cancelled').length,
+        totalRefund: refundReturns.filter(r => r.return_type === 'refund').reduce((sum, r) => sum + Number(r.refund_amount), 0),
+        totalExchange: refundReturns.filter(r => r.return_type === 'exchange').length,
+        totalProducts: productsRes.count || 0,
+        totalCustomers: customersRes.count || 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);

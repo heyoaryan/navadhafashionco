@@ -58,6 +58,7 @@ export default function Boutique() {
   const [customizeProducts, setCustomizeProducts] = useState<Product[]>([]);
   const [madeProducts, setMadeProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   const scrollY = useScrollTransform();
   const card1Animation = useScrollAnimation(100);
@@ -77,28 +78,53 @@ export default function Boutique() {
   }, []);
 
   const fetchProducts = async () => {
+    setLoading(true);
+    setFetchError(false);
+    const timeout = setTimeout(() => { setLoading(false); setFetchError(true); }, 10000);
     try {
-      // Fetch products with 'customize' tag
+      // Fetch products with 'customize' / 'bespoke' tags
       const { data: customize } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
         .eq('is_active', true)
-        .contains('tags', ['customize'])
+        .or('tags.cs.{"customize"},tags.cs.{"customization"},tags.cs.{"bespoke"}')
         .limit(4);
 
-      // Fetch products with 'made' tag
+      // Fetch products with 'made' / 'ready-made' / 'boutique' tags
       const { data: made } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
         .eq('is_active', true)
-        .contains('tags', ['made'])
+        .or('tags.cs.{"made"},tags.cs.{"ready-made"},tags.cs.{"boutique"}')
         .limit(4);
 
-      setCustomizeProducts(customize || []);
-      setMadeProducts(made || []);
+      // Fallback: if no tag-matched products, show latest active products
+      let customizeResult = customize || [];
+      let madeResult = made || [];
+
+      if (customizeResult.length === 0 && madeResult.length === 0) {
+        const { data: fallback } = await supabase
+          .from('products')
+          .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, product_images(image_url, display_order)')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(8);
+        const all = fallback || [];
+        customizeResult = all.slice(0, 4);
+        madeResult = all.slice(4, 8);
+      } else if (customizeResult.length === 0) {
+        customizeResult = madeResult.slice(0, 4);
+      } else if (madeResult.length === 0) {
+        madeResult = customizeResult.slice(0, 4);
+      }
+
+      setCustomizeProducts(customizeResult);
+      setMadeProducts(madeResult);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setFetchError(true);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
