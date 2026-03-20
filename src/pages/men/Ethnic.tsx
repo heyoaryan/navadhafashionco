@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function MenEthnic() {
   };
 
   return (
+    <>
+      <SEO
+        title="Men's Ethnic Wear - Kurtas, Sherwanis & More | NAVADHA"
+        description="Shop men's ethnic wear at NAVADHA. Premium kurtas, sherwanis, nehru jackets, and traditional Indian clothing for men. Perfect for festivals and celebrations."
+        keywords="men ethnic wear India, kurta for men, sherwani online, nehru jacket, Indian traditional wear men, men ethnic fashion, festival wear men"
+        url="https://navadha.com/men/ethnic"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function MenEthnic() {
         )}
       </div>
     </div>
+    </>
   );
 }

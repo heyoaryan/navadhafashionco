@@ -1,7 +1,15 @@
 import { Leaf, Recycle, Heart, Users } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Sustainability() {
   return (
+    <>
+      <SEO
+        title="Sustainability - Fashion with a Conscience | NAVADHA"
+        description="At NAVADHA, sustainability is woven into every aspect of our business. Discover our commitment to eco-friendly fashion, ethical sourcing, and conscious manufacturing practices."
+        keywords="sustainable fashion India, eco friendly clothing, ethical fashion brand, conscious fashion, NAVADHA sustainability, green fashion India"
+        url="https://navadha.com/sustainability"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -67,5 +75,6 @@ export default function Sustainability() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { Scissors, Filter, Sparkles, Ruler, Palette } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 export default function BoutiqueCustomization() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,6 +69,13 @@ export default function BoutiqueCustomization() {
   };
 
   return (
+    <>
+      <SEO
+        title="Bespoke Customization - Design Your Dream Outfit | NAVADHA"
+        description="Get a bespoke outfit crafted just for you at NAVADHA. Choose your fabric, embroidery, and design. Our expert designers bring your vision to life with precision and artistry."
+        keywords="bespoke fashion India, custom outfit, tailored clothing India, custom embroidery, designer customization, made to measure India, NAVADHA bespoke"
+        url="https://navadha.com/boutique/customization"
+      />
     <div className="min-h-screen bg-gradient-to-b from-white via-rose-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Hero Section */}
       <section className="relative min-h-[50vh] flex items-center justify-center bg-gradient-to-br from-rose-100 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-rose-900/20 dark:to-gray-900">
@@ -181,5 +189,6 @@ export default function BoutiqueCustomization() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function WomenGymAttire() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Gym & Activewear - Stylish Sportswear | NAVADHA"
+        description="Shop women's gym attire and activewear at NAVADHA. Stylish and functional sportswear, yoga wear, and gym outfits. Performance meets fashion. Free shipping above ₹2,999."
+        keywords="women gym wear India, women activewear, yoga wear women, sports clothing women, gym outfit women, workout clothes India"
+        url="https://navadha.com/women/gym-attire"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function WomenGymAttire() {
         )}
       </div>
     </div>
+    </>
   );
 }

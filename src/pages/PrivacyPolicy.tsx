@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 export default function PrivacyPolicy() {
   return (
     <>
-      <SEO title="Privacy Policy | NAVADHA Fashion Co" description="Privacy Policy for NAVADHA Fashion Co" />
+      <SEO title="Privacy Policy | NAVADHA Fashion Co" description="Read NAVADHA Fashion Co's privacy policy. Learn how we collect, use, and protect your personal information when you shop with us." keywords="NAVADHA privacy policy, data protection, personal information, online shopping privacy" url="https://navadha.com/privacy" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-light" style={{ color: '#EE458F' }}>Privacy Policy</h1>

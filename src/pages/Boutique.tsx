@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Package, ArrowRight, Star, Scissors, Palette, Ruler, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
+import SEO from '../components/SEO';
 import ProductCard from '../components/ProductCard';
 
 // Custom hook for scroll animations
@@ -130,6 +131,13 @@ export default function Boutique() {
   };
 
   return (
+    <>
+      <SEO
+        title="Boutique - Ready-Made & Bespoke Customization | NAVADHA"
+        description="Explore NAVADHA's exclusive boutique collection. Shop premium ready-made pieces or get a bespoke outfit crafted just for you. Custom embroidery, fabric selection, and designer consultation."
+        keywords="boutique fashion India, bespoke clothing, custom outfit India, ready made boutique, designer boutique, custom embroidery, tailored fashion India, NAVADHA boutique"
+        url="https://navadha.com/boutique"
+      />
     <div className="min-h-screen bg-gradient-to-b from-white via-rose-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pb-24 sm:pb-28 md:pb-32 lg:pb-40">
@@ -577,5 +585,6 @@ export default function Boutique() {
         </section>
       </div>
     </div>
+    </>
   );
 }

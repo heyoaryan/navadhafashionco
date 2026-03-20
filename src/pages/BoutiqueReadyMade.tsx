@@ -4,6 +4,7 @@ import { Package, Filter, Star, Truck, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 export default function BoutiqueReadyMade() {
   const [searchParams] = useSearchParams();
@@ -89,6 +90,13 @@ export default function BoutiqueReadyMade() {
   };
 
   return (
+    <>
+      <SEO
+        title="Boutique Ready-Made Collection | NAVADHA Fashion Co"
+        description="Shop NAVADHA's exclusive ready-made boutique collection. Premium handcrafted pieces with exceptional quality, unique designs, and free shipping above ₹2,999."
+        keywords="ready made boutique India, premium fashion, handcrafted clothing, boutique collection, designer ready to wear, NAVADHA special collection"
+        url="https://navadha.com/boutique/ready-made"
+      />
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/20 to-pink-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Hero Section */}
       <section className="relative min-h-[50vh] flex items-center justify-center bg-gradient-to-br from-purple-100 via-pink-50 to-rose-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900">
@@ -221,5 +229,6 @@ export default function BoutiqueReadyMade() {
         )}
       </div>
     </div>
+    </>
   );
 }

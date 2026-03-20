@@ -1,7 +1,15 @@
 import { Truck, Package } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Shipping() {
   return (
+    <>
+      <SEO
+        title="Shipping Information - Fast Pan India Delivery | NAVADHA"
+        description="NAVADHA offers free shipping on orders above ₹2,999. Standard delivery in 3-7 days across India. Express shipping available. Track your order easily."
+        keywords="NAVADHA shipping, free shipping India, fashion delivery, order tracking, express delivery, pan India shipping"
+        url="https://navadha.com/shipping"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -49,5 +57,6 @@ export default function Shipping() {
         </div>
       </div>
     </div>
+    </>
   );
 }

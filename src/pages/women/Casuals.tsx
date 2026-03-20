@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function WomenCasuals() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Casual Wear - Everyday Fashion | NAVADHA"
+        description="Shop women's casual wear at NAVADHA. Comfortable yet stylish everyday outfits, casual tops, pants, and more. Premium quality fashion for every day. Free shipping above ₹2,999."
+        keywords="women casual wear India, casual clothes women, everyday fashion India, comfortable women clothing, casual tops online India"
+        url="https://navadha.com/women/casuals"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function WomenCasuals() {
         )}
       </div>
     </div>
+    </>
   );
 }

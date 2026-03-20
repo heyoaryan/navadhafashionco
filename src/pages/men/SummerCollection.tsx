@@ -4,6 +4,7 @@ import { Sun, Wind, Droplets } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 export default function MenSummerCollection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,6 +61,13 @@ export default function MenSummerCollection() {
   };
 
   return (
+    <>
+      <SEO
+        title="Men's Summer Collection - Cool & Stylish Fashion | NAVADHA"
+        description="Shop NAVADHA's men's summer collection. Cool, lightweight, and stylish summer outfits for men. Breathable fabrics and vibrant designs perfect for the season."
+        keywords="men summer collection India, summer clothes men, summer fashion men India, light clothing men, summer shirts India, cool outfits men"
+        url="https://navadha.com/men/summer-collection"
+      />
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-orange-400 via-amber-500 to-yellow-400 dark:from-orange-600 dark:via-amber-700 dark:to-yellow-600">
@@ -173,5 +181,6 @@ export default function MenSummerCollection() {
         )}
       </div>
     </div>
+    </>
   );
 }

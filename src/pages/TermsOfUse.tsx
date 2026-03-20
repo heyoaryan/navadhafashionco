@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 export default function TermsOfUse() {
   return (
     <>
-      <SEO title="Terms of Use | NAVADHA Fashion Co" description="Terms of Use for NAVADHA Fashion Co" />
+      <SEO title="Terms of Use | NAVADHA Fashion Co" description="Read NAVADHA Fashion Co's terms of use. Understand the terms and conditions governing your use of our website and services." keywords="NAVADHA terms of use, terms and conditions, user agreement, shopping terms" url="https://navadha.com/terms" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-light" style={{ color: '#EE458F' }}>Terms of Use</h1>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Briefcase, Clock, ArrowLeft, ChevronDown } from 'lucide-react';
 import JobApplicationModal from '../../components/JobApplicationModal';
 import { supabase } from '../../lib/supabase';
+import SEO from '../../components/SEO';
 
 interface JobPosition {
   id: string;
@@ -66,6 +67,13 @@ export default function StoreCareers() {
   }
 
   return (
+    <>
+      <SEO
+        title="Store Careers - In-Store Jobs at NAVADHA Fashion Co"
+        description="Join NAVADHA's in-store team. Explore retail, styling, and store management career opportunities. Be part of a premium fashion brand with a passion for style."
+        keywords="store jobs fashion India, retail fashion jobs, in-store careers, fashion retail India, NAVADHA store jobs, fashion stylist jobs"
+        url="https://navadha.com/careers/store"
+      />
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hero Section */}
       <div className="relative h-[50vh] min-h-[400px] bg-gray-900 overflow-hidden">
@@ -255,5 +263,6 @@ export default function StoreCareers() {
         jobPositionId={applicationModal.jobPositionId}
       />
     </div>
+    </>
   );
 }

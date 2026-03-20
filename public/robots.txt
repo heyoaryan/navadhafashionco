@@ -1,4 +1,28 @@
 User-agent: *
 Allow: /
 
+# Block admin and private pages
+Disallow: /admin/
+Disallow: /account/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /auth
+Disallow: /auth/callback
+
+# Allow important pages
+Allow: /shop
+Allow: /product/
+Allow: /women/
+Allow: /men/
+Allow: /boutique/
+Allow: /best-sellers
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /shipping
+Allow: /returns
+Allow: /careers
+Allow: /sustainability
+Allow: /size-guide
+
 Sitemap: https://navadha.com/sitemap.xml

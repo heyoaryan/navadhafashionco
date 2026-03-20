@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -113,6 +114,13 @@ export default function FAQ() {
   ];
 
   return (
+    <>
+      <SEO
+        title="FAQ - Frequently Asked Questions | NAVADHA Fashion Co"
+        description="Find answers to common questions about shopping at NAVADHA — orders, payments, shipping, returns, sizing, and more. We're here to help."
+        keywords="NAVADHA FAQ, fashion store questions, shipping policy India, return policy, size guide, payment methods, order tracking"
+        url="https://navadha.com/faq"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -190,5 +198,6 @@ export default function FAQ() {
         </div>
       </div>
     </div>
+    </>
   );
 }

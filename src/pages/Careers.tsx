@@ -1,7 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Users, Target, Rocket, FileText, Video, CheckCircle, ArrowLeft } from 'lucide-react';export default function Careers() {
+import { ArrowRight, Users, Target, Rocket, FileText, Video, CheckCircle, ArrowLeft } from 'lucide-react';
+import SEO from '../components/SEO';
+
+export default function Careers() {
 
   return (
+    <>
+      <SEO
+        title="Careers at NAVADHA - Join Our Fashion Team"
+        description="Join the NAVADHA Fashion Co team. Explore exciting career opportunities in fashion, retail, design, and remote roles. Be part of a growing premium fashion brand."
+        keywords="NAVADHA careers, fashion jobs India, retail jobs, fashion designer jobs, remote fashion jobs, clothing brand careers"
+        url="https://navadha.com/careers"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Hero Section with Background Image */}
       <div className="relative h-[70vh] min-h-[500px] bg-gray-900 overflow-hidden">
@@ -186,5 +196,6 @@ import { ArrowRight, Users, Target, Rocket, FileText, Video, CheckCircle, ArrowL
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Heart, Scissors, Sparkles, BookOpen, Users } from 'lucide-react';
+import SEO from '../components/SEO';
 
 // Hook for intersection observer scroll animations
 function useScrollAnimation() {
@@ -58,6 +59,13 @@ function Divider() {
 
 export default function About() {
   return (
+    <>
+      <SEO
+        title="About NAVADHA - Our Story, Vision & Craftsmanship"
+        description="Learn about NAVADHA Fashion Co — born from a mother's devotion and a daughter's vision. Discover our story, our commitment to quality craftsmanship, and our passion for contemporary Indian fashion."
+        keywords="about NAVADHA fashion, NAVADHA story, Indian fashion brand, Aanchal Mishra designer, boutique fashion India, handcrafted clothing, sustainable fashion India"
+        url="https://navadha.com/about"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900 overflow-x-hidden">
 
       {/* ── HERO ── */}
@@ -366,5 +374,6 @@ export default function About() {
       </section>
 
     </div>
+    </>
   );
 }

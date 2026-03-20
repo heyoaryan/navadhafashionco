@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Wifi, Briefcase, Clock, ArrowLeft, ChevronDown } from 'lucide-react';
 import JobApplicationModal from '../../components/JobApplicationModal';
 import { supabase } from '../../lib/supabase';
+import SEO from '../../components/SEO';
 
 interface JobPosition {
   id: string;
@@ -66,6 +67,13 @@ export default function RemoteCareers() {
   }
 
   return (
+    <>
+      <SEO
+        title="Remote Careers - Work From Home at NAVADHA Fashion Co"
+        description="Join NAVADHA's remote team. Explore work-from-home opportunities in fashion, marketing, design, and technology. Flexible roles for passionate fashion enthusiasts."
+        keywords="remote fashion jobs India, work from home fashion, remote careers India, online fashion jobs, NAVADHA remote jobs, fashion internship remote"
+        url="https://navadha.com/careers/remote"
+      />
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hero Section */}
       <div className="relative h-[50vh] min-h-[400px] bg-gray-900 overflow-hidden">
@@ -255,5 +263,6 @@ export default function RemoteCareers() {
         jobPositionId={applicationModal.jobPositionId}
       />
     </div>
+    </>
   );
 }

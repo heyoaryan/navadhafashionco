@@ -1,6 +1,7 @@
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import { useState } from 'react';
 import { validateEmail, validatePhone } from '../utils/validation';
+import SEO from '../components/SEO';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -34,6 +35,13 @@ export default function Contact() {
   };
 
   return (
+    <>
+      <SEO
+        title="Contact Us | NAVADHA Fashion Co"
+        description="Get in touch with NAVADHA Fashion Co. We're here to help with orders, styling advice, returns, and any questions you may have. Reach us via email, phone, or our contact form."
+        keywords="contact NAVADHA, fashion store contact, customer support India, NAVADHA help, fashion brand contact"
+        url="https://navadha.com/contact"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -232,5 +240,6 @@ export default function Contact() {
         </div>
       </div>
     </div>
+    </>
   );
 }

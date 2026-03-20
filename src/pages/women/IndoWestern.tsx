@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function WomenIndoWestern() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Indo-Western Wear - Fusion Fashion | NAVADHA"
+        description="Shop women's indo-western wear at NAVADHA. Fusion fashion that blends Indian tradition with contemporary style. Dhoti pants, cape sets, fusion kurtas, and more."
+        keywords="indo western wear women, fusion fashion India, indo western dress, contemporary Indian fashion, fusion kurta, dhoti pants women"
+        url="https://navadha.com/women/indo-western"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function WomenIndoWestern() {
         )}
       </div>
     </div>
+    </>
   );
 }

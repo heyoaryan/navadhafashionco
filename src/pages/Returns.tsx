@@ -1,7 +1,15 @@
 import { RotateCcw, CheckCircle, XCircle } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Returns() {
   return (
+    <>
+      <SEO
+        title="Returns & Exchanges - Easy 5-Day Returns | NAVADHA"
+        description="NAVADHA offers hassle-free 5-day returns and exchanges. Learn about our return policy, eligible items, and how to initiate a return for your fashion purchase."
+        keywords="NAVADHA returns, fashion return policy, exchange policy, 5 day returns, hassle free returns India"
+        url="https://navadha.com/returns"
+      />
     <div className="min-h-screen bg-white dark:bg-gray-900 py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -92,5 +100,6 @@ export default function Returns() {
         </div>
       </div>
     </div>
+    </>
   );
 }

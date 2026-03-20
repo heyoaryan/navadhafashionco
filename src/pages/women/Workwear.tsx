@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function WomenWorkwear() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Workwear - Professional Fashion | NAVADHA"
+        description="Shop women's workwear at NAVADHA. Elegant and professional clothing for the modern working woman. Blazers, formal tops, trousers, and more. Free shipping above ₹2,999."
+        keywords="women workwear India, professional women clothing, office wear women, formal fashion women, blazer women India, work outfit women"
+        url="https://navadha.com/women/workwear"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function WomenWorkwear() {
         )}
       </div>
     </div>
+    </>
   );
 }

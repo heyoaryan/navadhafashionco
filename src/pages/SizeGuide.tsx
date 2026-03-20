@@ -1,7 +1,15 @@
 import { Ruler } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function SizeGuide() {
   return (
+    <>
+      <SEO
+        title="Size Guide - Find Your Perfect Fit | NAVADHA Fashion Co"
+        description="Use NAVADHA's comprehensive size guide to find your perfect fit. Detailed measurements for women's and men's clothing including ethnic wear, western wear, and more."
+        keywords="size guide India, clothing size chart, women size guide, men size guide, ethnic wear sizing, how to measure clothing size"
+        url="https://navadha.com/size-guide"
+      />
     <div className="min-h-screen py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
@@ -200,5 +208,6 @@ export default function SizeGuide() {
         </div>
       </div>
     </div>
+    </>
   );
 }

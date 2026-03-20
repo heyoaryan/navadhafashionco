@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function MenWorkwear() {
   };
 
   return (
+    <>
+      <SEO
+        title="Men's Workwear - Professional Fashion | NAVADHA"
+        description="Shop men's workwear at NAVADHA. Sharp and professional clothing for the modern working man. Formal shirts, trousers, blazers, and more. Free shipping above ₹2,999."
+        keywords="men workwear India, professional men clothing, office wear men, formal fashion men, men blazer India, work outfit men"
+        url="https://navadha.com/men/workwear"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function MenWorkwear() {
         )}
       </div>
     </div>
+    </>
   );
 }

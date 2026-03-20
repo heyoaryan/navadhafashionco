@@ -187,9 +187,10 @@ export default function Shop() {
   return (
     <div className="min-h-screen">
       <SEO 
-        title={isNewArrivals ? 'New Arrivals - NAVADHA Fashion Co' : 'Shop Collections - NAVADHA Fashion Co'}
-        description={isNewArrivals ? 'Discover the latest additions to our collection. Fresh styles and new arrivals for the modern you.' : 'Browse our complete collection of elegant fashion pieces. Premium quality clothing for every occasion.'}
-        keywords="new arrivals, latest fashion, women clothing, boutique fashion, designer wear, online shopping"
+        title={isNewArrivals ? 'New Arrivals - Latest Fashion | NAVADHA' : selectedCategory ? `${selectedCategory} Collection | NAVADHA Fashion Co` : 'Shop All Collections - Ethnic, Western & More | NAVADHA'}
+        description={isNewArrivals ? 'Discover the latest additions to NAVADHA\'s collection. Fresh styles, new arrivals, and trending fashion for the modern you. Free shipping above ₹2,999.' : 'Browse NAVADHA\'s complete collection of premium fashion. Ethnic wear, western wear, indo-western, boutique pieces and more. Free shipping above ₹2,999.'}
+        keywords={isNewArrivals ? 'new arrivals fashion India, latest fashion, new clothes online, trending fashion India, new collection NAVADHA' : 'shop fashion India, ethnic wear online, western wear women, indo western, boutique fashion, designer wear India, NAVADHA shop'}
+        url={isNewArrivals ? 'https://navadha.com/shop?filter=new' : 'https://navadha.com/shop'}
       />
       {/* Hero Section for New Arrivals */}
       {isNewArrivals && (

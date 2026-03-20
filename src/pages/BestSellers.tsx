@@ -111,8 +111,10 @@ export default function BestSellers() {
     return (
       <>
         <SEO 
-          title="Most Loved - Top Trending Fashion"
-          description="Shop our best-selling products. Discover what everyone is loving from Navadha Fashion Co."
+          title="Most Loved - Best Selling Fashion | NAVADHA"
+          description="Shop NAVADHA's best-selling products. Discover what everyone is loving — top trending ethnic wear, western wear, and more. Free shipping above ₹2,999."
+          keywords="best sellers fashion India, top selling clothes, trending fashion India, most popular clothing, NAVADHA best sellers, top rated fashion"
+          url="https://navadha.com/best-sellers"
         />
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-rose-50/30 to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
           <div className="relative bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -143,8 +145,10 @@ export default function BestSellers() {
   return (
     <>
       <SEO
-        title="Most Loved - Top Trending Fashion"
-        description="Shop our best-selling products. Discover what everyone is loving from Navadha Fashion Co."
+        title="Most Loved - Best Selling Fashion | NAVADHA"
+        description="Shop NAVADHA's best-selling products. Discover what everyone is loving — top trending ethnic wear, western wear, and more. Free shipping above ₹2,999."
+        keywords="best sellers fashion India, top selling clothes, trending fashion India, most popular clothing, NAVADHA best sellers, top rated fashion"
+        url="https://navadha.com/best-sellers"
       />
       
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-rose-50/30 to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">

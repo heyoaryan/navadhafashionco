@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function MenCasuals() {
   };
 
   return (
+    <>
+      <SEO
+        title="Men's Casual Wear - Everyday Style | NAVADHA"
+        description="Shop men's casual wear at NAVADHA. Comfortable and stylish everyday outfits, casual shirts, t-shirts, and more. Premium quality fashion for men. Free shipping above ₹2,999."
+        keywords="men casual wear India, casual clothes men, everyday fashion men, men shirts online, casual t-shirts India, men clothing online"
+        url="https://navadha.com/men/casuals"
+      />
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
@@ -129,5 +137,6 @@ export default function MenCasuals() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -299,7 +299,19 @@ export default function Home() {
 
   return (
     <div>
-      <SEO />
+      <SEO
+        title="NAVADHA Fashion Co - Premium Ethnic & Contemporary Fashion Online"
+        description="Shop premium ethnic wear, western wear, indo-western, boutique pieces & bespoke customization at NAVADHA. Free shipping above ₹2,999. Pan India delivery in 3-7 days."
+        keywords="NAVADHA fashion, ethnic wear online India, women western wear, indo western dress, boutique fashion India, designer kurta, lehenga online, men ethnic wear, bespoke customization, online fashion store India"
+        url="https://navadha.com"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": "NAVADHA Fashion Collections",
+          "description": "Premium fashion collections including ethnic wear, western wear, indo-western and boutique pieces",
+          "url": "https://navadha.com/shop"
+        }}
+      />
       <HeroIntro />
 
       {/* New Arrivals Section — only show if loading or has products */}

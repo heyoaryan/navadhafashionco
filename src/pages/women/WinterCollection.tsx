@@ -4,6 +4,7 @@ import { Snowflake, Heart, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 export default function WomenWinterCollection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,6 +61,13 @@ export default function WomenWinterCollection() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Winter Collection - Cozy & Stylish Fashion | NAVADHA"
+        description="Shop NAVADHA's women's winter collection. Warm, cozy, and stylish winter outfits. Sweaters, shawls, jackets, and layering pieces for the cold season."
+        keywords="women winter collection India, winter clothes women, winter fashion India, warm clothing women, sweater women India, winter outfits"
+        url="https://navadha.com/women/winter-collection"
+      />
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800">
@@ -173,5 +181,6 @@ export default function WomenWinterCollection() {
         )}
       </div>
     </div>
+    </>
   );
 }

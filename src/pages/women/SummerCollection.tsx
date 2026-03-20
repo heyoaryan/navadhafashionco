@@ -4,6 +4,7 @@ import { Sun, Wind, Droplets } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 export default function WomenSummerCollection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,6 +61,13 @@ export default function WomenSummerCollection() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Summer Collection - Light & Breezy Fashion | NAVADHA"
+        description="Shop NAVADHA's women's summer collection. Light, breezy, and stylish summer outfits perfect for the season. Breathable fabrics, vibrant colors, and contemporary designs."
+        keywords="women summer collection India, summer clothes women, summer fashion India, light clothing women, summer dresses India, breezy outfits"
+        url="https://navadha.com/women/summer-collection"
+      />
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-orange-400 via-amber-500 to-yellow-400 dark:from-orange-600 dark:via-amber-700 dark:to-yellow-600">
@@ -170,5 +178,6 @@ export default function WomenSummerCollection() {
         )}
       </div>
     </div>
+    </>
   );
 }

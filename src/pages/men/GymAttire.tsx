@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function MenGymAttire() {
   };
 
   return (
+    <>
+      <SEO
+        title="Men's Gym & Activewear - Performance Sportswear | NAVADHA"
+        description="Shop men's gym attire and activewear at NAVADHA. High-performance sportswear, gym outfits, and workout clothes for men. Style meets function. Free shipping above ₹2,999."
+        keywords="men gym wear India, men activewear, men sportswear, gym outfit men, workout clothes men India, men fitness wear"
+        url="https://navadha.com/men/gym-attire"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function MenGymAttire() {
         )}
       </div>
     </div>
+    </>
   );
 }

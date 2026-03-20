@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function WomenWestern() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Western Wear - Tops, Dresses & More | NAVADHA"
+        description="Shop women's western wear at NAVADHA. Trendy tops, dresses, co-ords, and more. Premium quality contemporary fashion for the modern woman. Free shipping above ₹2,999."
+        keywords="women western wear India, western dresses online, women tops online, contemporary fashion women, trendy clothes India, NAVADHA western"
+        url="https://navadha.com/women/western"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function WomenWestern() {
         )}
       </div>
     </div>
+    </>
   );
 }

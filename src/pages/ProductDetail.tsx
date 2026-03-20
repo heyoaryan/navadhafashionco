@@ -592,6 +592,41 @@ export default function ProductDetail() {
     ? product.description.replace(/<[^>]*>/g, '').slice(0, 160)
     : `Shop ${product.name} at NAVADHA Fashion Co. ₹${product.price.toLocaleString()} — Premium quality fashion.`;
 
+  const productStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "description": productDescription,
+    "image": productImage,
+    "url": productUrl,
+    "brand": {
+      "@type": "Brand",
+      "name": "NAVADHA Fashion Co"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": productUrl,
+      "priceCurrency": "INR",
+      "price": (product as any).sale_price ?? product.price,
+      "availability": product.stock_quantity > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "NAVADHA Fashion Co"
+      }
+    },
+    ...(reviews.length > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": averageRating.toFixed(1),
+        "reviewCount": reviews.length,
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    })
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
       <SEO
@@ -600,6 +635,7 @@ export default function ProductDetail() {
         image={productImage}
         url={productUrl}
         type="product"
+        structuredData={productStructuredData}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 mb-12 sm:mb-16">
         <div className="space-y-4">

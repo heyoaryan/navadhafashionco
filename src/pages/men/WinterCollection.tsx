@@ -4,6 +4,7 @@ import { Snowflake, Wind, Flame } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 export default function MenWinterCollection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,6 +61,13 @@ export default function MenWinterCollection() {
   };
 
   return (
+    <>
+      <SEO
+        title="Men's Winter Collection - Warm & Stylish Fashion | NAVADHA"
+        description="Shop NAVADHA's men's winter collection. Warm, cozy, and stylish winter outfits for men. Jackets, sweaters, and layering pieces for the cold season."
+        keywords="men winter collection India, winter clothes men, winter fashion men India, warm clothing men, men jacket India, winter outfits men"
+        url="https://navadha.com/men/winter-collection"
+      />
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-800 dark:to-gray-900">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-700 via-blue-800 to-indigo-900 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950">
@@ -173,5 +181,6 @@ export default function MenWinterCollection() {
         )}
       </div>
     </div>
+    </>
   );
 }

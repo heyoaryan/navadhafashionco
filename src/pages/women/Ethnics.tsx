@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import LoadingState from '../../components/LoadingState';
 import { Product } from '../../types';
+import SEO from '../../components/SEO';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -64,6 +65,13 @@ export default function WomenEthnics() {
   };
 
   return (
+    <>
+      <SEO
+        title="Women's Ethnic Wear - Kurtas, Sarees & More | NAVADHA"
+        description="Shop women's ethnic wear at NAVADHA. Beautiful kurtas, sarees, lehengas, salwar suits, and more. Authentic Indian ethnic fashion with premium quality. Free shipping above ₹2,999."
+        keywords="women ethnic wear India, kurta online, saree online, lehenga online, salwar suit, Indian ethnic fashion, traditional wear women"
+        url="https://navadha.com/women/ethnics"
+      />
     <div className="min-h-screen">
       <section className="relative min-h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden py-8 sm:py-0">
         <div 
@@ -127,5 +135,6 @@ export default function WomenEthnics() {
         )}
       </div>
     </div>
+    </>
   );
 }
