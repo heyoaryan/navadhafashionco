@@ -107,7 +107,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-200 dark:border-gray-800 pt-6 sm:pt-8 flex flex-col gap-4 sm:gap-6">
           <div className="flex items-center justify-center gap-6">
-            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
+            <a href="https://www.instagram.com/navadha.fashionco?igsh=MWJkc2c2MXhkbTh1eg==" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
               <Instagram className="w-5 h-5" />
             </a>
             <a href="mailto:navadhafashionco@gmail.com" className="text-gray-600 dark:text-gray-400 hover:text-rose-400 transition-colors">
