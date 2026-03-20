@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus, Camera, X, Play, CheckCircle, Lock, Bell } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
+import { savePendingIntent } from '../lib/pendingIntent';
 import { Product, ProductImage, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -187,25 +188,10 @@ export default function ProductDetail() {
 
   const handleAddToCart = async () => {
     if (!user) {
-      // Store pending cart item in localStorage
       if (product) {
-        const pendingCartItem = {
-          productId: product.id,
-          quantity: quantity,
-          size: selectedSize,
-          color: selectedColor,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('pendingCartItem', JSON.stringify(pendingCartItem));
+        savePendingIntent({ action: 'addToCart', productId: product.id, quantity, size: selectedSize || undefined, color: selectedColor || undefined });
       }
-      
-      // Redirect to auth with action flag
-      navigate('/auth', { 
-        state: { 
-          from: `/product/${slug}`,
-          action: 'addToCart'
-        } 
-      });
+      navigate('/auth', { state: { from: `/product/${slug}`, action: 'addToCart' } });
       return;
     }
     
@@ -226,20 +212,11 @@ export default function ProductDetail() {
   };
 
   const handleBuyNow = () => {
+    const productPrice = (product as any)?.sale_price ?? product?.price ?? 0;
+
     if (!user) {
-      // Save directBuy data so Auth can restore it after login
       if (product) {
-        const pendingBuyNow = {
-          productId: product.id,
-          productName: product.name,
-          productImage: images[0]?.image_url || product.main_image_url,
-          price: product.sale_price ?? product.price,
-          quantity,
-          size: selectedSize,
-          color: selectedColor,
-          timestamp: Date.now(),
-        };
-        localStorage.setItem('pendingBuyNow', JSON.stringify(pendingBuyNow));
+        savePendingIntent({ action: 'buyNow', productId: product.id, productName: product.name, price: productPrice, quantity, size: selectedSize || undefined, color: selectedColor || undefined });
       }
       navigate('/auth', { state: { from: `/product/${slug}`, action: 'buyNow' } });
       return;
@@ -247,17 +224,16 @@ export default function ProductDetail() {
 
     if (!product) return;
 
-    // Go directly to checkout with product info, no cart involved
     navigate('/checkout', {
       state: {
         directBuy: {
           productId: product.id,
           productName: product.name,
-          productImage: images[0]?.image_url || product.main_image_url,
-          price: product.sale_price ?? product.price,
+          productImage: images[0]?.image_url || product.main_image_url || '',
+          price: productPrice,
           quantity,
-          size: selectedSize,
-          color: selectedColor,
+          size: selectedSize || undefined,
+          color: selectedColor || undefined,
         }
       }
     });

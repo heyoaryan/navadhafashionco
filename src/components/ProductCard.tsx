@@ -6,6 +6,7 @@ import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useState, useEffect, memo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { savePendingIntent } from '../lib/pendingIntent';
 import { trackProductAction } from '../utils/analytics';
 import OptimizedImage from './OptimizedImage';
 
@@ -63,7 +64,7 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) {
-      localStorage.setItem('pendingCartItem', JSON.stringify({ productId: product.id, quantity: 1, size: undefined, color: undefined, timestamp: Date.now() }));
+      savePendingIntent({ action: 'addToCart', productId: product.id, quantity: 1 });
       navigate('/auth', { state: { from: `/product/${product.slug}`, action: 'addToCart' } });
       return;
     }

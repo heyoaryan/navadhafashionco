@@ -17,16 +17,19 @@ export default function Checkout() {
   const { cartItems, cartTotal, clearCart, removeFromCart } = useCart();
   const { showToast } = useToast();
 
-  // directBuy: bypass cart entirely
-  const directBuy = location.state?.directBuy as {
-    productId: string;
-    productName: string;
-    productImage?: string;
-    price: number;
-    quantity: number;
-    size?: string;
-    color?: string;
-  } | undefined;
+  // directBuy: from router state (email login) OR query param (OAuth redirect)
+  const directBuy = (() => {
+    if (location.state?.directBuy) return location.state.directBuy as {
+      productId: string; productName: string; productImage?: string;
+      price: number; quantity: number; size?: string; color?: string;
+    };
+    const param = new URLSearchParams(location.search).get('directBuy');
+    if (param) {
+      try { return JSON.parse(decodeURIComponent(param)) as { productId: string; productName: string; productImage?: string; price: number; quantity: number; size?: string; color?: string; }; }
+      catch { return undefined; }
+    }
+    return undefined;
+  })();
 
   // selectedCartIds: only checkout selected items from cart
   const selectedCartIds = location.state?.selectedCartIds as string[] | undefined;
@@ -35,6 +38,7 @@ export default function Checkout() {
   const checkoutItems = useMemo(() => {
     if (directBuy) {
       return [{
+        id: 'direct-buy',
         product_id: directBuy.productId,
         quantity: directBuy.quantity,
         size: directBuy.size,
@@ -951,6 +955,15 @@ export default function Checkout() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors mb-3"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Home
+          </button>
           <h1 className="text-2xl sm:text-3xl font-semibold mb-2">Secure Checkout</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">Complete your purchase in a few simple steps</p>
         </div>
@@ -1555,23 +1568,6 @@ export default function Checkout() {
                   })()}
                 </div>
               )}
-            </div>
-
-            {/* Payment Method Info */}
-            <div className="mb-6 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-                <span className="font-semibold text-green-900 dark:text-green-100">
-                  {paymentMethod === 'online' ? 'Secure Online Payment' : 'Cash on Delivery'}
-                </span>
-              </div>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                {paymentMethod === 'online' 
-                  ? '✓ Your payment is protected with 256-bit SSL encryption'
-                  : '✓ Pay cash when you receive your order'}
-              </p>
             </div>
 
             {/* Order Items */}

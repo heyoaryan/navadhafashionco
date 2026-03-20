@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Sparkles, ShieldCheck, Truck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
 import { trackSignup } from '../utils/analytics';
+import { loadPendingIntent, clearPendingIntent, consumeOAuthHandled } from '../lib/pendingIntent';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -24,6 +25,7 @@ export default function Auth() {
   );
   const navigate = useNavigate();
   const location = useLocation();
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
     if (new URLSearchParams(location.search).get('blocked') === '1') {
@@ -44,77 +46,60 @@ export default function Auth() {
     return () => clearInterval(t);
   }, []);
   const from = (location.state as any)?.from || null;
-  const action = (location.state as any)?.action || null;
 
   useEffect(() => {
-    const handlePostLoginRedirect = async () => {
-      if (user && profile) {
-        // Check blacklist first — both fields
-        if (profile.is_blacklisted) {
-          setIsBlacklisted(true);
-          await supabase.auth.signOut();
-          return;
-        }
+    if (!user) return;
+    if (redirectedRef.current) return;
+    redirectedRef.current = true;
 
-        // Also check blacklist table
-        const { data: bl } = await supabase
-          .from('blacklist')
-          .select('id')
-          .eq('entity_id', user.id)
-          .eq('entity_type', 'customer')
-          .eq('is_active', true)
-          .maybeSingle();
+    const run = async () => {
+      // OAuth flow already handled by AuthCallback — don't redirect again
+      if (consumeOAuthHandled()) return;
 
-        if (bl) {
-          setIsBlacklisted(true);
-          await supabase.auth.signOut();
-          return;
-        }
-
-        const pendingCartItemStr = localStorage.getItem('pendingCartItem');
-        if (pendingCartItemStr && action !== 'buyNow') {
+      // Wait for profile if not yet loaded (max 3s)   // Wait for profile if not yet loaded (max 3s)
+      let p = profile;
+      if (!p) {
+        for (let i = 0; i < 15; i++) {
+          await new Promise(r => setTimeout(r, 200));
           try {
-            const pendingCartItem = JSON.parse(pendingCartItemStr);
-            const oneHour = 60 * 60 * 1000;
-            if (Date.now() - pendingCartItem.timestamp < oneHour) {
-              await addToCart(pendingCartItem.productId, pendingCartItem.quantity, pendingCartItem.size, pendingCartItem.color);
-              localStorage.removeItem('pendingCartItem');
-              navigate('/cart');
-              return;
-            } else {
-              localStorage.removeItem('pendingCartItem');
-            }
-          } catch {
-            localStorage.removeItem('pendingCartItem');
-          }
-        }
-        if (from) {
-          if (action === 'buyNow') {
-            const pendingBuyNowStr = localStorage.getItem('pendingBuyNow');
-            let directBuy = undefined;
-            if (pendingBuyNowStr) {
-              try {
-                const parsed = JSON.parse(pendingBuyNowStr);
-                const oneHour = 60 * 60 * 1000;
-                if (Date.now() - parsed.timestamp < oneHour) {
-                  directBuy = parsed;
-                }
-              } catch { /* ignore */ }
-              localStorage.removeItem('pendingBuyNow');
-            }
-            navigate('/checkout', { state: directBuy ? { directBuy } : undefined });
-          }
-          else if (action === 'addToCart') navigate('/cart');
-          else navigate(from);
-        } else if (profile.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/account');
+            const cached = localStorage.getItem(`profile_${user.id}`);
+            if (cached) { p = JSON.parse(cached); break; }
+          } catch { /* ignore */ }
         }
       }
+
+      // Blacklist check
+      if (p?.is_blacklisted) { setIsBlacklisted(true); await supabase.auth.signOut(); return; }
+      const { data: bl } = await supabase.from('blacklist').select('id').eq('entity_id', user.id).eq('entity_type', 'customer').eq('is_active', true).maybeSingle();
+      if (bl) { setIsBlacklisted(true); await supabase.auth.signOut(); return; }
+
+      const intent = loadPendingIntent();
+      clearPendingIntent();
+
+      if (intent?.action === 'buyNow') {
+        navigate('/checkout', {
+          replace: true,
+          state: { directBuy: { productId: intent.productId, productName: intent.productName, price: intent.price, quantity: intent.quantity, size: intent.size, color: intent.color } }
+        });
+        return;
+      }
+
+      if (intent?.action === 'addToCart') {
+        try { await addToCart(intent.productId, intent.quantity, intent.size, intent.color); } catch { /* ignore */ }
+        navigate('/cart', { replace: true });
+        return;
+      }
+
+      if (intent?.action === 'redirect') {
+        navigate(intent.to, { replace: true });
+        return;
+      }
+
+      navigate(p?.role === 'admin' ? '/admin' : '/account', { replace: true });
     };
-    handlePostLoginRedirect();
-  }, [user, profile, navigate, from, action, addToCart]);
+
+    run();
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,19 +178,13 @@ export default function Auth() {
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
     setError(''); setLoading(true);
     try {
-      // Save pending redirect so callback page knows where to go
-      if (from) {
-        if (action === 'buyNow') localStorage.setItem('pendingRedirect', '/checkout');
-        else if (action === 'addToCart') localStorage.setItem('pendingRedirect', '/cart');
-        else localStorage.setItem('pendingRedirect', from);
-      }
+      // pendingIntent already saved by handleBuyNow/handleAddToCart before navigating to /auth
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: `${window.location.origin}/auth/callback`, queryParams: { access_type: 'offline', prompt: 'consent' } },
       });
       if (error) throw error;
     } catch (err: any) {
-      localStorage.removeItem('pendingRedirect');
       setError(`Failed to sign in with ${provider}. Please try again.`);
       setLoading(false);
     }

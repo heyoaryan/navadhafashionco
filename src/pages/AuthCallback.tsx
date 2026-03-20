@@ -1,17 +1,33 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { loadPendingIntent, clearPendingIntent, markOAuthHandled } from '../lib/pendingIntent';
+
+async function flushAddToCart(userId: string, productId: string, quantity: number, size?: string, color?: string) {
+  try {
+    let { data: cart } = await supabase.from('cart').select('id').eq('user_id', userId).maybeSingle();
+    if (!cart) {
+      const { data: created } = await supabase.from('cart').insert([{ user_id: userId }]).select().single();
+      cart = created;
+    }
+    if (!cart) return;
+    const { data: existing } = await supabase.from('cart_items').select('id, quantity')
+      .eq('cart_id', cart.id).eq('product_id', productId)
+      .eq('size', size ?? null).eq('color', color ?? null).maybeSingle();
+    if (existing) {
+      await supabase.from('cart_items').update({ quantity: existing.quantity + quantity }).eq('id', existing.id);
+    } else {
+      await supabase.from('cart_items').insert([{ cart_id: cart.id, product_id: productId, quantity, size, color }]);
+    }
+  } catch { /* ignore */ }
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Wait for AuthContext onAuthStateChange to process blacklist check first
-      // It will redirect to /auth?blocked=1 if blacklisted
-      // We just need to handle the redirect for non-blocked users
-
-      // Poll for session — onAuthStateChange sets it after blacklist check passes
+      // Poll for session
       let session = null;
       for (let i = 0; i < 10; i++) {
         const { data } = await supabase.auth.getSession();
@@ -19,52 +35,45 @@ export default function AuthCallback() {
         await new Promise(r => setTimeout(r, 400));
       }
 
-      if (!session) {
-        // Either blacklisted (already redirected) or error
-        navigate('/auth', { replace: true });
-        return;
-      }
+      if (!session) { navigate('/auth', { replace: true }); return; }
 
       const userId = session.user.id;
 
-      // Fetch profile for redirect logic
-      let profileData: { role: string } | null = null;
+      // Fetch profile role
+      let role = 'customer';
       for (let i = 0; i < 6; i++) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', userId)
-          .maybeSingle();
-        if (data) { profileData = data; break; }
+        const { data } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
+        if (data) { role = data.role; break; }
         await new Promise(r => setTimeout(r, 500));
       }
 
-      // Handle pending cart item
-      const pendingCartItemStr = localStorage.getItem('pendingCartItem');
-      if (pendingCartItemStr) {
-        try {
-          const pendingCartItem = JSON.parse(pendingCartItemStr);
-          if (Date.now() - pendingCartItem.timestamp < 60 * 60 * 1000) {
-            navigate('/cart', { replace: true });
-            return;
-          }
-        } catch { /* ignore */ }
-        localStorage.removeItem('pendingCartItem');
-      }
+      const intent = loadPendingIntent();
+      clearPendingIntent();
+      markOAuthHandled();
 
-      // Handle pending redirect
-      const pendingRedirect = localStorage.getItem('pendingRedirect');
-      if (pendingRedirect) {
-        localStorage.removeItem('pendingRedirect');
-        navigate(pendingRedirect, { replace: true });
+      if (intent?.action === 'buyNow') {
+        // Full page redirect to avoid React state race conditions with Auth.tsx useEffect
+        const state = encodeURIComponent(JSON.stringify({
+          productId: intent.productId, productName: intent.productName,
+          price: intent.price, quantity: intent.quantity,
+          size: intent.size, color: intent.color
+        }));
+        window.location.replace(`/checkout?directBuy=${state}`);
         return;
       }
 
-      if (profileData?.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/account', { replace: true });
+      if (intent?.action === 'addToCart') {
+        await flushAddToCart(userId, intent.productId, intent.quantity, intent.size, intent.color);
+        window.location.replace('/cart');
+        return;
       }
+
+      if (intent?.action === 'redirect') {
+        window.location.replace(intent.to);
+        return;
+      }
+
+      navigate(role === 'admin' ? '/admin' : '/account', { replace: true });
     };
 
     handleCallback();
