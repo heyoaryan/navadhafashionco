@@ -40,7 +40,7 @@ export default function WomenEthnics() {
       const { data, error, count } = await supabase
         .from('products')
         .select('*', { count: 'exact' })
-        .eq('category', 'ethnic')
+        .eq('category', 'ethnics')
         .in('gender', ['women', 'unisex'])
         .eq('is_active', true)
         .order('created_at', { ascending: false })

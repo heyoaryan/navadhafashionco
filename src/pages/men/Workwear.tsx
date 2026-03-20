@@ -40,7 +40,7 @@ export default function MenWorkwear() {
       const { data, error, count } = await supabase
         .from('products')
         .select('*', { count: 'exact' })
-        .eq('category', 'work')
+        .eq('category', 'workwear')
         .in('gender', ['men', 'unisex'])
         .eq('is_active', true)
         .order('created_at', { ascending: false })

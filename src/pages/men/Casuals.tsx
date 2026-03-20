@@ -40,7 +40,7 @@ export default function MenCasuals() {
       const { data, error, count } = await supabase
         .from('products')
         .select('*', { count: 'exact' })
-        .eq('category', 'casual')
+        .eq('category', 'casuals')
         .in('gender', ['men', 'unisex'])
         .eq('is_active', true)
         .order('created_at', { ascending: false })

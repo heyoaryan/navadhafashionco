@@ -40,7 +40,7 @@ export default function WomenGymAttire() {
       const { data, error, count } = await supabase
         .from('products')
         .select('*', { count: 'exact' })
-        .eq('category', 'gym')
+        .eq('category', 'gym-attire')
         .in('gender', ['women', 'unisex'])
         .eq('is_active', true)
         .order('created_at', { ascending: false })
