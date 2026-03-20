@@ -268,13 +268,9 @@ export default function BestSellers() {
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {products.map((product) => (
-                  <div key={product.id} className="relative group">
-                    <div className="relative overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-xl">
-                      <ProductCard product={product} />
-                    </div>
-                  </div>
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
 
