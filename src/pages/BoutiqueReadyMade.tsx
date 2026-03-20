@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Package, Filter, Star, Truck, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 
 export default function BoutiqueReadyMade() {
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [sortBy, setSortBy] = useState('latest');
   const [genderFilter, setGenderFilter] = useState<'all' | 'men' | 'women'>('all');
 
+  const searchQuery = searchParams.get('search') || '';
+
   useEffect(() => {
     fetchProducts();
-  }, [sortBy, genderFilter]);
+  }, [sortBy, genderFilter, searchQuery]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -25,6 +29,10 @@ export default function BoutiqueReadyMade() {
         .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
         .eq('is_active', true)
         .or('tags.cs.{"made"},tags.cs.{"ready-made"},tags.cs.{"boutique"}');
+
+      if (searchQuery) {
+        query = query.ilike('name', `%${searchQuery}%`);
+      }
 
       if (genderFilter !== 'all') {
         query = query.eq('gender', genderFilter);
@@ -49,6 +57,10 @@ export default function BoutiqueReadyMade() {
           .from('products')
           .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at')
           .eq('is_active', true);
+
+        if (searchQuery) {
+          fallbackQuery = fallbackQuery.ilike('name', `%${searchQuery}%`);
+        }
 
         if (genderFilter !== 'all') {
           fallbackQuery = fallbackQuery.eq('gender', genderFilter);

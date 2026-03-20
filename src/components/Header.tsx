@@ -36,6 +36,7 @@ export default function Header() {
     '/men/casuals', '/men/workwear', '/men/ethnic', '/men/gym-attire',
     '/men/summer-collection', '/men/winter-collection',
     '/best-sellers', '/boutique',
+    '/shop',
   ];
 
   const isOnCategoryPage = categoryPagePaths.includes(location.pathname);
@@ -150,13 +151,34 @@ export default function Header() {
     };
   }, [lockedDropdown]);
 
+  // Build search URL — if query exactly matches a gender, apply gender filter
+  const buildSearchUrl = (query: string) => {
+    const q = query.trim().toLowerCase();
+    if (q === 'men') return '/shop?gender=men';
+    if (q === 'women') return '/shop?gender=women';
+    return `/shop?search=${encodeURIComponent(query.trim())}`;
+  };
+
+  // Build URL preserving existing params (for /shop page)
+  const buildSearchUrlWithParams = (query: string) => {
+    const params = new URLSearchParams(location.search);
+    if (query.trim()) {
+      params.set('search', query.trim());
+    } else {
+      params.delete('search');
+    }
+    return `${location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      if (isOnCategoryPage) {
+      if (location.pathname === '/shop') {
+        navigate(buildSearchUrlWithParams(searchQuery));
+      } else if (isOnCategoryPage) {
         navigate(`${location.pathname}?search=${encodeURIComponent(searchQuery.trim())}`);
       } else {
-        navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+        navigate(buildSearchUrl(searchQuery));
       }
       setSearchOpen(false);
       setSearchQuery('');
@@ -173,10 +195,12 @@ export default function Header() {
   useEffect(() => {
     if (!searchOpen) return;
     if (debouncedSearch.trim()) {
-      if (isOnCategoryPage) {
+      if (location.pathname === '/shop') {
+        navigate(buildSearchUrlWithParams(debouncedSearch));
+      } else if (isOnCategoryPage) {
         navigate(`${location.pathname}?search=${encodeURIComponent(debouncedSearch.trim())}`);
       } else {
-        navigate(`/shop?search=${encodeURIComponent(debouncedSearch.trim())}`);
+        navigate(buildSearchUrl(debouncedSearch));
       }
     } else if (debouncedSearch === '') {
       if (isOnCategoryPage) {

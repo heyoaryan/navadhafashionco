@@ -212,7 +212,15 @@ export default function Shop() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light tracking-wider mb-1 sm:mb-2">
-              {searchQuery ? `Search Results for "${searchQuery}"` : isNewArrivals ? 'Latest Collection' : 'All Collections'}
+              {searchQuery
+                ? `Search Results for "${searchQuery}"`
+                : selectedGender === 'men'
+                ? "Men's Collection"
+                : selectedGender === 'women'
+                ? "Women's Collection"
+                : isNewArrivals
+                ? 'Latest Collection'
+                : 'All Collections'}
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               {products.length} {products.length === 1 ? 'product' : 'products'}

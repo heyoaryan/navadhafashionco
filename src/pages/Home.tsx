@@ -310,7 +310,7 @@ export default function Home() {
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">New Arrivals</h2>
+              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2" style={{ color: '#EE458F', textShadow: '0 0 18px rgba(238,69,143,0.45), 0 0 40px rgba(238,69,143,0.2)' }}>New Arrivals</h2>
               <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Fresh styles for the season</p>
             </div>
             {!loading && newArrivals.length > 0 && (
@@ -334,7 +334,7 @@ export default function Home() {
           <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-8 sm:mb-12">
               <div>
-                <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">Women's Collection</h2>
+                <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2" style={{ color: '#EE458F', textShadow: '0 0 18px rgba(238,69,143,0.45), 0 0 40px rgba(238,69,143,0.2)' }}>Women's Collection</h2>
                 <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Elegant styles for every occasion</p>
               </div>
               {!loading && womenProducts.length > 0 && (
@@ -358,7 +358,7 @@ export default function Home() {
         <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">Men's Collection</h2>
+              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2" style={{ color: '#EE458F', textShadow: '0 0 18px rgba(238,69,143,0.45), 0 0 40px rgba(238,69,143,0.2)' }}>Men's Collection</h2>
               <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Contemporary fashion for modern men</p>
             </div>
             {!loading && menProducts.length > 0 && (
@@ -381,7 +381,7 @@ export default function Home() {
         <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <div>
-              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2">All Products</h2>
+              <h2 className="brand-logo text-xl sm:text-3xl lg:text-4xl mb-2" style={{ color: '#EE458F', textShadow: '0 0 18px rgba(238,69,143,0.45), 0 0 40px rgba(238,69,143,0.2)' }}>All Products</h2>
               <p className="text-xs sm:text-base text-gray-600 dark:text-gray-400">Discover our complete collection</p>
             </div>
             {!loading && allProducts.length > 0 && (
