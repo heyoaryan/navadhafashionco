@@ -15,27 +15,30 @@ export default defineConfig({
     },
   },
   build: {
-    // Code splitting for better performance
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'supabase-vendor': ['@supabase/supabase-js'],
           'ui-vendor': ['lucide-react'],
+          'sanitize-vendor': ['dompurify'],
         },
       },
     },
-    // Optimize chunk size
     chunkSizeWarningLimit: 1000,
-    // Enable minification
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
       },
     },
+    // Enable CSS code splitting
+    cssCodeSplit: true,
+    // Generate source maps only for production debugging (disable for smaller builds)
+    sourcemap: false,
   },
-  // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
   },

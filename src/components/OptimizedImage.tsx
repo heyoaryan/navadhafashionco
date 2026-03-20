@@ -6,23 +6,53 @@ interface OptimizedImageProps {
   className?: string;
   aspectRatio?: string;
   priority?: boolean;
+  width?: number;
   onLoad?: () => void;
 }
 
-export default function OptimizedImage({ 
-  src, 
-  alt, 
-  className = '', 
+// Transform Supabase Storage URLs to use built-in image transformation
+// Docs: https://supabase.com/docs/guides/storage/serving/image-transformations
+function getOptimizedSrc(url: string, width = 600): string {
+  if (!url) return url;
+
+  try {
+    // Handle Supabase storage URLs
+    if (url.includes('/storage/v1/object/public/')) {
+      const transformed = url.replace(
+        '/storage/v1/object/public/',
+        '/storage/v1/render/image/public/'
+      );
+      const separator = transformed.includes('?') ? '&' : '?';
+      return `${transformed}${separator}width=${width}&quality=80&format=webp`;
+    }
+
+    // Handle Pexels URLs — they support query params natively
+    if (url.includes('pexels.com')) {
+      const base = url.split('?')[0];
+      return `${base}?auto=compress&cs=tinysrgb&w=${width}`;
+    }
+  } catch {
+    // fallback to original
+  }
+
+  return url;
+}
+
+export default function OptimizedImage({
+  src,
+  alt,
+  className = '',
   aspectRatio = '3/4',
   priority = false,
-  onLoad
+  width = 600,
+  onLoad,
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (priority) return; // Skip lazy loading for priority images
+    if (priority) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -33,50 +63,33 @@ export default function OptimizedImage({
           }
         });
       },
-      {
-        rootMargin: '50px', // Start loading 50px before image enters viewport
-      }
+      { rootMargin: '100px' }
     );
 
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
+    if (imgRef.current) observer.observe(imgRef.current);
+    return () => observer.disconnect();
   }, [priority]);
 
-  const handleLoad = () => {
-    setIsLoaded(true);
-    onLoad?.();
-  };
-
-  // Generate optimized image URL (if using a CDN or image service)
-  const getOptimizedSrc = (url: string) => {
-    // If using Supabase Storage or similar, you can add transformations here
-    // For now, return original URL
-    return url;
-  };
+  const optimizedSrc = getOptimizedSrc(src, width);
 
   return (
-    <div 
+    <div
       ref={imgRef}
       className={`relative overflow-hidden bg-gray-200 dark:bg-gray-800 ${className}`}
       style={{ aspectRatio }}
     >
-      {/* Placeholder/Skeleton */}
+      {/* Skeleton */}
       {!isLoaded && (
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800" />
       )}
 
-      {/* Actual Image */}
       {isInView && (
         <img
-          src={getOptimizedSrc(src)}
+          src={optimizedSrc}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
-          onLoad={handleLoad}
+          decoding="async"
+          onLoad={() => { setIsLoaded(true); onLoad?.(); }}
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}

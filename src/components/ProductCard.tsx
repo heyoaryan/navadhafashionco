@@ -4,7 +4,7 @@ import { Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { savePendingIntent } from '../lib/pendingIntent';
 import { trackProductAction } from '../utils/analytics';
@@ -23,16 +23,16 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const cardRef = useRef<HTMLAnchorElement>(null);
+  const isInViewRef = useRef(false);
 
   const inWishlist = isInWishlist(product.id);
   const isOutOfStock = product.stock_quantity === 0;
 
   useEffect(() => {
-    // Always show main_image_url immediately — no blank state, no extra DB call
     if (product.main_image_url) {
       setImages([product.main_image_url]);
     } else {
-      // Only hit DB if there's no main_image_url at all
       supabase
         .from('product_images')
         .select('image_url')
@@ -52,13 +52,23 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
     }
   }, [product.id, product.main_image_url]);
 
+  // Carousel only runs when card is visible in viewport — saves CPU & battery
   useEffect(() => {
-    if (images.length > 1) {
-      const interval = setInterval(() => {
+    if (images.length <= 1) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { isInViewRef.current = entry.isIntersecting; },
+      { threshold: 0.1 }
+    );
+    if (cardRef.current) observer.observe(cardRef.current);
+
+    const interval = setInterval(() => {
+      if (isInViewRef.current) {
         setCurrentImageIndex((prev) => (prev + 1) % images.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
+      }
+    }, 3000);
+
+    return () => { clearInterval(interval); observer.disconnect(); };
   }, [images.length]);
 
   const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
@@ -89,6 +99,7 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link
+      ref={cardRef}
       to={`/product/${product.slug}`}
       onClick={() => trackProductAction(product.id, 'click')}
       className="group block relative overflow-hidden rounded-lg"

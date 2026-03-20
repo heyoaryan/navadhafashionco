@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Gem, Truck, RotateCcw, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { withCache } from '../lib/queryCache';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
@@ -225,29 +226,25 @@ export default function Home() {
     setMenProducts([]);
     setPage(1);
     setHasMore(true);
-    // Max 15 seconds skeleton — then show error
     const safetyTimer = setTimeout(() => { setLoading(false); setFetchError(true); }, 15000);
     try {
-      const { data: all, count, error } = await supabase
-        .from('products')
-        .select(PRODUCT_FIELDS, { count: 'exact' })
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(24);
+      const { products, count } = await withCache('home:products:initial', async () => {
+        const { data: all, count, error } = await supabase
+          .from('products')
+          .select(PRODUCT_FIELDS, { count: 'exact' })
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(24);
 
-      if (error) {
-        console.error('Supabase products error:', error.message, error.code, error.details);
-        setFetchError(true);
-        return;
-      }
-
-      const products = all || [];
+        if (error) throw error;
+        return { products: all || [], count: count || 0 };
+      }, 2 * 60_000); // cache for 2 minutes
       // New arrivals: only products from last 30 days — no fallback
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      setNewArrivals(products.filter(p => new Date(p.created_at) >= thirtyDaysAgo).slice(0, productsPerPage));
-      setWomenProducts(products.filter(p => p.gender === 'women').slice(0, productsPerPage));
-      setMenProducts(products.filter(p => p.gender === 'men').slice(0, productsPerPage));
+      setNewArrivals(products.filter((p: Product) => new Date(p.created_at) >= thirtyDaysAgo).slice(0, productsPerPage));
+      setWomenProducts(products.filter((p: Product) => p.gender === 'women').slice(0, productsPerPage));
+      setMenProducts(products.filter((p: Product) => p.gender === 'men').slice(0, productsPerPage));
       setAllProducts(products.slice(0, productsPerPage));
       setHasMore((count || 0) > productsPerPage);
     } catch (error) {
