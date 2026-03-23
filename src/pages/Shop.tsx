@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter } from 'lucide-react';
+import { Filter, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Product, Category } from '../types';
 import ProductCard from '../components/ProductCard';
@@ -8,26 +8,52 @@ import SEO from '../components/SEO';
 import LoadingState from '../components/LoadingState';
 import { lockScroll, unlockScroll } from '../utils/scrollLock';
 
+const PRODUCTS_PER_PAGE = 20;
+const QUERY_TIMEOUT_MS = 8000;
+const MAX_RETRIES = 3;
+
+async function fetchWithRetry<T>(
+  fn: () => PromiseLike<T>,
+  retries = MAX_RETRIES
+): Promise<T> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const raceResult = await Promise.race([
+        Promise.resolve(fn()),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('QueryTimeout')), QUERY_TIMEOUT_MS)
+        ),
+      ]);
+      return raceResult as T;
+    } catch (err: any) {
+      const isLast = attempt === retries;
+      const isTimeout = err?.message === 'QueryTimeout';
+      if (isLast || !isTimeout) throw err;
+      await new Promise(r => setTimeout(r, 500 * attempt));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const categoriesFetched = useRef(false);
-  const PRODUCTS_PER_PAGE = 20;
 
   const selectedCategory = searchParams.get('category');
-  const filterType = searchParams.get('filter'); // new, featured, etc.
-  const selectedGender = searchParams.get('gender'); // men, women
+  const filterType = searchParams.get('filter');
+  const selectedGender = searchParams.get('gender');
   const sortBy = searchParams.get('sort') || 'latest';
   const priceRange = searchParams.get('price');
   const searchQuery = searchParams.get('search') || '';
-
   const isNewArrivals = filterType === 'new';
 
   useEffect(() => {
@@ -35,7 +61,6 @@ export default function Shop() {
       categoriesFetched.current = true;
       fetchCategories();
     } else {
-      // categories already loaded, fetch products immediately
       setPage(1);
       setProducts([]);
       fetchProducts(1);
@@ -43,159 +68,124 @@ export default function Shop() {
   }, [selectedCategory, selectedGender, sortBy, priceRange, filterType, searchQuery]);
 
   useEffect(() => {
-    // Lock body scroll when mobile filter is open
-    if (showFilters && window.innerWidth < 1024) {
-      lockScroll();
-    } else {
-      unlockScroll();
-    }
-
-    return () => {
-      unlockScroll();
-    };
+    if (showFilters && window.innerWidth < 1024) lockScroll();
+    else unlockScroll();
+    return () => unlockScroll();
   }, [showFilters]);
 
   const fetchCategories = async () => {
     try {
-      const { data } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order');
-
-      const allowedCategories = ['women'];
-      const filteredCategories = (data || []).filter(cat => 
-        allowedCategories.includes(cat.slug.toLowerCase())
+      const { data } = await fetchWithRetry(() =>
+        supabase.from('categories').select('*').eq('is_active', true).order('display_order')
+      ) as { data: Category[] | null };
+      const filteredCategories = (data || []).filter((cat: Category) =>
+        ['women'].includes(cat.slug.toLowerCase())
       );
-      
       setCategories(filteredCategories);
-      // Pass freshly loaded categories directly to avoid stale closure
       setPage(1);
       setProducts([]);
       fetchProducts(1, filteredCategories);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      // Still fetch products even if categories fail
+    } catch {
       setPage(1);
       setProducts([]);
       fetchProducts(1, []);
     }
   };
 
+  const buildQuery = (cats: Category[]) => {
+    let query = supabase
+      .from('products')
+      .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season, subcategory', { count: 'exact' })
+      .eq('is_active', true);
+
+    if (searchQuery) {
+      const phrase = searchQuery.trim();
+      query = query.or(`name.ilike.%${phrase}%,description.ilike.%${phrase}%,subcategory.ilike.%${phrase}%`);
+    } else {
+      if (filterType === 'new') {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        query = query.gte('created_at', d.toISOString());
+      }
+      if (selectedCategory) {
+        const cat = cats.find(c => c.slug === selectedCategory);
+        if (cat) query = query.eq('category_id', cat.id);
+      }
+      if (selectedGender) query = query.eq('gender', selectedGender);
+      if (priceRange) {
+        const [min, max] = priceRange.split('-').map(Number);
+        query = query.gte('price', min);
+        if (max) query = query.lte('price', max);
+      }
+    }
+
+    if (sortBy === 'price-low') query = query.order('price', { ascending: true });
+    else if (sortBy === 'price-high') query = query.order('price', { ascending: false });
+    else query = query.order('created_at', { ascending: false });
+
+    return query;
+  };
+
   const fetchProducts = async (pageNum: number = 1, currentCategories?: Category[]) => {
     const cats = currentCategories ?? categories;
-    if (pageNum === 1) {
-      setLoading(true);
-      setFetchError(false);
-    } else {
-      setLoadingMore(true);
-    }
-    const timeout = pageNum === 1 ? setTimeout(() => { setLoading(false); setFetchError(true); }, 10000) : null;
+    if (pageNum === 1) { setLoading(true); setFetchError(false); }
+    else setLoadingMore(true);
+
     try {
-      let query = supabase
-        .from('products')
-        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season, subcategory', { count: 'exact' })
-        .eq('is_active', true);
-
-      if (searchQuery) {
-        // When searching, only filter by search — ignore category/gender/price filters
-        const phrase = searchQuery.trim();
-        query = query.or(
-          `name.ilike.%${phrase}%,description.ilike.%${phrase}%,tags.cs.{${phrase}},subcategory.ilike.%${phrase}%`
-        );
-      } else {
-        // Only apply these filters when NOT searching
-        if (filterType === 'new') {
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          query = query.gte('created_at', thirtyDaysAgo.toISOString());
-        }
-
-        if (selectedCategory) {
-          const category = cats.find(c => c.slug === selectedCategory);
-          if (category) {
-            query = query.eq('category_id', category.id);
-          }
-        }
-
-        if (selectedGender) {
-          query = query.eq('gender', selectedGender);
-        }
-
-        if (priceRange) {
-          const [min, max] = priceRange.split('-').map(Number);
-          query = query.gte('price', min);
-          if (max) {
-            query = query.lte('price', max);
-          }
-        }
-      }
-
-      if (sortBy === 'latest') {
-        query = query.order('created_at', { ascending: false });
-      } else if (sortBy === 'price-low') {
-        query = query.order('price', { ascending: true });
-      } else if (sortBy === 'price-high') {
-        query = query.order('price', { ascending: false });
-      } else if (sortBy === 'popular') {
-        query = query.eq('is_featured', true);
-      }
-
-      // Pagination
       const from = (pageNum - 1) * PRODUCTS_PER_PAGE;
       const to = from + PRODUCTS_PER_PAGE - 1;
-      query = query.range(from, to);
 
-      const { data, count } = await query;
-      
-      const hasMoreProducts = (count || 0) > pageNum * PRODUCTS_PER_PAGE;
-      
-      if (pageNum === 1) {
-        setProducts(data || []);
-      } else {
-        setProducts(prev => [...prev, ...(data || [])]);
-      }
-      
-      setHasMore(hasMoreProducts);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+      const { data, count, error } = await fetchWithRetry(() =>
+        buildQuery(cats).range(from, to)
+      ) as { data: Product[] | null; count: number | null; error: any };
+
+      if (error) throw error;
+
+      if (pageNum === 1) setProducts(data || []);
+      else setProducts(prev => [...prev, ...(data || [])]);
+
+      setHasMore((count || 0) > pageNum * PRODUCTS_PER_PAGE);
+      setRetryCount(0);
+    } catch (err: any) {
+      console.error('fetchProducts failed:', err?.message || err);
       if (pageNum === 1) setFetchError(true);
     } finally {
-      if (timeout) clearTimeout(timeout);
       setLoading(false);
       setLoadingMore(false);
     }
   };
 
+  const handleRetry = () => {
+    setRetryCount(c => c + 1);
+    setPage(1);
+    setProducts([]);
+    fetchProducts(1);
+  };
+
   const loadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchProducts(nextPage, categories);
+    const next = page + 1;
+    setPage(next);
+    fetchProducts(next, categories);
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set(key, value);
-    } else {
-      newParams.delete(key);
-    }
-    setSearchParams(newParams);
+    const p = new URLSearchParams(searchParams);
+    if (value) p.set(key, value); else p.delete(key);
+    setSearchParams(p);
   };
 
-  const clearFilters = () => {
-    setSearchParams({});
-  };
+  const clearFilters = () => setSearchParams({});
+
 
   return (
     <div className="min-h-screen">
-      <SEO 
+      <SEO
         title={isNewArrivals ? 'New Arrivals - Latest Fashion | NAVADHA' : selectedCategory ? `${selectedCategory} Collection | NAVADHA Fashion Co` : 'Shop All Collections - Ethnic, Western & More | NAVADHA'}
-        description={isNewArrivals ? 'Discover the latest additions to NAVADHA\'s collection. Fresh styles, new arrivals, and trending fashion for the modern you. Free shipping above ₹2,999.' : 'Browse NAVADHA\'s complete collection of premium fashion. Ethnic wear, western wear, indo-western, boutique pieces and more. Free shipping above ₹2,999.'}
+        description={isNewArrivals ? "Discover the latest additions to NAVADHA's collection. Fresh styles, new arrivals, and trending fashion for the modern you. Free shipping above ₹2,999." : "Browse NAVADHA's complete collection of premium fashion. Ethnic wear, western wear, indo-western, boutique pieces and more. Free shipping above ₹2,999."}
         keywords={isNewArrivals ? 'new arrivals fashion India, latest fashion, new clothes online, trending fashion India, new collection NAVADHA' : 'shop fashion India, ethnic wear online, western wear women, indo western, boutique fashion, designer wear India, NAVADHA shop'}
         url={isNewArrivals ? 'https://navadha.com/shop?filter=new' : 'https://navadha.com/shop'}
       />
-      {/* Hero Section for New Arrivals */}
+
       {isNewArrivals && (
         <section className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="text-center px-4">
@@ -212,19 +202,11 @@ export default function Shop() {
         </section>
       )}
 
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${isNewArrivals ? 'py-6 sm:py-8 md:py-12' : 'py-12'} ${showFilters ? 'lg:overflow-visible overflow-hidden' : ''}`}>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${isNewArrivals ? 'py-6 sm:py-8 md:py-12' : 'py-12'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light tracking-wider mb-1 sm:mb-2">
-              {searchQuery
-                ? `Search Results for "${searchQuery}"`
-                : selectedGender === 'men'
-                ? "Men's Collection"
-                : selectedGender === 'women'
-                ? "Women's Collection"
-                : isNewArrivals
-                ? 'Latest Collection'
-                : 'All Collections'}
+              {searchQuery ? `Search Results for "${searchQuery}"` : selectedGender === 'men' ? "Men's Collection" : selectedGender === 'women' ? "Women's Collection" : isNewArrivals ? 'Latest Collection' : 'All Collections'}
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               {products.length} {products.length === 1 ? 'product' : 'products'}
@@ -246,279 +228,157 @@ export default function Shop() {
           )}
         </div>
 
-      <div className="flex gap-8">
-        {/* Mobile Filter Overlay */}
-        {showFilters && !isNewArrivals && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setShowFilters(false)}
-          />
-        )}
+        <div className="flex gap-8">
+          {showFilters && !isNewArrivals && (
+            <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowFilters(false)} />
+          )}
 
-        {/* Filter Sidebar */}
-        {!isNewArrivals && (
-        <aside
-          className={`${
-            showFilters ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 fixed lg:static top-0 left-0 h-full lg:h-auto w-[85vw] sm:w-80 lg:w-64 bg-white dark:bg-gray-900 lg:bg-transparent z-50 lg:z-auto transition-transform duration-300 ease-in-out flex-shrink-0 overflow-y-auto lg:overflow-visible shadow-xl lg:shadow-none`}
-        >
-          <div className="p-6 lg:p-0 space-y-6 lg:space-y-8">
-            {/* Mobile Header */}
-            <div className="lg:hidden flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-xl font-medium">Filters</h3>
-              <button
-                onClick={() => setShowFilters(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Desktop Header */}
-            <div className="hidden lg:flex items-center justify-between">
-              <h3 className="text-lg font-medium">Filters</h3>
-              {(selectedCategory || selectedGender || sortBy !== 'latest' || priceRange) && (
-                <button
-                  onClick={clearFilters}
-                  className="text-sm text-rose-500 dark:text-pink-400 hover:text-rose-600 dark:hover:text-pink-500 transition-colors font-medium"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              {/* Gender Filter */}
-              <div>
-                <h4 className="text-sm font-medium mb-3">Gender</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={selectedGender === 'women'}
-                      onChange={() => handleFilterChange('gender', 'women')}
-                      className="w-4 h-4 text-rose-400 focus:ring-rose-400"
-                    />
-                    <span className="text-sm group-hover:text-rose-400 transition-colors">Women</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={selectedGender === 'men'}
-                      onChange={() => handleFilterChange('gender', 'men')}
-                      className="w-4 h-4 text-rose-400 focus:ring-rose-400"
-                    />
-                    <span className="text-sm group-hover:text-rose-400 transition-colors">Men</span>
-                  </label>
-                  {selectedGender && (
-                    <button
-                      onClick={() => handleFilterChange('gender', '')}
-                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-pink-400 transition-colors ml-6"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Categories */}
-              <div>
-                <h4 className="text-sm font-medium mb-3">Categories</h4>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <label key={category.id} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="category"
-                        checked={selectedCategory === category.slug}
-                        onChange={() => handleFilterChange('category', category.slug)}
-                        className="w-4 h-4 text-rose-400 focus:ring-rose-400"
-                      />
-                      <span className="text-sm group-hover:text-rose-400 transition-colors">{category.name}</span>
-                    </label>
-                  ))}
-                  {selectedCategory && (
-                    <button
-                      onClick={() => handleFilterChange('category', '')}
-                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-pink-400 transition-colors ml-6"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Sort By */}
-              <div>
-                <h4 className="text-sm font-medium mb-3">Sort By</h4>
-                <select
-                  value={sortBy}
-                  onChange={(e) => handleFilterChange('sort', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400"
-                >
-                  <option value="latest">Latest</option>
-                  <option value="popular">Popular</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                </select>
-              </div>
-
-              {/* Price Range */}
-              <div>
-                <h4 className="text-sm font-medium mb-3">Price Range</h4>
-                <div className="space-y-2">
-                  {[
-                    { label: 'Under ₹1,000', value: '0-1000' },
-                    { label: '₹1,000 - ₹2,000', value: '1000-2000' },
-                    { label: '₹2,000 - ₹5,000', value: '2000-5000' },
-                    { label: 'Above ₹5,000', value: '5000-' },
-                  ].map((range) => (
-                    <label key={range.value} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="price"
-                        checked={priceRange === range.value}
-                        onChange={() => handleFilterChange('price', range.value)}
-                        className="w-4 h-4 text-rose-400 focus:ring-rose-400"
-                      />
-                      <span className="text-sm group-hover:text-rose-400 transition-colors">{range.label}</span>
-                    </label>
-                  ))}
-                  {priceRange && (
-                    <button
-                      onClick={() => handleFilterChange('price', '')}
-                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-rose-500 dark:hover:text-pink-400 transition-colors ml-6"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Apply Button */}
-            <div className="lg:hidden sticky bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 -mx-6 -mb-6">
-              <div className="flex gap-3">
-                {(selectedCategory || selectedGender || sortBy !== 'latest' || priceRange) && (
-                  <button
-                    onClick={() => {
-                      clearFilters();
-                      setShowFilters(false);
-                    }}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
-                  >
-                    Clear All
+          {!isNewArrivals && (
+            <aside className={`${showFilters ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static top-0 left-0 h-full lg:h-auto w-[85vw] sm:w-80 lg:w-64 bg-white dark:bg-gray-900 lg:bg-transparent z-50 lg:z-auto transition-transform duration-300 ease-in-out flex-shrink-0 overflow-y-auto lg:overflow-visible shadow-xl lg:shadow-none`}>
+              <div className="p-6 lg:p-0 space-y-6 lg:space-y-8">
+                <div className="lg:hidden flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-xl font-medium">Filters</h3>
+                  <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
-                )}
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="flex-1 px-4 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors font-medium"
-                >
-                  Apply Filters
-                </button>
+                </div>
+                <div className="hidden lg:flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Filters</h3>
+                  {(selectedCategory || selectedGender || sortBy !== 'latest' || priceRange) && (
+                    <button onClick={clearFilters} className="text-sm text-rose-500 dark:text-pink-400 hover:text-rose-600 transition-colors font-medium">Clear All</button>
+                  )}
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Gender</h4>
+                    <div className="space-y-2">
+                      {(['women', 'men'] as const).map(g => (
+                        <label key={g} className="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" name="gender" checked={selectedGender === g} onChange={() => handleFilterChange('gender', g)} className="w-4 h-4 text-rose-400 focus:ring-rose-400" />
+                          <span className="text-sm group-hover:text-rose-400 transition-colors capitalize">{g}</span>
+                        </label>
+                      ))}
+                      {selectedGender && <button onClick={() => handleFilterChange('gender', '')} className="text-sm text-gray-600 dark:text-gray-400 hover:text-rose-500 transition-colors ml-6">Clear</button>}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Categories</h4>
+                    <div className="space-y-2">
+                      {categories.map(cat => (
+                        <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" name="category" checked={selectedCategory === cat.slug} onChange={() => handleFilterChange('category', cat.slug)} className="w-4 h-4 text-rose-400 focus:ring-rose-400" />
+                          <span className="text-sm group-hover:text-rose-400 transition-colors">{cat.name}</span>
+                        </label>
+                      ))}
+                      {selectedCategory && <button onClick={() => handleFilterChange('category', '')} className="text-sm text-gray-600 dark:text-gray-400 hover:text-rose-500 transition-colors ml-6">Clear</button>}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Sort By</h4>
+                    <select value={sortBy} onChange={e => handleFilterChange('sort', e.target.value)} className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400">
+                      <option value="latest">Latest</option>
+                      <option value="price-low">Price: Low to High</option>
+                      <option value="price-high">Price: High to Low</option>
+                    </select>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Price Range</h4>
+                    <div className="space-y-2">
+                      {[{ label: 'Under ₹1,000', value: '0-1000' }, { label: '₹1,000 - ₹2,000', value: '1000-2000' }, { label: '₹2,000 - ₹5,000', value: '2000-5000' }, { label: 'Above ₹5,000', value: '5000-' }].map(r => (
+                        <label key={r.value} className="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" name="price" checked={priceRange === r.value} onChange={() => handleFilterChange('price', r.value)} className="w-4 h-4 text-rose-400 focus:ring-rose-400" />
+                          <span className="text-sm group-hover:text-rose-400 transition-colors">{r.label}</span>
+                        </label>
+                      ))}
+                      {priceRange && <button onClick={() => handleFilterChange('price', '')} className="text-sm text-gray-600 dark:text-gray-400 hover:text-rose-500 transition-colors ml-6">Clear</button>}
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:hidden sticky bottom-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 -mx-6 -mb-6">
+                  <div className="flex gap-3">
+                    {(selectedCategory || selectedGender || sortBy !== 'latest' || priceRange) && (
+                      <button onClick={() => { clearFilters(); setShowFilters(false); }} className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium">Clear All</button>
+                    )}
+                    <button onClick={() => setShowFilters(false)} className="flex-1 px-4 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors font-medium">Apply Filters</button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </aside>
-        )}
+            </aside>
+          )}
 
-        <div className="flex-1">
-          {loading ? (
-            <LoadingState type="skeleton" skeletonType="product" skeletonCount={6} />
-          ) : fetchError ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-20 h-20 mb-6 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-                <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">Failed to load products</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-6">Check your connection and try again.</p>
-              <button
-                onClick={() => fetchProducts(1)}
-                className="px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
-                style={{ backgroundColor: '#EE458F' }}
-              >
-                Try Again
-              </button>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-20 h-20 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">
-                {searchQuery ? `No results for "${searchQuery}"` : 'No products found'}
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
-                {searchQuery ? 'Try a different search term or browse our collections.' : 'Try adjusting your filters.'}
-              </p>
-              {searchQuery && (
+          <div className="flex-1">
+            {loading ? (
+              <LoadingState type="skeleton" skeletonType="product" skeletonCount={6} />
+            ) : fetchError ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-20 h-20 mb-6 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">Failed to load products</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-2">
+                  {retryCount > 0 ? `Tried ${retryCount} time${retryCount > 1 ? 's' : ''}. Check your internet connection.` : 'Check your connection and try again.'}
+                </p>
                 <button
-                  onClick={() => handleFilterChange('search', '')}
-                  className="mt-6 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
+                  onClick={handleRetry}
+                  className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
                   style={{ backgroundColor: '#EE458F' }}
                 >
-                  Clear Search
+                  <RefreshCw className="w-4 h-4" />
+                  Try Again
                 </button>
-              )}
-            </div>
-          ) : (
-            <>
-              <div className={`grid gap-3 sm:gap-4 md:gap-5 ${isNewArrivals ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-8'}`}>
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
               </div>
-              
-              {/* Load More Button */}
-              {hasMore && (
-                <div className="flex justify-center mt-8 sm:mt-12">
-                  <button
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                    className="px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2"
-                    style={{ 
-                      color: loadingMore ? '#999' : '#E91E63', 
-                      borderColor: loadingMore ? '#999' : '#E91E63' 
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!loadingMore) {
-                        e.currentTarget.style.backgroundColor = '#E91E63';
-                        e.currentTarget.style.color = '#fff';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!loadingMore) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#E91E63';
-                      }
-                    }}
-                  >
-                    {loadingMore ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Loading...
-                      </span>
-                    ) : (
-                      'Load More'
-                    )}
-                  </button>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-20 h-20 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
-              )}
-            </>
-          )}
+                <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2">
+                  {searchQuery ? `No results for "${searchQuery}"` : 'No products found'}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
+                  {searchQuery ? 'Try a different search term or browse our collections.' : 'Try adjusting your filters.'}
+                </p>
+                {searchQuery && (
+                  <button onClick={() => handleFilterChange('search', '')} className="mt-6 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all" style={{ backgroundColor: '#EE458F' }}>
+                    Clear Search
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className={`grid gap-3 sm:gap-4 md:gap-5 ${isNewArrivals ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-8'}`}>
+                  {products.map(product => <ProductCard key={product.id} product={product} />)}
+                </div>
+                {hasMore && (
+                  <div className="flex justify-center mt-8 sm:mt-12">
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2"
+                      style={{ color: loadingMore ? '#999' : '#E91E63', borderColor: loadingMore ? '#999' : '#E91E63' }}
+                      onMouseEnter={e => { if (!loadingMore) { e.currentTarget.style.backgroundColor = '#E91E63'; e.currentTarget.style.color = '#fff'; } }}
+                      onMouseLeave={e => { if (!loadingMore) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#E91E63'; } }}
+                    >
+                      {loadingMore ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Loading...
+                        </span>
+                      ) : 'Load More'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );
