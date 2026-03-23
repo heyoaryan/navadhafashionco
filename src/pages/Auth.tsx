@@ -45,7 +45,20 @@ export default function Auth() {
     const t = setInterval(() => setSlideIndex(i => (i + 1) % slides.length), 3000);
     return () => clearInterval(t);
   }, []);
-  const from = (location.state as any)?.from || null;
+  const from = (() => {
+    const raw = (location.state as any)?.from || null;
+    if (!raw) return null;
+    // Only allow same-origin relative paths — prevent open redirect
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin !== window.location.origin) return null;
+      return url.pathname + url.search;
+    } catch {
+      // raw is already a relative path like "/checkout"
+      if (typeof raw === 'string' && raw.startsWith('/')) return raw;
+      return null;
+    }
+  })();
 
   useEffect(() => {
     if (!user) return;
@@ -129,7 +142,7 @@ export default function Auth() {
     }
     if (!email.trim()) { setError('Please enter your email address.'); setLoading(false); return; }
     if (!password) { setError('Please enter your password.'); setLoading(false); return; }
-    if (!isLogin && password.length < 6) { setError('Password must be at least 6 characters long.'); setLoading(false); return; }
+    if (!isLogin && password.length < 8) { setError('Password must be at least 8 characters long.'); setLoading(false); return; }
     try {
       if (isLogin) {
         await authSignIn(email, password);
@@ -151,7 +164,7 @@ export default function Auth() {
             setError('This email is already registered. Please sign in instead.');
             setTimeout(() => { setIsLogin(true); setError(''); }, 3000);
           } else if (signupError.message?.includes('Password')) {
-            setError('Password must be at least 6 characters long.');
+            setError('Password must be at least 8 characters long.');
           } else {
             setError(signupError.message || 'Signup failed. Please try again.');
           }
@@ -509,7 +522,7 @@ export default function Auth() {
                   <div className="relative">
                     <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                       className="w-full px-4 py-3 pr-11 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all placeholder:text-gray-400"
-                      placeholder="••••••••" required minLength={6}/>
+                      placeholder="••••••••" required minLength={8}/>
                     <button type="button" onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                       {showPassword ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
@@ -523,7 +536,7 @@ export default function Auth() {
                     <div className="relative">
                       <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                         className="w-full px-4 py-3 pr-11 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all placeholder:text-gray-400"
-                        placeholder="••••••••" required minLength={6}/>
+                        placeholder="••••••••" required minLength={8}/>
                       <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                         {showConfirmPassword ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}

@@ -69,7 +69,17 @@ export default function AuthCallback() {
       }
 
       if (intent?.action === 'redirect') {
-        window.location.replace(intent.to);
+        // Validate same-origin before redirecting
+        try {
+          const url = new URL(intent.to, window.location.origin);
+          if (url.origin === window.location.origin) {
+            window.location.replace(url.pathname + url.search);
+          } else {
+            window.location.replace('/account');
+          }
+        } catch {
+          window.location.replace('/account');
+        }
         return;
       }
 

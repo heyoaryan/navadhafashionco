@@ -61,57 +61,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTimeout(() => { blockingRef.current = false; }, 1500);
   };
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (!error || error.code === 'PGRST116') {
-        if (data) {
-          setProfile(data);
-          localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
-        }
-      }
-    } catch {
-      // Silently handle
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     const loadingTimeout = setTimeout(() => setLoading(false), 2000);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       clearTimeout(loadingTimeout);
 
       if (session?.user) {
-        // Load cached profile instantly & show UI
-        const cached = localStorage.getItem(`profile_${session.user.id}`);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (!parsed?.is_blacklisted) setProfile(parsed);
-          } catch { /* ignore */ }
+        // Check blacklist BEFORE setting user state — no race condition
+        const { blacklisted, profile: p } = await fetchProfileAndCheckBlacklist(session.user.id).catch(() => ({ blacklisted: false, profile: null }));
+
+        if (blacklisted) {
+          await forceSignOut(session.user.id);
+          return;
         }
+
+        // Safe to set user now
         setSession(session);
         setUser(session.user);
-        setLoading(false);
 
-        // Single combined query: blacklist + profile in background
-        fetchProfileAndCheckBlacklist(session.user.id).then(async ({ blacklisted, profile: p }) => {
-          if (blacklisted) {
-            await forceSignOut(session.user.id);
-            return;
-          }
-          if (p) {
-            setProfile(p);
-            localStorage.setItem(`profile_${session.user.id}`, JSON.stringify(p));
-          }
-        }).catch(() => { /* silently ignore */ });
+        if (p) {
+          // Only cache non-sensitive fields
+          const safeProfile = { id: p.id, full_name: p.full_name, email: p.email, role: p.role, avatar_url: p.avatar_url };
+          setProfile(p);
+          localStorage.setItem(`profile_${session.user.id}`, JSON.stringify(safeProfile));
+        }
+        setLoading(false);
       } else {
         setLoading(false);
       }
@@ -125,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       (async () => {
         if (session?.user) {
-          // Single combined query: blacklist + profile
+          // Check blacklist BEFORE setting user state
           const { blacklisted, profile: p } = await fetchProfileAndCheckBlacklist(session.user.id);
           if (blacklisted) {
             await forceSignOut(session.user.id);
@@ -137,8 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(session.user);
 
           if (p) {
+            const safeProfile = { id: p.id, full_name: p.full_name, email: p.email, role: p.role, avatar_url: p.avatar_url };
             setProfile(p);
-            localStorage.setItem(`profile_${session.user.id}`, JSON.stringify(p));
+            localStorage.setItem(`profile_${session.user.id}`, JSON.stringify(safeProfile));
           }
           setLoading(false);
         } else {
@@ -204,8 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     const { profile: p } = await fetchProfileAndCheckBlacklist(user.id);
     if (p) {
+      const safeProfile = { id: p.id, full_name: p.full_name, email: p.email, role: p.role, avatar_url: p.avatar_url };
       setProfile(p);
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify(p));
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(safeProfile));
     }
   };
 
@@ -213,8 +190,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const { profile: p } = await fetchProfileAndCheckBlacklist(user.id);
     if (p) {
+      const safeProfile = { id: p.id, full_name: p.full_name, email: p.email, role: p.role, avatar_url: p.avatar_url };
       setProfile(p);
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify(p));
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(safeProfile));
     }
   };
 

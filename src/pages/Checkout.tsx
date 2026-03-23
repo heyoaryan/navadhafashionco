@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -210,16 +210,30 @@ export default function Checkout() {
     }
   };
 
+  // Coupon attempt rate limiting (client-side)
+  const couponAttemptsRef = useRef<{ count: number; resetAt: number }>({ count: 0, resetAt: 0 });
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       setCouponError('Please enter a coupon code');
       return;
     }
 
-    // Sanitize coupon code — only alphanumeric + dash allowed
-    const sanitizedCode = couponCode.trim().toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+    // Sanitize coupon code — only alphanumeric + dash allowed, max 50 chars
+    const sanitizedCode = couponCode.trim().toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 50);
     if (!sanitizedCode) {
       setCouponError('Invalid coupon code format');
+      return;
+    }
+
+    // Rate limit: max 5 attempts per minute
+    const now = Date.now();
+    if (now > couponAttemptsRef.current.resetAt) {
+      couponAttemptsRef.current = { count: 0, resetAt: now + 60_000 };
+    }
+    couponAttemptsRef.current.count += 1;
+    if (couponAttemptsRef.current.count > 5) {
+      setCouponError('Too many attempts. Please wait a minute and try again.');
       return;
     }
 
@@ -313,11 +327,36 @@ export default function Checkout() {
       };
     }
 
-    const subtotal = checkoutTotal;
+    // Fetch fresh prices from DB — never trust client-side prices
+    const productIds = checkoutItems.map(i => i.product_id);
+    const { data: freshProducts, error: priceError } = await supabase
+      .from('products')
+      .select('id, price, sale_price, is_active, stock_quantity')
+      .in('id', productIds);
+
+    if (priceError || !freshProducts) throw new Error('Failed to verify product prices');
+
+    // Validate all products are active and in stock
+    for (const item of checkoutItems) {
+      const fp = freshProducts.find(p => p.id === item.product_id);
+      if (!fp) throw new Error(`Product not found: ${item.product_id}`);
+      if (!fp.is_active) throw new Error(`Product is no longer available: ${item.product?.name}`);
+      if (fp.stock_quantity < item.quantity) throw new Error(`Insufficient stock for: ${item.product?.name}`);
+    }
+
+    // Calculate subtotal using server-verified prices
+    const verifiedSubtotal = checkoutItems.reduce((sum, item) => {
+      const fp = freshProducts.find(p => p.id === item.product_id)!;
+      const unitPrice = fp.sale_price ?? fp.price;
+      return sum + unitPrice * item.quantity;
+    }, 0);
+
     const discount = calculateDiscount();
-    const shippingCost = deliveryMethod === 'pickup' ? 0 : ((subtotal - discount) >= 2999 ? 0 : 99);
-    const tax = Math.round((subtotal - discount) * 0.05);
-    const total = subtotal - discount + shippingCost + tax;
+    // Ensure discount doesn't exceed subtotal
+    const safeDiscount = Math.min(discount, verifiedSubtotal);
+    const shippingCost = deliveryMethod === 'pickup' ? 0 : ((verifiedSubtotal - safeDiscount) >= 2999 ? 0 : 99);
+    const tax = Math.round((verifiedSubtotal - safeDiscount) * 0.05);
+    const total = verifiedSubtotal - safeDiscount + shippingCost + tax;
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -327,8 +366,8 @@ export default function Checkout() {
         payment_status: paymentId ? 'paid' : 'pending',
         payment_method: paymentMethod,
         payment_id: paymentId || null,
-        subtotal,
-        discount,
+        subtotal: verifiedSubtotal,
+        discount: safeDiscount,
         shipping_cost: shippingCost,
         tax,
         total,
@@ -347,17 +386,21 @@ export default function Checkout() {
 
     if (orderError) throw orderError;
 
-    const orderItems = checkoutItems.map(item => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      product_name: item.product?.name || '',
-      product_image: item.product?.main_image_url || null,
-      quantity: item.quantity,
-      size: item.size,
-      color: item.color,
-      price: item.product?.price || 0,
-      subtotal: (item.product?.price || 0) * item.quantity,
-    }));
+    const orderItems = checkoutItems.map(item => {
+      const fp = freshProducts.find(p => p.id === item.product_id)!;
+      const unitPrice = fp.sale_price ?? fp.price;
+      return {
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: item.product?.name || '',
+        product_image: item.product?.main_image_url || null,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: unitPrice,
+        subtotal: unitPrice * item.quantity,
+      };
+    });
 
     const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
     if (itemsError) throw itemsError;
@@ -393,8 +436,8 @@ export default function Checkout() {
 
       if (paymentMethod === 'cod') {
         // COD: create order directly
-        const { order } = await createOrderInDB();
-        setConfirmedOrderDetails({ total, paymentMethod, deliveryMethod });
+        const { order, total: verifiedTotal } = await createOrderInDB();
+        setConfirmedOrderDetails({ total: verifiedTotal, paymentMethod, deliveryMethod });
         if (!directBuy) await clearCart();
         localStorage.removeItem('bespokeCustomization');
         setConfirmedOrderId(order.id);
@@ -402,11 +445,29 @@ export default function Checkout() {
         setIsProcessingOrder(false);
         setLoading(false);
       } else {
-        // Online: reset button immediately, then open Razorpay
-        setConfirmedOrderDetails({ total, paymentMethod, deliveryMethod });
+        // Online: fetch verified total first, then open Razorpay
+        const productIds = checkoutItems.map(i => i.product_id);
+        const { data: freshProducts } = await supabase
+          .from('products')
+          .select('id, price, sale_price')
+          .in('id', productIds);
+
+        const verifiedSubtotal = checkoutItems.reduce((sum, item) => {
+          const fp = freshProducts?.find(p => p.id === item.product_id);
+          const unitPrice = fp ? (fp.sale_price ?? fp.price) : (item.product?.price || 0);
+          return sum + unitPrice * item.quantity;
+        }, 0);
+
+        const discount = calculateDiscount();
+        const safeDiscount = Math.min(discount, verifiedSubtotal);
+        const shippingCost = deliveryMethod === 'pickup' ? 0 : ((verifiedSubtotal - safeDiscount) >= 2999 ? 0 : 99);
+        const tax = Math.round((verifiedSubtotal - safeDiscount) * 0.05);
+        const verifiedTotal = verifiedSubtotal - safeDiscount + shippingCost + tax;
+
+        setConfirmedOrderDetails({ total: verifiedTotal, paymentMethod, deliveryMethod });
         setLoading(false);
         setIsProcessingOrder(false);
-        await initiateRazorpayPayment(total);
+        await initiateRazorpayPayment(verifiedTotal);
       }
     } catch (error: any) {
       console.error('Error placing order:', error);
@@ -432,9 +493,39 @@ export default function Checkout() {
           customerPhone: addresses.find(a => a.id === selectedAddress)?.phone || '9999999999',
         },
         async (paymentData) => {
-          // Success — show processing while we save order
+          // Success — verify payment server-side BEFORE saving order
           setPaymentStatus('processing');
           try {
+            // Step 1: Verify with Edge Function
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+
+            const verifyRes = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  razorpay_payment_id: paymentData.razorpay_payment_id,
+                  razorpay_order_id: paymentData.razorpay_order_id,
+                  razorpay_signature: paymentData.razorpay_signature,
+                }),
+              }
+            );
+
+            const verifyResult = await verifyRes.json();
+
+            if (!verifyResult.verified) {
+              setPaymentStatus('failed');
+              setPaymentError('Payment verification failed. If money was deducted, contact support with your payment ID: ' + paymentData.razorpay_payment_id);
+              setIsProcessingOrder(false);
+              return;
+            }
+
+            // Step 2: Payment verified — save order
             const { order } = await createOrderInDB(paymentData.razorpay_payment_id);
             if (!directBuy) await clearCart();
             localStorage.removeItem('bespokeCustomization');
@@ -452,13 +543,11 @@ export default function Checkout() {
           }
         },
         (error) => {
-          // payment.failed or network error — modal already closed by this point (ondismiss fired after)
           setIsProcessingOrder(false);
           setPaymentStatus('failed');
           if (error.type === 'NETWORK_ERROR') {
             setPaymentError('Network error. Please check your connection and try again.');
           } else if (error.type === 'PAYMENT_CANCELLED') {
-            // Razorpay sometimes sends payment_cancelled reason through payment.failed
             setPaymentStatus('cancelled');
             setPaymentError('');
           } else {
@@ -466,7 +555,6 @@ export default function Checkout() {
           }
         },
         () => {
-          // User manually closed modal without attempting payment
           setIsProcessingOrder(false);
           setPaymentStatus('cancelled');
           setPaymentError('');

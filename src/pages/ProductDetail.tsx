@@ -2,6 +2,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingBag, Star, Truck, RotateCcw, Shield, Zap, ChevronDown, ChevronUp, Share2, Scissors, Ruler, Palette, Phone, Plus, Minus, Camera, X, Play, CheckCircle, Lock, Bell } from 'lucide-react';
 import DOMPurify from 'dompurify';
+
+// Strict sanitization — only safe display tags
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'ol', 'li', 'span'],
+  ALLOWED_ATTR: ['style'],
+  FORBID_SCRIPTS: true,
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'a'],
+};
 import { supabase } from '../lib/supabase';
 import { savePendingIntent } from '../lib/pendingIntent';
 import { Product, ProductImage, Review } from '../types';
@@ -1282,7 +1290,7 @@ export default function ProductDetail() {
               {openAccordion === 'fabric' && (
                 <div
                   className="pb-4 text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.fabric_details) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.fabric_details, PURIFY_CONFIG as any) }}
                 />
               )}
             </div>
@@ -1300,7 +1308,7 @@ export default function ProductDetail() {
               {openAccordion === 'care' && (
                 <div
                   className="pb-4 text-sm text-gray-600 dark:text-gray-400 prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.care_instructions) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.care_instructions, PURIFY_CONFIG as any) }}
                 />
               )}
             </div>
@@ -1319,7 +1327,7 @@ export default function ProductDetail() {
                 <div className="pb-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                   <div
                     className={`prose prose-sm dark:prose-invert max-w-none ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description, PURIFY_CONFIG as any) }}
                   />
                   {product.description.length > 200 && (
                     <button

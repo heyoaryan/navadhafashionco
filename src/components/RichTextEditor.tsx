@@ -2,6 +2,15 @@ import { useRef, useEffect } from 'react';
 import { Bold, Italic, List, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
+// Strict DOMPurify config — only safe formatting tags allowed
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'ol', 'li', 'span'],
+  ALLOWED_ATTR: ['style'],
+  ALLOWED_STYLE: { '*': { 'text-align': [/^(left|center|right|justify)$/] } },
+  FORBID_SCRIPTS: true,
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'a'],
+};
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -16,7 +25,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     if (editorRef.current) {
       // On initial mount or when value changes externally
       if (isInitialMount.current || editorRef.current.innerHTML !== value) {
-        editorRef.current.innerHTML = DOMPurify.sanitize(value || '');
+        editorRef.current.innerHTML = DOMPurify.sanitize(value || '', PURIFY_CONFIG as any);
         isInitialMount.current = false;
       }
     }
@@ -24,7 +33,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(DOMPurify.sanitize(editorRef.current.innerHTML));
+      onChange(DOMPurify.sanitize(editorRef.current.innerHTML, PURIFY_CONFIG as any));
     }
   };
 
