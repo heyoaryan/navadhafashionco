@@ -72,7 +72,7 @@ export default function CookieConsent() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
-                  Did you like cookies? 🍪
+                  We use cookies 🍪
                 </h3>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Your privacy, your choice</p>
               </div>
