@@ -2,6 +2,7 @@
 // Verifies Razorpay payment signature server-side before creating order
 // Secret key never leaves the server
 
+// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
