@@ -94,37 +94,40 @@ export default function Shop() {
     try {
       let query = supabase
         .from('products')
-        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season', { count: 'exact' })
+        .select('id, name, slug, price, compare_at_price, main_image_url, stock_quantity, sizes, colors, gender, is_active, tags, category_id, created_at, season, subcategory', { count: 'exact' })
         .eq('is_active', true);
 
       if (searchQuery) {
+        // When searching, only filter by search — ignore category/gender/price filters
         const phrase = searchQuery.trim();
-        query = query.or(`name.ilike.%${phrase}%,description.ilike.%${phrase}%`);
-      }
-
-      if (filterType === 'new') {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        query = query.gte('created_at', thirtyDaysAgo.toISOString());
-      }
-
-      if (selectedCategory) {
-        const category = cats.find(c => c.slug === selectedCategory);
-        if (category) {
-          query = query.eq('category_id', category.id);
+        query = query.or(
+          `name.ilike.%${phrase}%,description.ilike.%${phrase}%,tags.cs.{${phrase}},subcategory.ilike.%${phrase}%`
+        );
+      } else {
+        // Only apply these filters when NOT searching
+        if (filterType === 'new') {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          query = query.gte('created_at', thirtyDaysAgo.toISOString());
         }
-      }
 
-      // Filter by gender
-      if (selectedGender) {
-        query = query.eq('gender', selectedGender);
-      }
+        if (selectedCategory) {
+          const category = cats.find(c => c.slug === selectedCategory);
+          if (category) {
+            query = query.eq('category_id', category.id);
+          }
+        }
 
-      if (priceRange) {
-        const [min, max] = priceRange.split('-').map(Number);
-        query = query.gte('price', min);
-        if (max) {
-          query = query.lte('price', max);
+        if (selectedGender) {
+          query = query.eq('gender', selectedGender);
+        }
+
+        if (priceRange) {
+          const [min, max] = priceRange.split('-').map(Number);
+          query = query.gte('price', min);
+          if (max) {
+            query = query.lte('price', max);
+          }
         }
       }
 

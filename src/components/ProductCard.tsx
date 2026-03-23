@@ -93,8 +93,9 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
     finally { setIsTogglingWishlist(false); }
   }, [user, product.id, product.slug, toggleWishlist, navigate]);
 
-  const discountPercentage = product.compare_at_price
-    ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
+  const hasDiscount = product.compare_at_price != null && product.compare_at_price > product.price;
+  const discountPercentage = hasDiscount
+    ? Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)
     : 0;
 
   return (
@@ -135,7 +136,7 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Discount badge */}
-        {discountPercentage > 0 && (
+        {hasDiscount && discountPercentage > 0 && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium z-10">
             {discountPercentage}% OFF
           </div>
@@ -183,8 +184,8 @@ export default memo(function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium mb-1 line-clamp-1">{product.name}</h3>
         <div className="flex items-center gap-2">
           <span className="text-base sm:text-lg font-medium">₹{product.price.toLocaleString()}</span>
-          {product.compare_at_price && (
-            <span className="text-xs sm:text-sm text-gray-500 line-through">₹{product.compare_at_price.toLocaleString()}</span>
+          {hasDiscount && (
+            <span className="text-xs sm:text-sm text-gray-500 line-through">₹{product.compare_at_price!.toLocaleString()}</span>
           )}
         </div>
 

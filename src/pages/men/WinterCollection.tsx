@@ -74,7 +74,7 @@ export default function MenWinterCollection() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
-            src="https://images.unsplash.com/photo-1483118714900-540cf339fd46?w=1920&q=80" 
+            src="https://images.unsplash.com/photo-1548883354-94bcfe321cbb?w=1920&q=80" 
             alt="Winter Collection Background"
             className="w-full h-full object-cover opacity-40"
           />

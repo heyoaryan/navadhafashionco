@@ -480,6 +480,33 @@ export default function Checkout() {
     }
   };
 
+  // Read bespoke customization data from localStorage
+  const bespokeCustomization = (() => {
+    try {
+      const raw = localStorage.getItem('bespokeCustomization');
+      return raw ? JSON.parse(raw) as {
+        urgency: 'standard' | 'express' | 'rush';
+        complexity: 'simple' | 'moderate' | 'complex';
+        complexityCharge: number;
+        urgencyCharge: number;
+        basePrice: number;
+        designerCharge: number;
+        [key: string]: any;
+      } : null;
+    } catch { return null; }
+  })();
+
+  const isBespokeOrder = !!(location.state?.isBespokeOrder || bespokeCustomization);
+
+  // Bespoke delivery timeline info
+  const bespokeTimeline = bespokeCustomization?.urgency === 'rush'
+    ? { label: 'Rush', days: '7–13 days' }
+    : bespokeCustomization?.urgency === 'express'
+    ? { label: 'Express', days: '14–20 days' }
+    : isBespokeOrder
+    ? { label: 'Standard', days: '21–30 days' }
+    : null;
+
   const subtotal = checkoutTotal;
   const discount = calculateDiscount();
   const shippingCost = deliveryMethod === 'pickup' ? 0 : ((subtotal - discount) >= 2999 ? 0 : 99);
@@ -1044,10 +1071,29 @@ export default function Checkout() {
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span className="font-medium">₹{subtotal.toLocaleString()}</span>
-              </div>
+              {bespokeCustomization ? (
+                <>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Base Price</span>
+                    <span className="font-medium">₹{(bespokeCustomization.basePrice || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Designer Charge</span>
+                    <span className="font-medium">+₹{(bespokeCustomization.complexityCharge || 0).toLocaleString()}</span>
+                  </div>
+                  {(bespokeCustomization.urgencyCharge || 0) > 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">Delivery Charge ({bespokeTimeline?.label})</span>
+                      <span className="font-medium">+₹{bespokeCustomization.urgencyCharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="font-medium">₹{subtotal.toLocaleString()}</span>
+                </div>
+              )}
               {discount > 0 && (
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600 dark:text-gray-400">Discount</span>
@@ -1118,9 +1164,15 @@ export default function Checkout() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                     Delivered to your doorstep
                   </p>
-                  <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                    {(subtotal - discount) >= 2999 ? '✓ Free shipping' : '₹99 shipping fee'}
-                  </p>
+                  {bespokeTimeline ? (
+                    <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                      ₹99 shipping fee • {bespokeTimeline.label}: {bespokeTimeline.days}
+                    </p>
+                  ) : (
+                    <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                      {(subtotal - discount) >= 2999 ? '✓ Free shipping' : '₹99 shipping fee'}
+                    </p>
+                  )}
                 </div>
               </label>
 
@@ -1154,9 +1206,15 @@ export default function Checkout() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                     Collect from our store
                   </p>
-                  <p className="text-xs font-medium text-green-600 dark:text-green-400">
-                    ✓ Free • Ready in 2-3 hours
-                  </p>
+                  {bespokeTimeline ? (
+                    <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                      ✓ Free • Ready in {bespokeTimeline.days}
+                    </p>
+                  ) : (
+                    <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                      ✓ Free • Ready in 2-3 hours
+                    </p>
+                  )}
                 </div>
               </label>
             </div>
@@ -1639,10 +1697,29 @@ export default function Checkout() {
 
             {/* Price Breakdown */}
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span className="font-medium">₹{subtotal.toLocaleString()}</span>
-              </div>
+              {bespokeCustomization ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Base Price</span>
+                    <span className="font-medium">₹{(bespokeCustomization.basePrice || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Designer Charge</span>
+                    <span className="font-medium">+₹{(bespokeCustomization.complexityCharge || 0).toLocaleString()}</span>
+                  </div>
+                  {(bespokeCustomization.urgencyCharge || 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Delivery Charge ({bespokeTimeline?.label})</span>
+                      <span className="font-medium">+₹{bespokeCustomization.urgencyCharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="font-medium">₹{subtotal.toLocaleString()}</span>
+                </div>
+              )}
               {discount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Discount</span>
@@ -1653,6 +1730,12 @@ export default function Checkout() {
                 <span className="text-gray-600 dark:text-gray-400">Shipping</span>
                 <span className="font-medium">{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span>
               </div>
+              {bespokeTimeline && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Delivery Timeline</span>
+                  <span className="font-medium text-rose-500">{bespokeTimeline.label} ({bespokeTimeline.days})</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Tax (5%)</span>
                 <span className="font-medium">₹{tax.toLocaleString()}</span>
@@ -1730,10 +1813,29 @@ export default function Checkout() {
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span className="font-medium">₹{subtotal.toLocaleString()}</span>
-              </div>
+              {bespokeCustomization ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Base Price</span>
+                    <span className="font-medium">₹{(bespokeCustomization.basePrice || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Designer Charge</span>
+                    <span className="font-medium">+₹{(bespokeCustomization.complexityCharge || 0).toLocaleString()}</span>
+                  </div>
+                  {(bespokeCustomization.urgencyCharge || 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Delivery Charge ({bespokeTimeline?.label})</span>
+                      <span className="font-medium">+₹{bespokeCustomization.urgencyCharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="font-medium">₹{subtotal.toLocaleString()}</span>
+                </div>
+              )}
               {discount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Discount</span>
@@ -1744,6 +1846,12 @@ export default function Checkout() {
                 <span className="text-gray-600 dark:text-gray-400">Shipping</span>
                 <span className="font-medium">{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span>
               </div>
+              {bespokeTimeline && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Delivery Timeline</span>
+                  <span className="font-medium text-rose-500">{bespokeTimeline.label} ({bespokeTimeline.days})</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Tax (5%)</span>
                 <span className="font-medium">₹{tax.toLocaleString()}</span>

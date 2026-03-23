@@ -457,6 +457,8 @@ export default function ProductDetail() {
     setBespokeSubmitting(true);
     try {
       // Save customization request to localStorage so checkout can attach it to the order
+      const complexityCharge = { simple: 500, moderate: 1000, complex: 2000 }[bespokeComplexity];
+      const urgencyCharge = { standard: 0, express: 500, rush: 1000 }[bespokeUrgency];
       const bespokeData = {
         phone: cleanPhone,
         designNotes: bespokeDesignNotes.trim(),
@@ -465,7 +467,10 @@ export default function ProductDetail() {
         embroidery: bespokeEmbroidery.trim(),
         complexity: bespokeComplexity,
         urgency: bespokeUrgency,
+        complexityCharge,
+        urgencyCharge,
         designerCharge,
+        basePrice: product.price,
         productId: product.id,
       };
       localStorage.setItem('bespokeCustomization', JSON.stringify(bespokeData));
@@ -749,7 +754,7 @@ export default function ProductDetail() {
             {!showBespokeForm && (
               <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl font-medium">₹{product.price.toLocaleString()}</span>
-                {product.compare_at_price && (
+                {product.compare_at_price != null && product.compare_at_price > product.price && (
                   <span className="text-lg sm:text-xl text-gray-500 line-through">
                     ₹{product.compare_at_price.toLocaleString()}
                   </span>
@@ -779,7 +784,15 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex justify-between gap-8">
                     <span>Designer charge</span>
-                    <span className="text-rose-500">+₹{designerCharge.toLocaleString()}</span>
+                    <span className="text-rose-500">+₹{{ simple: 500, moderate: 1000, complex: 2000 }[bespokeComplexity].toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between gap-8">
+                    <span>Delivery charge</span>
+                    <span className="text-rose-500">
+                      {{ standard: 0, express: 500, rush: 1000 }[bespokeUrgency] > 0
+                        ? `+₹${{ standard: 0, express: 500, rush: 1000 }[bespokeUrgency].toLocaleString()}`
+                        : 'Free'}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right ml-6">

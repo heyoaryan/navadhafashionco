@@ -25,8 +25,38 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   western:      { label: 'Western',          color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
   'indo-western':{ label: 'Indo-Western',    color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' },
   summer:       { label: 'Summer Collection',color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
+  winter:       { label: 'Winter Collection',color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
   uncategorized:{ label: 'Uncategorized',    color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
 };
+
+// Categories that should be sub-grouped by gender
+const GENDER_SUBCATEGORY_CATEGORIES = new Set(['workwear', 'ethnic', 'ethnics', 'casuals', 'gym-attire', 'western', 'indo-western']);
+
+const GENDER_LABEL: Record<string, string> = {
+  men: 'Men',
+  women: 'Women',
+  unisex: 'Unisex',
+};
+
+function getGroupKey(p: Product): string {
+  if (p.season === 'summer') return 'summer';
+  if (p.season === 'winter') return 'winter';
+  const cat = p.category?.toLowerCase() || 'uncategorized';
+  if (GENDER_SUBCATEGORY_CATEGORIES.has(cat) && p.gender) {
+    return `${cat}__${p.gender.toLowerCase()}`;
+  }
+  return cat;
+}
+
+function getGroupLabel(key: string): { label: string; color: string } {
+  if (key.includes('__')) {
+    const [cat, gender] = key.split('__');
+    const base = CATEGORY_CONFIG[cat] || { label: cat, color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' };
+    const genderLabel = GENDER_LABEL[gender] || gender.charAt(0).toUpperCase() + gender.slice(1);
+    return { label: `${base.label} — ${genderLabel}`, color: base.color };
+  }
+  return CATEGORY_CONFIG[key] || { label: key.charAt(0).toUpperCase() + key.slice(1), color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' };
+}
 
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -59,24 +89,31 @@ export default function ProductList() {
         query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
       }
 
-      const from = (pageNum - 1) * PAGE_SIZE;
-      query = query.range(from, from + PAGE_SIZE - 1);
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-      setProducts(data || []);
-      setTotalCount(count || 0);
+      if (groupByCategory) {
+        // Fetch all products for grouped view (no pagination)
+        const { data, error, count } = await query;
+        if (error) throw error;
+        setProducts(data || []);
+        setTotalCount(count || 0);
+      } else {
+        const from = (pageNum - 1) * PAGE_SIZE;
+        query = query.range(from, from + PAGE_SIZE - 1);
+        const { data, error, count } = await query;
+        if (error) throw error;
+        setProducts(data || []);
+        setTotalCount(count || 0);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [groupByCategory]);
 
   useEffect(() => {
     setPage(1);
     fetchProducts(1, debouncedSearch);
-  }, [debouncedSearch, fetchProducts]);
+  }, [debouncedSearch, fetchProducts, groupByCategory]);
 
   useEffect(() => {
     if (quickEditProduct) lockScroll();
@@ -151,21 +188,24 @@ export default function ProductList() {
     }
   };
 
-  // Group products by category (also treat season=summer as its own group)
+  // Group products by category + gender
   const grouped = useMemo(() => {
     const map = new Map<string, Product[]>();
     for (const p of products) {
-      // Summer collection gets its own group regardless of category
-      const key = p.season === 'summer' ? 'summer' : (p.category?.toLowerCase() || 'uncategorized');
+      const key = getGroupKey(p);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(p);
     }
-    // Sort groups: known categories first, then uncategorized
-    const order = ['casuals', 'workwear', 'ethnic', 'ethnics', 'gym-attire', 'western', 'indo-western', 'summer', 'uncategorized'];
+    // Sort groups: known categories first (men before women within same category), then uncategorized
+    const catOrder = ['casuals', 'workwear', 'ethnic', 'ethnics', 'gym-attire', 'western', 'indo-western', 'summer', 'winter', 'uncategorized'];
+    const genderOrder = ['men', 'women', 'unisex', ''];
     return [...map.entries()].sort(([a], [b]) => {
-      const ai = order.indexOf(a) === -1 ? 99 : order.indexOf(a);
-      const bi = order.indexOf(b) === -1 ? 99 : order.indexOf(b);
-      return ai - bi;
+      const [aCat, aGender = ''] = a.includes('__') ? a.split('__') : [a, ''];
+      const [bCat, bGender = ''] = b.includes('__') ? b.split('__') : [b, ''];
+      const ai = catOrder.indexOf(aCat) === -1 ? 99 : catOrder.indexOf(aCat);
+      const bi = catOrder.indexOf(bCat) === -1 ? 99 : catOrder.indexOf(bCat);
+      if (ai !== bi) return ai - bi;
+      return genderOrder.indexOf(aGender) - genderOrder.indexOf(bGender);
     });
   }, [products]);
 
@@ -209,7 +249,7 @@ export default function ProductList() {
       </td>
       <td className="px-3 py-3 whitespace-nowrap">
         <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
-        {product.compare_at_price && <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>}
+        {product.compare_at_price && product.compare_at_price > product.price && <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>}
       </td>
       <td className="px-3 py-3 whitespace-nowrap">
         <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
@@ -239,53 +279,49 @@ export default function ProductList() {
 
   // Reusable mobile card
   const ProductCard = ({ product }: { product: Product }) => (
-    <div key={product.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
-      <div className="flex gap-3 p-3">
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+      {/* Top row: image + name + actions */}
+      <div className="flex items-center gap-3 px-3 pt-3 pb-2">
         {product.main_image_url ? (
-          <img src={product.main_image_url} alt={product.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+          <img src={product.main_image_url} alt={product.name} className="w-14 h-14 object-cover rounded-lg flex-shrink-0 border border-gray-100 dark:border-gray-700" />
         ) : (
-          <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-            <Package className="w-7 h-7 text-gray-400" />
+          <div className="w-14 h-14 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+            <Package className="w-6 h-6 text-gray-400" />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">{product.name}</h3>
+          <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-1">{product.name}</p>
           {product.sku && <p className="text-xs text-gray-400 font-mono mt-0.5">{product.sku}</p>}
-          <div className="flex gap-1.5 mt-2 flex-wrap">
-            {product.gender && <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 capitalize">{product.gender}</span>}
-            {product.subcategory && <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 capitalize">{product.subcategory}</span>}
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {product.gender && <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 capitalize">{product.gender}</span>}
+            {product.subcategory && <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 capitalize">{product.subcategory}</span>}
           </div>
         </div>
+        {/* Action buttons - icon only, large touch targets */}
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button onClick={() => openQuickEdit(product)} className="p-2.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors active:scale-95" title="Quick Edit"><Zap className="w-4 h-4" /></button>
+          <Link to={`/admin/products/${product.id}`} className="p-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors active:scale-95" title="Edit"><Edit className="w-4 h-4" /></Link>
+          <button onClick={() => handleDelete(product.id)} className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors active:scale-95" title="Delete"><Trash2 className="w-4 h-4" /></button>
+        </div>
       </div>
-      <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
-        <div className="px-3 py-2">
-          <p className="text-xs text-gray-400 mb-0.5">Price</p>
+      {/* Bottom row: price, stock, status */}
+      <div className="flex items-center gap-3 px-3 pb-3">
+        <div className="flex-1">
           <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">₹{product.price.toLocaleString()}</p>
-          {product.compare_at_price && <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>}
+          {product.compare_at_price && product.compare_at_price > product.price && <p className="text-xs text-gray-400 line-through">₹{product.compare_at_price.toLocaleString()}</p>}
         </div>
-        <div className="px-3 py-2">
-          <p className="text-xs text-gray-400 mb-0.5">Stock</p>
-          <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
-            product.stock_quantity > 10 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
-            product.stock_quantity > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
-            'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-          }`}>{product.stock_quantity} units</span>
-        </div>
-        <div className="px-3 py-2">
-          <p className="text-xs text-gray-400 mb-0.5">Status</p>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-            product.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
-            'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-            {product.is_active ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-      </div>
-      <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
-        <button onClick={() => openQuickEdit(product)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"><Zap className="w-3.5 h-3.5" /> Quick Edit</button>
-        <Link to={`/admin/products/${product.id}`} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"><Edit className="w-3.5 h-3.5" /> Edit</Link>
-        <button onClick={() => handleDelete(product.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+          product.stock_quantity > 10 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+          product.stock_quantity > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+          'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+        }`}>{product.stock_quantity} units</span>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+          product.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+          'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+          {product.is_active ? 'Active' : 'Inactive'}
+        </span>
       </div>
     </div>
   );
@@ -295,7 +331,7 @@ export default function ProductList() {
       {/* Quick Edit Modal */}
       {quickEditProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 animate-fade-in-fast">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-4 sm:p-6 animate-fade-in-fast max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Quick Edit</h3>
               <button onClick={closeQuickEdit} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"><X className="w-5 h-5" /></button>
@@ -378,7 +414,7 @@ export default function ProductList() {
         /* ── GROUPED VIEW ── */
         <div className="space-y-4">
           {grouped.map(([key, groupProducts]) => {
-            const config = CATEGORY_CONFIG[key] || { label: key.charAt(0).toUpperCase() + key.slice(1), color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' };
+            const config = getGroupLabel(key);
             const isCollapsed = collapsedGroups.has(key);
             return (
               <div key={key} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
@@ -444,14 +480,14 @@ export default function ProductList() {
               </table>
             </div>
           </div>
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-100 dark:divide-gray-700">
             {products.map(product => <ProductCard key={product.id} product={product} />)}
           </div>
         </>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination - only in flat list view */}
+      {!groupByCategory && totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <p className="text-sm text-gray-600 dark:text-gray-400">Page {page} of {totalPages} ({totalCount} products)</p>
           <div className="flex items-center gap-2">

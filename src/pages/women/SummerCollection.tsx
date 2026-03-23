@@ -74,7 +74,7 @@ export default function WomenSummerCollection() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
-            src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1920&q=80" 
+            src="https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=1920&q=80" 
             alt="Summer Collection Background"
             className="w-full h-full object-cover opacity-40"
           />

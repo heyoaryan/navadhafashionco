@@ -151,35 +151,23 @@ export default function Header() {
     };
   }, [lockedDropdown]);
 
-  // Build search URL — if query exactly matches a gender, apply gender filter
+  // Build search URL — always go to /shop with only the search param
   const buildSearchUrl = (query: string) => {
-    const q = query.trim().toLowerCase();
-    if (q === 'men') return '/shop?gender=men';
-    if (q === 'women') return '/shop?gender=women';
-    return `/shop?search=${encodeURIComponent(query.trim())}`;
+    const q = query.trim();
+    if (!q) return '/shop';
+    return `/shop?search=${encodeURIComponent(q)}`;
   };
 
-  // Build URL preserving existing params (for /shop page)
+  // On /shop page, replace all params with just the search param
   const buildSearchUrlWithParams = (query: string) => {
-    const params = new URLSearchParams(location.search);
-    if (query.trim()) {
-      params.set('search', query.trim());
-    } else {
-      params.delete('search');
-    }
-    return `${location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    if (!query.trim()) return '/shop';
+    return `/shop?search=${encodeURIComponent(query.trim())}`;
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      if (location.pathname === '/shop') {
-        navigate(buildSearchUrlWithParams(searchQuery));
-      } else if (isOnCategoryPage) {
-        navigate(`${location.pathname}?search=${encodeURIComponent(searchQuery.trim())}`);
-      } else {
-        navigate(buildSearchUrl(searchQuery));
-      }
+      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
       setSearchQuery('');
       setMobileMenuOpen(false);
@@ -195,19 +183,9 @@ export default function Header() {
   useEffect(() => {
     if (!searchOpen) return;
     if (debouncedSearch.trim()) {
-      if (location.pathname === '/shop') {
-        navigate(buildSearchUrlWithParams(debouncedSearch));
-      } else if (isOnCategoryPage) {
-        navigate(`${location.pathname}?search=${encodeURIComponent(debouncedSearch.trim())}`);
-      } else {
-        navigate(buildSearchUrl(debouncedSearch));
-      }
+      navigate(`/shop?search=${encodeURIComponent(debouncedSearch.trim())}`);
     } else if (debouncedSearch === '') {
-      if (isOnCategoryPage) {
-        navigate(location.pathname);
-      } else {
-        navigate('/shop');
-      }
+      navigate('/shop');
     }
   }, [debouncedSearch, searchOpen]);
 

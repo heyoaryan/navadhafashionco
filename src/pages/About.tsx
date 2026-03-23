@@ -151,7 +151,7 @@ export default function About() {
             <div className="relative">
               <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-20 pointer-events-none" style={{ background: 'linear-gradient(135deg, #EE458F, #a855f7)' }} />
               <img
-                src="/1.png"
+                src="/aboutusphoto/1.png"
                 alt="Elegant Indian dresses and garments"
                 className="relative rounded-2xl shadow-2xl w-full h-56 sm:h-72 lg:h-96 object-cover object-center"
               />
@@ -216,7 +216,7 @@ export default function About() {
               <div className="relative">
                 <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-15 pointer-events-none" style={{ background: '#EE458F' }} />
                 <img
-                  src="/2.png"
+                  src="/aboutusphoto/2.png"
                   alt="Fashion designer working with fabric"
                   className="relative rounded-2xl shadow-2xl w-full h-56 sm:h-72 lg:h-96 object-cover object-center"
                 />
@@ -326,7 +326,7 @@ export default function About() {
               <div className="relative">
                 <div className="absolute -inset-4 rounded-2xl blur-2xl opacity-15 pointer-events-none" style={{ background: '#a855f7' }} />
                 <img
-                  src="/3.png"
+                  src="/aboutusphoto/3.png"
                   alt="Beautiful ethnic wear collection"
                   className="relative rounded-2xl shadow-2xl w-full h-56 sm:h-72 lg:h-96 object-cover object-top"
                 />
