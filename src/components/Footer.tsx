@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Mail } from 'lucide-react';
+import { Instagram, Mail, Phone } from 'lucide-react';
 
 export default function Footer() {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -125,9 +128,42 @@ export default function Footer() {
             </Link>
           </div>
 
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center">
-            © 2026 Navadha Fashion Co. All rights reserved.
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center">
+              © 2026 Navadha Fashion Co. All rights reserved.
+            </p>
+
+            {/* Developer Credit */}
+            <div className="relative flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 dark:text-gray-400 italic">Developed by</span>
+              <div
+                className="relative cursor-pointer"
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+              >
+                <span className="text-xs font-semibold bg-gradient-to-r from-rose-400 via-pink-500 to-purple-500 bg-clip-text text-transparent tracking-wide select-none">
+                  Aryan Singh Thakur
+                </span>
+
+                {/* Hover Card */}
+                {hovered && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 z-50 text-center">
+                    {/* Arrow */}
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white dark:bg-gray-800 border-r border-b border-gray-100 dark:border-gray-700 rotate-45" />
+
+                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 mb-2">✨ Want one just like this?</p>
+                    <a
+                      href="tel:8384041061"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-500 hover:text-rose-600 transition-colors"
+                    >
+                      <Phone className="w-3 h-3" />
+                      8384041061
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
