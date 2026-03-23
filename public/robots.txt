@@ -25,4 +25,4 @@ Allow: /careers
 Allow: /sustainability
 Allow: /size-guide
 
-Sitemap: https://navadha.com/sitemap.xml
+Sitemap: https://navadhafashion.com/sitemap.xml

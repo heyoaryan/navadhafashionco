@@ -12,7 +12,7 @@ interface SEOProps {
 }
 
 const SITE_NAME = 'NAVADHA Fashion Co';
-const BASE_URL = 'https://navadha.com';
+const BASE_URL = 'https://navadhafashion.com';
 const DEFAULT_IMAGE = 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1200';
 
 export default function SEO({

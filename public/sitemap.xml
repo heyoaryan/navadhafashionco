@@ -4,172 +4,172 @@
 
   <!-- Homepage -->
   <url>
-    <loc>https://navadha.com/</loc>
+    <loc>https://navadhafashion.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <!-- Shop -->
   <url>
-    <loc>https://navadha.com/shop</loc>
+    <loc>https://navadhafashion.com/shop</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://navadha.com/best-sellers</loc>
+    <loc>https://navadhafashion.com/best-sellers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Women's Collections -->
   <url>
-    <loc>https://navadha.com/women/western</loc>
+    <loc>https://navadhafashion.com/women/western</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/indo-western</loc>
+    <loc>https://navadhafashion.com/women/indo-western</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/ethnics</loc>
+    <loc>https://navadhafashion.com/women/ethnics</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/casuals</loc>
+    <loc>https://navadhafashion.com/women/casuals</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/workwear</loc>
+    <loc>https://navadhafashion.com/women/workwear</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/gym-attire</loc>
+    <loc>https://navadhafashion.com/women/gym-attire</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/summer-collection</loc>
+    <loc>https://navadhafashion.com/women/summer-collection</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/women/winter-collection</loc>
+    <loc>https://navadhafashion.com/women/winter-collection</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- Men's Collections -->
   <url>
-    <loc>https://navadha.com/men/casuals</loc>
+    <loc>https://navadhafashion.com/men/casuals</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/men/workwear</loc>
+    <loc>https://navadhafashion.com/men/workwear</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/men/ethnic</loc>
+    <loc>https://navadhafashion.com/men/ethnic</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/men/gym-attire</loc>
+    <loc>https://navadhafashion.com/men/gym-attire</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://navadha.com/men/summer-collection</loc>
+    <loc>https://navadhafashion.com/men/summer-collection</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/men/winter-collection</loc>
+    <loc>https://navadhafashion.com/men/winter-collection</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- Boutique -->
   <url>
-    <loc>https://navadha.com/boutique</loc>
+    <loc>https://navadhafashion.com/boutique</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://navadha.com/boutique/ready-made</loc>
+    <loc>https://navadhafashion.com/boutique/ready-made</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://navadha.com/boutique/customization</loc>
+    <loc>https://navadhafashion.com/boutique/customization</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- Static Pages -->
   <url>
-    <loc>https://navadha.com/about</loc>
+    <loc>https://navadhafashion.com/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://navadha.com/contact</loc>
+    <loc>https://navadhafashion.com/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://navadha.com/faq</loc>
+    <loc>https://navadhafashion.com/faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://navadha.com/shipping</loc>
+    <loc>https://navadhafashion.com/shipping</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://navadha.com/returns</loc>
+    <loc>https://navadhafashion.com/returns</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://navadha.com/size-guide</loc>
+    <loc>https://navadhafashion.com/size-guide</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://navadha.com/sustainability</loc>
+    <loc>https://navadhafashion.com/sustainability</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://navadha.com/careers</loc>
+    <loc>https://navadhafashion.com/careers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://navadha.com/careers/store</loc>
+    <loc>https://navadhafashion.com/careers/store</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://navadha.com/careers/remote</loc>
+    <loc>https://navadhafashion.com/careers/remote</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://navadha.com/privacy</loc>
+    <loc>https://navadhafashion.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://navadha.com/terms</loc>
+    <loc>https://navadhafashion.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
