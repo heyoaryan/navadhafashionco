@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { loadPendingIntent, clearPendingIntent, markOAuthHandled } from '../lib/pendingIntent';
+import { trackSignup } from '../utils/analytics';
 
 async function flushAddToCart(userId: string, productId: string, quantity: number, size?: string, color?: string) {
   try {
@@ -38,6 +39,14 @@ export default function AuthCallback() {
       if (!session) { navigate('/auth', { replace: true }); return; }
 
       const userId = session.user.id;
+
+      // Detect new signup — created_at within last 30 seconds means just signed up
+      const createdAt = session.user.created_at;
+      const isNewUser = createdAt && (Date.now() - new Date(createdAt).getTime()) < 30000;
+      if (isNewUser) {
+        const provider = session.user.app_metadata?.provider || 'google';
+        trackSignup(userId, provider);
+      }
 
       // Fetch profile role
       let role = 'customer';

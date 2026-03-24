@@ -9,7 +9,7 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ user: { id: string } | null }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string): Promise<void> => {
+  const signUp = async (email: string, password: string, fullName: string): Promise<{ user: { id: string } | null }> => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data?.user) {
       trackSignup(data.user.id, 'email');
     }
-    return data as any;
+    return { user: data?.user ? { id: data.user.id } : null };
   };
 
   const signIn = async (email: string, password: string) => {

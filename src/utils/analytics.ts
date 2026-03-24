@@ -103,5 +103,7 @@ export const trackSignup = (userId: string, signupMethod: string = 'email') => {
       session_id: getSessionId(),
       signup_method: signupMethod,
     });
+    // Flush immediately so signup is never lost
+    flushQueue();
   } catch { /* silently fail */ }
 };

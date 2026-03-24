@@ -148,9 +148,8 @@ export default function Auth() {
         await authSignIn(email, password);
       } else {
         try {
-          const result: any = await authSignUp(email, password, fullName);
-          if (result?.user?.id) await trackSignup(result.user.id, 'email');
-          if (result?.user?.confirmed_at || result?.session) {
+          const result = await authSignUp(email, password, fullName);
+          if (result?.user) {
             setSuccess('Account created successfully! You can now sign in.');
             setTimeout(() => { setIsLogin(true); setSuccess(''); setPassword(''); setConfirmPassword(''); }, 2000);
           } else {
