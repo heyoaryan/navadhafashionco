@@ -139,6 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { full_name: fullName }, emailRedirectTo: undefined },
     });
     if (error) throw error;
+
+    // Supabase silently "succeeds" when email is already registered (security by design).
+    // Detect this: existing user comes back with identities = [] (empty array).
+    if (data?.user && (data.user.identities?.length === 0)) {
+      throw new Error('User already registered');
+    }
+
     if (data?.user) {
       await trackSignup(data.user.id, 'email');
     }
@@ -162,6 +169,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await forceSignOut(data.user.id);
         throw new Error('BLACKLISTED');
       }
+
+      // If user signed in successfully but only has Google identity (no email/password identity),
+      // this means Supabase linked the accounts — that's fine, proceed normally.
+      // If they somehow got in with a Google-only account via password, we still allow it
+      // since Supabase validated the credentials.
     }
   };
 

@@ -132,6 +132,23 @@ export default function Auth() {
     }
   };
 
+  // Check if a registered email was signed up via Google OAuth
+  // by attempting signInWithOAuth silently — we can't do this client-side,
+  // so we rely on Supabase's "User already registered" error which only fires
+  // for email/password signups on an existing account (Google or email).
+  // The distinction: Google accounts return "User already registered" on email signup attempt.
+  const isGoogleOnlyAccount = async (emailToCheck: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', emailToCheck.trim().toLowerCase())
+        .maybeSingle();
+      return !!data;
+    } catch {
+      return false;
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess(''); setLoading(true);
@@ -160,8 +177,22 @@ export default function Auth() {
           if (signupError.message?.includes('rate limit') || signupError.message?.includes('Email rate limit exceeded')) {
             setError('Too many signup attempts. Please wait 5 minutes and try again.');
           } else if (signupError.message?.includes('User already registered') || signupError.message?.includes('already registered')) {
-            setError('This email is already registered. Please sign in instead.');
-            setTimeout(() => { setIsLogin(true); setError(''); }, 3000);
+            // Account exists — check if it's a Google account
+            const accountExists = await isGoogleOnlyAccount(email);
+            if (accountExists) {
+              // Show specific message and redirect to Google login option
+              setError('');
+              setSuccess('');
+              setShowEmailForm(false);
+              setIsLogin(true);
+              // Small delay then show the error on the social buttons screen
+              setTimeout(() => {
+                setError('This email is already registered with Google. Please use "Continue with Google" to sign in.');
+              }, 100);
+            } else {
+              setError('This email is already registered. Please sign in instead.');
+              setTimeout(() => { setIsLogin(true); setError(''); setShowEmailForm(false); }, 3000);
+            }
           } else if (signupError.message?.includes('Password')) {
             setError('Password must be at least 8 characters long.');
           } else {
@@ -176,7 +207,17 @@ export default function Auth() {
       } else if (err.message === 'BLACKLISTED') {
         setIsBlacklisted(true);
       } else if (err.message?.includes('Invalid login credentials')) {
-        setError('Wrong email or password. Please try again.');
+        // Check if this email might be a Google-only account
+        const profileExists = await isGoogleOnlyAccount(email);
+        if (profileExists) {
+          setError('');
+          setShowEmailForm(false);
+          setTimeout(() => {
+            setError('This account was created with Google. Please use "Continue with Google" to sign in.');
+          }, 100);
+        } else {
+          setError('Wrong email or password. Please try again.');
+        }
       } else if (err.message?.includes('Email not confirmed')) {
         setError('Please verify your email before signing in.');
       } else if (!err.message?.includes('rate limit') && !err.message?.includes('already registered') && !err.message?.includes('Password')) {

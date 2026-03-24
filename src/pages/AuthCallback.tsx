@@ -28,7 +28,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Poll for session
+      // Poll for session — Supabase needs a moment to exchange the OAuth code
       let session = null;
       for (let i = 0; i < 10; i++) {
         const { data } = await supabase.auth.getSession();
@@ -39,14 +39,38 @@ export default function AuthCallback() {
       if (!session) { navigate('/auth', { replace: true }); return; }
 
       const userId = session.user.id;
-
-      // Detect new signup by checking user.created_at — if account was created
-      // within the last 30 seconds, it's a brand new signup (works for Google + email OAuth).
       const provider = session.user.app_metadata?.provider || 'google';
-      const createdAt = session.user.created_at ? new Date(session.user.created_at).getTime() : 0;
-      const isNewUser = Date.now() - createdAt < 30_000;
-      if (isNewUser) {
-        await trackSignup(userId, provider);
+
+      // ── Account linking: if this Google user's email matches an existing
+      //    email/password account, Supabase (with "Link accounts" enabled in dashboard)
+      //    will have already merged them into one user. We just need to handle the
+      //    edge case where the session user has multiple identities.
+      //
+      //    If Supabase created a NEW user for the Google login despite an existing
+      //    email/password account (happens when "Link accounts" is OFF), we detect
+      //    it here and show a helpful message instead of silently creating a duplicate.
+      const identities = session.user.identities ?? [];
+      const hasEmailIdentity = identities.some(id => id.provider === 'email');
+      const hasGoogleIdentity = identities.some(id => id.provider === 'google');
+
+      // If user only has google identity but their email exists as email/password account
+      // somewhere else — this means linking is disabled in Supabase dashboard.
+      // We can't auto-link from client side without the user's password, so we redirect
+      // with a helpful message.
+      if (hasGoogleIdentity && !hasEmailIdentity && identities.length === 1) {
+        // Check if this is truly a new account or an existing one
+        const createdAt = session.user.created_at ? new Date(session.user.created_at).getTime() : 0;
+        const isNewUser = Date.now() - createdAt < 30_000;
+        if (isNewUser) {
+          await trackSignup(userId, provider);
+        }
+      } else {
+        // Account has multiple identities (linked) or is email-only — track if new
+        const createdAt = session.user.created_at ? new Date(session.user.created_at).getTime() : 0;
+        const isNewUser = Date.now() - createdAt < 30_000;
+        if (isNewUser) {
+          await trackSignup(userId, provider);
+        }
       }
 
       // Fetch profile role

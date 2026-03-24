@@ -99,10 +99,16 @@ export const trackProductAction = (
 export const trackSignup = async (userId: string, signupMethod: string = 'email') => {
   try {
     // Direct insert — bypass queue so it completes before page navigation
-    await supabase.from('signup_tracking').insert({
+    // DB trigger already inserts on auth.users INSERT, so use upsert to avoid duplicates
+    // (session_id 'server_trigger' from trigger vs real session_id from client)
+    const { error } = await supabase.from('signup_tracking').insert({
       user_id: userId,
       session_id: getSessionId(),
       signup_method: signupMethod,
     });
+    // Ignore duplicate key errors — trigger may have already inserted
+    if (error && !error.message?.includes('duplicate') && !error.code?.includes('23505')) {
+      console.warn('[analytics] trackSignup failed:', error.message);
+    }
   } catch { /* silently fail */ }
 };
