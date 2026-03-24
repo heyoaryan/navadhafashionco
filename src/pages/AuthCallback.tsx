@@ -40,15 +40,13 @@ export default function AuthCallback() {
 
       const userId = session.user.id;
 
-      // Detect new signup — check if this user_id already exists in signup_tracking.
-      // If not, it's a brand new user. This is 100% reliable with no time windows.
+      // Detect new signup by checking user.created_at — if account was created
+      // within the last 30 seconds, it's a brand new signup (works for Google + email OAuth).
       const provider = session.user.app_metadata?.provider || 'google';
-      const { count } = await supabase
-        .from('signup_tracking')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-      if (count === 0) {
-        trackSignup(userId, provider);
+      const createdAt = session.user.created_at ? new Date(session.user.created_at).getTime() : 0;
+      const isNewUser = Date.now() - createdAt < 30_000;
+      if (isNewUser) {
+        await trackSignup(userId, provider);
       }
 
       // Fetch profile role

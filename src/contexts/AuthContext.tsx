@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) throw error;
     if (data?.user) {
-      trackSignup(data.user.id, 'email');
+      await trackSignup(data.user.id, 'email');
     }
     return { user: data?.user ? { id: data.user.id } : null };
   };

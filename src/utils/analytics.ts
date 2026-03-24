@@ -96,14 +96,13 @@ export const trackProductAction = (
   } catch { /* silently fail */ }
 };
 
-export const trackSignup = (userId: string, signupMethod: string = 'email') => {
+export const trackSignup = async (userId: string, signupMethod: string = 'email') => {
   try {
-    enqueue('signup_tracking', {
+    // Direct insert — bypass queue so it completes before page navigation
+    await supabase.from('signup_tracking').insert({
       user_id: userId,
       session_id: getSessionId(),
       signup_method: signupMethod,
     });
-    // Flush immediately so signup is never lost
-    flushQueue();
   } catch { /* silently fail */ }
 };
