@@ -40,11 +40,14 @@ export default function AuthCallback() {
 
       const userId = session.user.id;
 
-      // Detect new signup — created_at within last 30 seconds means just signed up
-      const createdAt = session.user.created_at;
-      const isNewUser = createdAt && (Date.now() - new Date(createdAt).getTime()) < 30000;
-      if (isNewUser) {
-        const provider = session.user.app_metadata?.provider || 'google';
+      // Detect new signup — check if this user_id already exists in signup_tracking.
+      // If not, it's a brand new user. This is 100% reliable with no time windows.
+      const provider = session.user.app_metadata?.provider || 'google';
+      const { count } = await supabase
+        .from('signup_tracking')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      if (count === 0) {
         trackSignup(userId, provider);
       }
 
