@@ -209,13 +209,10 @@ export default function Analytics() {
     </div>
   );
 
+  if (loading) return <LoadingState type="page" message="Loading Analytics..." variant="spinner" />;
+
   return (
-    <div className={`space-y-6 relative ${loading ? 'pointer-events-none' : ''}`}>
-      {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 rounded-xl">
-          <LoadingState type="inline" message="Loading Analytics..." variant="spinner" />
-        </div>
-      )}
+    <div className="space-y-6">
       {/* Header + Dropdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
