@@ -52,6 +52,22 @@ export default function Analytics() {
   const debouncedStart = useDebounce(customStart, 800);
   const debouncedEnd = useDebounce(customEnd, 800);
 
+  const [minDate, setMinDate] = useState('');
+
+  // Fetch earliest available data date
+  useEffect(() => {
+    Promise.all([
+      supabase.from('product_clicks').select('created_at').order('created_at', { ascending: true }).limit(1).single(),
+      supabase.from('orders').select('created_at').order('created_at', { ascending: true }).limit(1).single(),
+      supabase.from('signup_tracking').select('created_at').order('created_at', { ascending: true }).limit(1).single(),
+    ]).then(([clicks, orders, signups]) => {
+      const dates = [clicks.data?.created_at, orders.data?.created_at, signups.data?.created_at]
+        .filter(Boolean)
+        .map(d => new Date(d!).toISOString().split('T')[0]);
+      if (dates.length > 0) setMinDate(dates.sort()[0]);
+    });
+  }, []);
+
   const isValidDate = (val: string) => {
     if (!val || val.length < 10) return false;
     const d = new Date(val);
@@ -247,6 +263,7 @@ export default function Analytics() {
               <input
                 type="date"
                 value={customStart}
+                min={minDate || undefined}
                 max={today}
                 onKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 onKeyPress={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -264,7 +281,7 @@ export default function Analytics() {
               <input
                 type="date"
                 value={customEnd}
-                min={customStart || undefined}
+                min={customStart || minDate || undefined}
                 max={today}
                 onKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 onKeyPress={(e) => { e.preventDefault(); e.stopPropagation(); }}
