@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { MousePointerClick, Users, TrendingUp, Package, ShoppingCart } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import LoadingState from '../../components/LoadingState';
@@ -42,14 +43,22 @@ export default function Analytics() {
   const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const debouncedStart = useDebounce(customStart, 800);
+  const debouncedEnd = useDebounce(customEnd, 800);
+
+  const isValidDate = (val: string) => {
+    if (!val || val.length < 10) return false;
+    const d = new Date(val);
+    return !isNaN(d.getTime()) && d.getFullYear() > 1900 && d.getFullYear() < 2200;
+  };
 
   useEffect(() => {
     if (timeRange !== 'custom') fetchAnalytics();
   }, [timeRange]);
 
   useEffect(() => {
-    if (timeRange === 'custom' && customStart && customEnd) fetchAnalytics();
-  }, [customStart, customEnd]);
+    if (timeRange === 'custom' && isValidDate(debouncedStart) && isValidDate(debouncedEnd)) fetchAnalytics();
+  }, [debouncedStart, debouncedEnd]);
 
   const getDateRange = (range: typeof timeRange, start?: string, end?: string) => {
     const now = new Date();
@@ -88,7 +97,7 @@ export default function Analytics() {
     const timeout = setTimeout(() => setLoading(false), 15000);
     try {
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const { from, to } = getDateRange(timeRange, customStart, customEnd);
+      const { from, to } = getDateRange(timeRange, debouncedStart, debouncedEnd);
 
       // Build reusable query helpers
       const applyRange = (q: any) => {
@@ -176,6 +185,7 @@ export default function Analytics() {
   const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? 'Last 7 Days' : timeRange === 'month' ? 'Last 30 Days' : timeRange === 'custom' ? 'Custom Range' : 'All Time';
   const currentClicks = timeRange === 'today' ? stats.todayProductClicks : stats.totalProductClicks;
   const currentSignups = timeRange === 'today' ? stats.todaySignups : stats.totalSignups;
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD for max date
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -199,10 +209,13 @@ export default function Analytics() {
     </div>
   );
 
-  if (loading) return <LoadingState type="page" message="Loading Analytics..." variant="spinner" />;
-
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 relative ${loading ? 'pointer-events-none' : ''}`}>
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 rounded-xl">
+          <LoadingState type="inline" message="Loading Analytics..." variant="spinner" />
+        </div>
+      )}
       {/* Header + Dropdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -226,15 +239,33 @@ export default function Analytics() {
               <input
                 type="date"
                 value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 text-sm"
+                max={today}
+                onKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onKeyPress={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onKeyUp={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val || isValidDate(val)) {
+                    setCustomStart(val);
+                    if (customEnd && val && customEnd < val) setCustomEnd('');
+                  }
+                }}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 text-sm cursor-pointer"
               />
               <span className="text-gray-500 dark:text-gray-400 text-sm">to</span>
               <input
                 type="date"
                 value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 text-sm"
+                min={customStart || undefined}
+                max={today}
+                onKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onKeyPress={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onKeyUp={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val || isValidDate(val)) setCustomEnd(val);
+                }}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 text-gray-900 dark:text-gray-100 text-sm cursor-pointer"
               />
             </div>
           )}
