@@ -11,6 +11,9 @@ interface AnalyticsStats {
   todaySignups: number;
   totalOrders: number;
   conversionRate: string;
+  rangeClicks: number;
+  rangeSignups: number;
+  rangeOrders: number;
 }
 
 interface PopularProduct {
@@ -36,6 +39,9 @@ export default function Analytics() {
     todaySignups: 0,
     totalOrders: 0,
     conversionRate: '0.00',
+    rangeClicks: 0,
+    rangeSignups: 0,
+    rangeOrders: 0,
   });
   const [popularProducts, setPopularProducts] = useState<PopularProduct[]>([]);
   const [topOrders, setTopOrders] = useState<TopOrder[]>([]);
@@ -112,8 +118,9 @@ export default function Analytics() {
         { count: totalSignups },
         { count: todaySignups },
         { count: totalOrders },
-        { count: rangeOrders },
-        { count: rangeClicks },
+        { count: rangeOrdersCount },
+        { count: rangeClicksCount },
+        { count: rangeSignupsCount },
       ] = await Promise.all([
         supabase.from('product_clicks').select('*', { count: 'exact', head: true }),
         supabase.from('product_clicks').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
@@ -122,10 +129,11 @@ export default function Analytics() {
         supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled'),
         applyRange(supabase.from('orders').select('*', { count: 'exact', head: true }).neq('status', 'cancelled')),
         applyRange(supabase.from('product_clicks').select('*', { count: 'exact', head: true })),
+        applyRange(supabase.from('signup_tracking').select('*', { count: 'exact', head: true })),
       ]);
 
-      const clicks = rangeClicks || 0;
-      const orders = rangeOrders || 0;
+      const clicks = rangeClicksCount || 0;
+      const orders = rangeOrdersCount || 0;
       const rawRate = clicks > 0 ? (orders / clicks) * 100 : 0;
       const conversionRate = Math.min(rawRate, 100).toFixed(2);
 
@@ -136,6 +144,9 @@ export default function Analytics() {
         todaySignups: todaySignups || 0,
         totalOrders: totalOrders || 0,
         conversionRate,
+        rangeClicks: clicks,
+        rangeSignups: rangeSignupsCount || 0,
+        rangeOrders: orders,
       });
 
       // Popular products — filtered by same time range
@@ -183,8 +194,8 @@ export default function Analytics() {
   };
 
   const rangeLabel = timeRange === 'today' ? 'Today' : timeRange === 'week' ? 'Last 7 Days' : timeRange === 'month' ? 'Last 30 Days' : timeRange === 'custom' ? 'Custom Range' : 'All Time';
-  const currentClicks = timeRange === 'today' ? stats.todayProductClicks : stats.totalProductClicks;
-  const currentSignups = timeRange === 'today' ? stats.todaySignups : stats.totalSignups;
+  const currentClicks = stats.rangeClicks;
+  const currentSignups = stats.rangeSignups;
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD for max date
 
   const getStatusColor = (status: string) => {
